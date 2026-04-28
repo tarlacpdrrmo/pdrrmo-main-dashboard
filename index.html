@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDRRMO Dashboard 2026</title>
+    <title>PDRRMO Analytical Dashboard</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
@@ -15,14 +15,14 @@
 <body>
     <div class="dashboard-container">
         <nav class="sidebar">
-            <h2>PDRRMO 2026</h2>
+            <div class="brand">PDRRMO 2026</div>
             <ul>
-                <li class="section-title">DASHBOARDS</li>
+                <li class="section-title">Dashboards</li>
                 <li class="active" onclick="switchPanel('assets')">Assets & Personnel</li>
                 <li onclick="switchPanel('tracking')">Document Tracking</li>
                 <li onclick="switchPanel('volunteers')">Volunteer's Section</li>
                 
-                <li class="section-title">GIS & MAPS</li>
+                <li class="section-title">GIS & Maps</li>
                 <li onclick="switchPanel('ews-map')">Early Warning System</li>
                 <li onclick="switchPanel('incident-map')">Incident Heatmap</li>
                 <li onclick="switchPanel('evac-map')">Evacuation Centers</li>
@@ -31,8 +31,12 @@
 
         <main class="main-content">
             
+            <header class="page-header">
+                <h1>TARLAC PROVINCIAL DISASTER RISK REDUCTION & MANAGEMENT OFFICE</h1>
+                <h2>Analytical Dashboard</h2>
+            </header>
+            
             <section id="assets" class="panel active-panel">
-                <h3>Assets and Personnel Dispatched</h3>
                 <div class="assets-layout">
                     <div class="kpi-column">
                         <div class="card kpi-card">
@@ -53,7 +57,7 @@
                         </div>
                         
                         <div class="card pie-card">
-                            <h4>Total Services Catered Per Month</h4>
+                            <h4>Total Services Catered</h4>
                             <div class="pie-wrapper">
                                 <canvas id="monthlyPieChart"></canvas>
                             </div>
@@ -72,7 +76,6 @@
             </section>
 
             <section id="tracking" class="panel" style="display:none;">
-                <h3>Incoming Document Tracking</h3>
                 <div class="assets-layout top-summary">
                     <div class="card chart-card doc-pie-container"><canvas id="requestPieChart"></canvas></div>
                     <div class="kpi-grid">
@@ -84,7 +87,6 @@
             </section>
 
             <section id="volunteers" class="panel" style="display:none;">
-                <h3>Volunteer's Section</h3>
                 <div class="assets-layout top-summary">
                     <div class="card summary-card"><p>Total Volunteer Organizations</p><h3 id="vol-orgs">0</h3></div>
                     <div class="card summary-card"><p>Individual Volunteers</p><h3 class="orange" id="vol-ind">0</h3></div>
