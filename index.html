@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDRRMO Dashboard 2026</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <nav class="sidebar">
+            <h2>PDRRMO 2026</h2>
+            <ul>
+                <li class="section-title">DASHBOARDS</li>
+                <li class="active" onclick="switchPanel('assets')">Assets & Personnel</li>
+                <li onclick="switchPanel('tracking')">Document Tracking</li>
+                <li onclick="switchPanel('volunteers')">Volunteer's Section</li>
+                
+                <li class="section-title">GIS & MAPS</li>
+                <li onclick="switchPanel('ews-map')">Early Warning System</li>
+                <li onclick="switchPanel('incident-map')">Incident Heatmap</li>
+                <li onclick="switchPanel('evac-map')">Evacuation Centers</li>
+            </ul>
+        </nav>
+
+        <main class="main-content">
+            
+            <section id="assets" class="panel active-panel">
+                <h3>Assets and Personnel Dispatched</h3>
+                <div class="grid-layout">
+                    <div class="kpi-column">
+                        <div class="card kpi-card">
+                            <h4>1st District</h4>
+                            <p class="big-number">16</p>
+                        </div>
+                        <div class="card kpi-card">
+                            <h4>2nd District</h4>
+                            <p class="big-number red">402</p>
+                        </div>
+                        <div class="card kpi-card">
+                            <h4>3rd District</h4>
+                            <p class="big-number">22</p>
+                        </div>
+                    </div>
+                    <div class="charts-grid">
+                        <div class="card chart-card"><canvas id="vehicularChart"></canvas></div>
+                        <div class="card chart-card"><canvas id="medicalChart"></canvas></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="tracking" class="panel" style="display:none;">
+                <h3>Incoming Document Tracking</h3>
+                <div class="grid-layout top-summary">
+                    <div class="card chart-card pie-container"><canvas id="requestPieChart"></canvas></div>
+                    <div class="kpi-grid">
+                        <div class="card summary-card"><p>Total Request</p><h3>320</h3></div>
+                        <div class="card summary-card"><p>Total Action Taken</p><h3>103</h3></div>
+                        <div class="card summary-card"><p>Total Catered</p><h3>47</h3></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="volunteers" class="panel" style="display:none;">
+                <h3>Volunteer's Section</h3>
+                <div class="grid-layout top-summary">
+                    <div class="card summary-card"><p>Total Volunteer Organizations</p><h3>885</h3></div>
+                    <div class="card summary-card"><p>Individual Volunteers</p><h3 class="orange">190</h3></div>
+                </div>
+                <div class="card table-card mt-2">
+                    <table id="volunteerTable">
+                        <thead>
+                            <tr>
+                                <th>List of Organization</th>
+                                <th>Total Count</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="ews-map" class="panel iframe-panel" style="display:none;">
+                <iframe src="https://tarlacpdrrmo.github.io/tarlac-ews-map/" title="EWS Map"></iframe>
+            </section>
+
+            <section id="incident-map" class="panel iframe-panel" style="display:none;">
+                <iframe src="https://tarlacpdrrmo.github.io/tarlac-incidents/" title="Incident Heatmap"></iframe>
+            </section>
+
+            <section id="evac-map" class="panel iframe-panel" style="display:none;">
+                <iframe src="https://tarlacpdrrmo.github.io/tarlac-evacuation-centers/" title="Evacuation Centers Map"></iframe>
+            </section>
+
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
