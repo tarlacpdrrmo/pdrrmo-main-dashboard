@@ -29,22 +29,27 @@
             
             <section id="assets" class="panel active-panel">
                 <h3>Assets and Personnel Dispatched</h3>
-                <div class="grid-layout">
+                <div class="assets-layout">
                     <div class="kpi-column">
                         <div class="card kpi-card">
-                            <h4>1st District</h4>
-                            <p class="big-number">16</p>
+                            <h4>1st District (Total No.)</h4>
+                            <p class="big-number" id="kpi-1st">0</p>
                         </div>
                         <div class="card kpi-card">
-                            <h4>2nd District</h4>
-                            <p class="big-number red">402</p>
+                            <h4>2nd District (Total No.)</h4>
+                            <p class="big-number red" id="kpi-2nd">0</p>
                         </div>
                         <div class="card kpi-card">
-                            <h4>3rd District</h4>
-                            <p class="big-number">22</p>
+                            <h4>3rd District (Total No.)</h4>
+                            <p class="big-number" id="kpi-3rd">0</p>
+                        </div>
+                        <div class="card kpi-card">
+                            <h4>Outside Tarlac Province</h4>
+                            <p class="big-number" id="kpi-outside">0</p>
                         </div>
                     </div>
-                   <div class="charts-grid">
+                    
+                    <div class="charts-grid">
                         <div class="card chart-card"><canvas id="vehicularChart"></canvas></div>
                         <div class="card chart-card"><canvas id="roadsideChart"></canvas></div>
                         <div class="card chart-card"><canvas id="patientChart"></canvas></div>
@@ -57,21 +62,21 @@
 
             <section id="tracking" class="panel" style="display:none;">
                 <h3>Incoming Document Tracking</h3>
-                <div class="grid-layout top-summary">
+                <div class="assets-layout top-summary">
                     <div class="card chart-card pie-container"><canvas id="requestPieChart"></canvas></div>
                     <div class="kpi-grid">
-                        <div class="card summary-card"><p>Total Request</p><h3>320</h3></div>
-                        <div class="card summary-card"><p>Total Action Taken</p><h3>103</h3></div>
-                        <div class="card summary-card"><p>Total Catered</p><h3>47</h3></div>
+                        <div class="card summary-card"><p>Total Request</p><h3>0</h3></div>
+                        <div class="card summary-card"><p>Total Action Taken</p><h3>0</h3></div>
+                        <div class="card summary-card"><p>Total Catered</p><h3>0</h3></div>
                     </div>
                 </div>
             </section>
 
             <section id="volunteers" class="panel" style="display:none;">
                 <h3>Volunteer's Section</h3>
-                <div class="grid-layout top-summary">
-                    <div class="card summary-card"><p>Total Volunteer Organizations</p><h3>885</h3></div>
-                    <div class="card summary-card"><p>Individual Volunteers</p><h3 class="orange">190</h3></div>
+                <div class="assets-layout top-summary">
+                    <div class="card summary-card"><p>Total Volunteer Organizations</p><h3 id="vol-orgs">0</h3></div>
+                    <div class="card summary-card"><p>Individual Volunteers</p><h3 class="orange" id="vol-ind">0</h3></div>
                 </div>
                 <div class="card table-card mt-2">
                     <table id="volunteerTable">
