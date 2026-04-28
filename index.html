@@ -47,6 +47,13 @@
                             <h4>Outside Tarlac Province</h4>
                             <p class="big-number" id="kpi-outside">0</p>
                         </div>
+                        
+                        <div class="card pie-card">
+                            <h4>Total Services Per Month</h4>
+                            <div class="pie-wrapper">
+                                <canvas id="monthlyPieChart"></canvas>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="charts-grid">
@@ -63,7 +70,7 @@
             <section id="tracking" class="panel" style="display:none;">
                 <h3>Incoming Document Tracking</h3>
                 <div class="assets-layout top-summary">
-                    <div class="card chart-card pie-container"><canvas id="requestPieChart"></canvas></div>
+                    <div class="card chart-card doc-pie-container"><canvas id="requestPieChart"></canvas></div>
                     <div class="kpi-grid">
                         <div class="card summary-card"><p>Total Request</p><h3>0</h3></div>
                         <div class="card summary-card"><p>Total Action Taken</p><h3>0</h3></div>
