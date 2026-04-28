@@ -20,16 +20,20 @@ document.addEventListener("DOMContentLoaded", function() {
     const panels = document.querySelectorAll('.panel');
     const navLinks = document.querySelectorAll('.sidebar li:not(.section-title)');
     
+    // Setup the observer to watch when sections enter the screen
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
+                // Remove active class from all links
                 navLinks.forEach(link => link.classList.remove('active'));
+                
+                // Add active class to the link matching the visible section
                 const id = entry.target.getAttribute('id');
                 const activeLink = document.querySelector(`.sidebar li[onclick="scrollToSection('${id}')"]`);
                 if(activeLink) activeLink.classList.add('active');
             }
         });
-    }, { threshold: 0.3 }); 
+    }, { threshold: 0.3 }); // Triggers when 30% of a section is visible
 
     panels.forEach(panel => observer.observe(panel));
 });
@@ -104,19 +108,18 @@ const commonChartOptions = {
     indexAxis: 'y',
     responsive: true,
     maintainAspectRatio: false,
-    layout: { padding: { left: -5, bottom: -5 } }, // Tighter layout
     plugins: {
         datalabels: { display: false }, 
         legend: { 
             position: 'top', 
-            labels: { boxWidth: 8, usePointStyle: true, font: { family: 'Inter', size: 9 }, padding: 10 } 
+            labels: { boxWidth: 10, usePointStyle: true, font: { family: 'Inter', size: 10 } } 
         }
     },
     scales: {
-        x: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 9 }, color: '#64748b' } },
-        y: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 9 }, color: '#64748b' } }
+        x: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } },
+        y: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } }
     },
-    elements: { bar: { borderRadius: 4 } } 
+    elements: { bar: { borderRadius: 3 } } 
 };
 
 function drawDonutChart(canvasId, labels, dataArr) {
@@ -157,7 +160,7 @@ function drawHorizontalBar(canvasId, labels, labelText, dataArr, color) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     new Chart(ctx, {
         type: 'bar',
-        data: { labels: labels, datasets: [{ label: labelText, data: dataArr, backgroundColor: color, maxBarThickness: 12 }] }, // Thinner bars
+        data: { labels: labels, datasets: [{ label: labelText, data: dataArr, backgroundColor: color, maxBarThickness: 20 }] },
         options: commonChartOptions
     });
 }
@@ -169,11 +172,11 @@ function drawCombinedBarChart(canvasId, labels, others, clearing, firetruck, hau
         data: {
             labels: labels,
             datasets: [
-                { label: 'OTHERS', data: others, backgroundColor: '#2563eb', maxBarThickness: 12 },
-                { label: 'CLEARING', data: clearing, backgroundColor: '#06b6d4', maxBarThickness: 12 },
-                { label: 'FIRETRUCK', data: firetruck, backgroundColor: '#e11d48', maxBarThickness: 12 },
-                { label: 'HAULING', data: hauling, backgroundColor: '#ea580c', maxBarThickness: 12 },
-                { label: 'LEDVAN', data: ledvan, backgroundColor: '#eab308', maxBarThickness: 12 }
+                { label: 'OTHERS', data: others, backgroundColor: '#2563eb', maxBarThickness: 20 },
+                { label: 'CLEARING OPE...', data: clearing, backgroundColor: '#06b6d4', maxBarThickness: 20 },
+                { label: 'FIRETRUCK', data: firetruck, backgroundColor: '#e11d48', maxBarThickness: 20 },
+                { label: 'HAULING', data: hauling, backgroundColor: '#ea580c', maxBarThickness: 20 },
+                { label: 'LEDVAN TRUCK', data: ledvan, backgroundColor: '#eab308', maxBarThickness: 20 }
             ]
         },
         options: commonChartOptions
