@@ -4,28 +4,29 @@ body { background-color: #f1f5f9; color: #334155; overflow: hidden; font-size: 1
 .dashboard-container { display: flex; height: 100vh; }
 
 /* Sidebar Polish */
-.sidebar { width: 240px; background-color: #ffffff; padding: 30px 16px; box-shadow: 1px 0 0 0 #e2e8f0; z-index: 10; flex-shrink: 0; }
+.sidebar { width: 220px; background-color: #ffffff; padding: 30px 16px; border-right: 1px solid #e2e8f0; z-index: 10; flex-shrink: 0; }
 .sidebar ul { list-style: none; }
 .sidebar li { padding: 10px 14px; margin-bottom: 4px; cursor: pointer; border-radius: 6px; transition: all 0.2s ease; color: #64748b; font-weight: 500; font-size: 0.85rem; }
 .sidebar li:hover { background-color: #f8fafc; color: #0f172a; }
 .sidebar li.active { background-color: #eff6ff; color: #2563eb; font-weight: 600; }
-.sidebar .section-title { font-size: 0.65rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-top: 24px; margin-bottom: 8px; padding: 0 14px; cursor: default; font-weight: 600; }
+.sidebar .section-title { font-size: 0.65rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-top: 24px; margin-bottom: 8px; padding: 0 14px; cursor: default; font-weight: 700; }
 
-/* Main Area - Enables Smooth Scrolling */
-.main-content { flex: 1; padding: 40px; overflow-y: auto; scroll-behavior: smooth; }
+/* Main Area */
+.main-content { flex: 1; padding: 32px 40px; overflow-y: auto; scroll-behavior: smooth; }
 
-/* Refined Header */
-.page-header { margin-bottom: 40px; padding-bottom: 20px; border-bottom: 2px solid #e2e8f0; }
-.page-header h1 { font-size: 1.4rem; color: #0f172a; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 6px; }
-.page-header h2 { font-size: 1rem; color: #2563eb; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+/* Refined Header enclosed in a sleek card */
+.page-header { margin-bottom: 24px; padding: 24px 32px; border-bottom: none; }
+.page-header h1 { font-size: 1.3rem; color: #0f172a; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 4px; }
+.page-header h2 { font-size: 1.05rem; color: #334155; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 8px; }
+.page-header .header-subtitle { font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+
+/* Ultra-Clean, Smoother Cards */
+.card { background: #ffffff; border-radius: 10px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); }
 
 /* Panel Stacking */
-.panel { padding-bottom: 60px; margin-bottom: 40px; border-bottom: 1px dashed #cbd5e1; scroll-margin-top: 40px; }
+.panel { padding-bottom: 40px; margin-bottom: 30px; border-bottom: 1px dashed #cbd5e1; scroll-margin-top: 40px; }
 .panel:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 20px; }
 .panel-heading { color: #64748b; text-transform: uppercase; font-size: 0.8rem; margin-bottom: 20px; letter-spacing: 1px; font-weight: 700; }
-
-/* Ultra-Clean Cards */
-.card { background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); }
 
 .assets-layout { display: flex; gap: 20px; }
 .kpi-column { display: flex; flex-direction: column; gap: 16px; width: 220px; flex-shrink: 0; }
@@ -40,7 +41,8 @@ body { background-color: #f1f5f9; color: #334155; overflow: hidden; font-size: 1
 .pie-card h4 { font-size: 0.65rem; color: #64748b; margin-bottom: 16px; text-transform: uppercase; font-weight: 700; text-align: center; letter-spacing: 0.5px; }
 .pie-wrapper { position: relative; height: 160px; width: 100%; display: flex; justify-content: center; align-items: center; }
 
-.chart-card { min-height: 220px; position: relative; padding: 20px; display: flex; align-items: center; justify-content: center; }
+/* Chart Cards - Reduced height significantly for a smaller, cleaner box */
+.chart-card { min-height: 170px; position: relative; padding: 16px; display: flex; align-items: center; justify-content: center; }
 
 .summary-card { padding: 20px; }
 .summary-card p { font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase;}
@@ -52,10 +54,10 @@ body { background-color: #f1f5f9; color: #334155; overflow: hidden; font-size: 1
 
 table { width: 100%; border-collapse: collapse; }
 th, td { text-align: left; padding: 12px 20px; border-bottom: 1px solid #e2e8f0; }
-th { background-color: #f8fafc; color: #475569; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; border-top: 1px solid #e2e8f0; }
+th { background-color: #f8fafc; color: #475569; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; border-top: 1px solid #e2e8f0; border-top-left-radius: 10px; border-top-right-radius: 10px;}
 td { font-size: 0.85rem; color: #0f172a; font-weight: 500; }
 .mt-2 { margin-top: 20px; }
 
 /* Maps are now stacked inline */
-.iframe-panel { height: 75vh; } /* Maps take up 75% of the screen height when scrolled to */
-.iframe-panel iframe { width: 100%; height: calc(100% - 30px); border: none; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); }
+.iframe-panel { height: 75vh; } 
+.iframe-panel iframe { width: 100%; height: calc(100% - 30px); border: none; border-radius: 10px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
