@@ -1,4 +1,3 @@
-// Register the DataLabels plugin for the Pie Chart
 Chart.register(ChartDataLabels);
 
 // 1. YOUR PUBLISHED GOOGLE SHEET CSV LINKS
@@ -8,15 +7,38 @@ const sheetUrls = {
     volunteers: ""
 };
 
-// 2. Navigation Logic
-function switchPanel(panelId) {
-    document.querySelectorAll('.panel').forEach(panel => panel.style.display = 'none');
-    document.getElementById(panelId).style.display = 'block';
-    document.querySelectorAll('.sidebar li:not(.section-title)').forEach(li => li.classList.remove('active'));
-    event.target.classList.add('active');
+// 2. Navigation Logic (Smooth Scroll)
+function scrollToSection(panelId) {
+    const section = document.getElementById(panelId);
+    if(section) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 }
 
-// 3. Fetch Data Logic
+// 3. ScrollSpy Logic (Highlights sidebar as you scroll)
+document.addEventListener("DOMContentLoaded", function() {
+    const panels = document.querySelectorAll('.panel');
+    const navLinks = document.querySelectorAll('.sidebar li:not(.section-title)');
+    
+    // Setup the observer to watch when sections enter the screen
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                // Remove active class from all links
+                navLinks.forEach(link => link.classList.remove('active'));
+                
+                // Add active class to the link matching the visible section
+                const id = entry.target.getAttribute('id');
+                const activeLink = document.querySelector(`.sidebar li[onclick="scrollToSection('${id}')"]`);
+                if(activeLink) activeLink.classList.add('active');
+            }
+        });
+    }, { threshold: 0.3 }); // Triggers when 30% of a section is visible
+
+    panels.forEach(panel => observer.observe(panel));
+});
+
+// 4. Fetch Data Logic
 function loadAllData() {
     if(sheetUrls.operations.includes("http")) {
         Papa.parse(sheetUrls.operations, {
@@ -30,7 +52,7 @@ function loadAllData() {
     }
 }
 
-// 4. Process the Data and Draw the Charts/KPIs
+// 5. Process the Data and Draw the Charts/KPIs
 function processOperationsData(data) {
     const labels = [];
     const vehicular = [], roadside = [], patient = [], medical = [], standby = [];
@@ -43,7 +65,6 @@ function processOperationsData(data) {
         if(row['MONTH']) { 
             labels.push(row['MONTH']);
             
-            // Bar Chart Data Extraction
             vehicular.push(Number(row['VEHICULAR ACCIDENT']) || 0);
             roadside.push(Number(row['ROADSIDE ASSISTANCE']) || 0);
             patient.push(Number(row['PATIENT TRANSPORT']) || 0);
@@ -56,10 +77,8 @@ function processOperationsData(data) {
             hauling.push(Number(row['HAULING']) || 0);
             ledvan.push(Number(row['LEDVAN TRUCK']) || 0);
 
-            // Pie Chart Data
             monthlyTotalServices.push(Number(row['GRAND TOTAL']) || 0);
 
-            // KPI Extraction
             for (let key in row) {
                 let upperKey = key.toUpperCase();
                 if (upperKey.includes("1ST DISTRICT")) { total1st += Number(row[key]) || 0; }
@@ -70,26 +89,21 @@ function processOperationsData(data) {
         }
     });
 
-    // Update KPI Text on the page
     document.getElementById('kpi-1st').innerText = total1st;
     document.getElementById('kpi-2nd').innerText = total2nd;
     document.getElementById('kpi-3rd').innerText = total3rd;
     document.getElementById('kpi-outside').innerText = totalOutside;
 
-    // 5. Draw the Charts
     drawDonutChart('monthlyPieChart', labels, monthlyTotalServices);
-    drawHorizontalBar('vehicularChart', labels, 'Vehicular Accident', vehicular, '#1a73e8');
-    drawHorizontalBar('roadsideChart', labels, 'Roadside Assistance', roadside, '#1a73e8');
-    drawHorizontalBar('patientChart', labels, 'Patient Transport', patient, '#1a73e8');
-    drawHorizontalBar('medicalChart', labels, 'Medical', medical, '#1a73e8');
-    drawHorizontalBar('standbyChart', labels, 'Standby Medic, Marshal & VIP', standby, '#1a73e8');
+    drawHorizontalBar('vehicularChart', labels, 'Vehicular Accident', vehicular, '#2563eb');
+    drawHorizontalBar('roadsideChart', labels, 'Roadside Assistance', roadside, '#2563eb');
+    drawHorizontalBar('patientChart', labels, 'Patient Transport', patient, '#2563eb');
+    drawHorizontalBar('medicalChart', labels, 'Medical', medical, '#2563eb');
+    drawHorizontalBar('standbyChart', labels, 'Standby Medic, Marshal & VIP', standby, '#2563eb');
     drawCombinedBarChart('combinedChart', labels, others, clearing, firetruck, hauling, ledvan);
 }
 
-// ----------------------------------------------------
-// CHART GENERATION FUNCTIONS (Polished & Sleek)
-// ----------------------------------------------------
-
+// CHART GENERATION
 const commonChartOptions = {
     indexAxis: 'y',
     responsive: true,
@@ -105,7 +119,7 @@ const commonChartOptions = {
         x: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } },
         y: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } }
     },
-    elements: { bar: { borderRadius: 2 } } 
+    elements: { bar: { borderRadius: 3 } } 
 };
 
 function drawDonutChart(canvasId, labels, dataArr) {
@@ -116,8 +130,8 @@ function drawDonutChart(canvasId, labels, dataArr) {
             labels: labels,
             datasets: [{
                 data: dataArr,
-                backgroundColor: ['#1a73e8', '#00bcd4', '#e91e63', '#ff9800', '#4caf50', '#9c27b0'],
-                borderWidth: 1.5,
+                backgroundColor: ['#2563eb', '#06b6d4', '#e11d48', '#ea580c', '#16a34a', '#9333ea'],
+                borderWidth: 2,
                 borderColor: '#ffffff'
             }]
         },
@@ -134,8 +148,7 @@ function drawDonutChart(canvasId, labels, dataArr) {
                     formatter: (value, context) => {
                         let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
                         if (sum === 0) return '';
-                        let percentage = ((value * 100) / sum).toFixed(1) + '%';
-                        return percentage;
+                        return ((value * 100) / sum).toFixed(1) + '%';
                     }
                 }
             }
@@ -147,7 +160,7 @@ function drawHorizontalBar(canvasId, labels, labelText, dataArr, color) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     new Chart(ctx, {
         type: 'bar',
-        data: { labels: labels, datasets: [{ label: labelText, data: dataArr, backgroundColor: color, maxBarThickness: 16 }] },
+        data: { labels: labels, datasets: [{ label: labelText, data: dataArr, backgroundColor: color, maxBarThickness: 20 }] },
         options: commonChartOptions
     });
 }
@@ -159,11 +172,11 @@ function drawCombinedBarChart(canvasId, labels, others, clearing, firetruck, hau
         data: {
             labels: labels,
             datasets: [
-                { label: 'OTHERS', data: others, backgroundColor: '#1a73e8', maxBarThickness: 16 },
-                { label: 'CLEARING OPE...', data: clearing, backgroundColor: '#00bcd4', maxBarThickness: 16 },
-                { label: 'FIRETRUCK', data: firetruck, backgroundColor: '#e91e63', maxBarThickness: 16 },
-                { label: 'HAULING', data: hauling, backgroundColor: '#ff9800', maxBarThickness: 16 },
-                { label: 'LEDVAN TRUCK', data: ledvan, backgroundColor: '#ffc107', maxBarThickness: 16 }
+                { label: 'OTHERS', data: others, backgroundColor: '#2563eb', maxBarThickness: 20 },
+                { label: 'CLEARING OPE...', data: clearing, backgroundColor: '#06b6d4', maxBarThickness: 20 },
+                { label: 'FIRETRUCK', data: firetruck, backgroundColor: '#e11d48', maxBarThickness: 20 },
+                { label: 'HAULING', data: hauling, backgroundColor: '#ea580c', maxBarThickness: 20 },
+                { label: 'LEDVAN TRUCK', data: ledvan, backgroundColor: '#eab308', maxBarThickness: 20 }
             ]
         },
         options: commonChartOptions
