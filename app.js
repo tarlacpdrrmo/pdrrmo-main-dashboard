@@ -1,63 +1,122 @@
 // 1. YOUR PUBLISHED GOOGLE SHEET CSV LINKS
 const sheetUrls = {
-    volunteers: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQu11mhIuAL2jr_ZrMze5ZhXRk6puER_QUBVLlm6gfRq88sa1FrfFlRRjL3pvlyYfO4Mb3GwF_nZpA7/pub?gid=0&single=true&output=csv",
-    operations: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEOujzNEOrDEv0W2CMKNDjXKW8WUusQkXmrNFuaR_Vh171r7rDsKpcCdwxwhWPqpjTr0iYICMVK5lv/pub?output=csv",
-    documents: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS4FYdO-pxACzJxrw7vEMLJKsxgEBQm_8Afh_hsKFxhxA3eiJz5kNZLkr3ArNmoEIVo5BtPBbNIz-oz/pub?gid=433918484&single=true&output=csv"
+    operations: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEOujzNEOrDEv0W2CMKNDjXKW8WUusQkXmrNFuaR_Vh171r7rDsKpcCdwxwhWPqpjTr0iYICMVK5lv/pub?output=csv", // <-- Put your Operations CSV link here
+    documents: "", 
+    volunteers: ""
 };
 
 // 2. Navigation Logic
 function switchPanel(panelId) {
-    // Hide all panels
-    document.querySelectorAll('.panel').forEach(panel => {
-        panel.style.display = 'none';
-    });
-    // Show selected panel
+    document.querySelectorAll('.panel').forEach(panel => panel.style.display = 'none');
     document.getElementById(panelId).style.display = 'block';
-    
-    // Highlight active menu item
     document.querySelectorAll('.sidebar li:not(.section-title)').forEach(li => li.classList.remove('active'));
     event.target.classList.add('active');
 }
 
 // 3. Fetch Data Logic
 function loadAllData() {
-    // Fetch Volunteer Data
-    if(sheetUrls.volunteers.includes("http")) {
-        Papa.parse(sheetUrls.volunteers, {
+    // Fetch Operations Data
+    if(sheetUrls.operations.includes("http")) {
+        Papa.parse(sheetUrls.operations, {
             download: true,
             header: true,
+            skipEmptyLines: true,
             complete: function(results) {
-                populateVolunteerTable(results.data);
+                processOperationsData(results.data);
             }
         });
     }
+}
 
-    // Initialize an empty chart as a placeholder for Operations
-    const ctxVehicular = document.getElementById('vehicularChart').getContext('2d');
-    new Chart(ctxVehicular, {
+// 4. Process the Data and Draw the Charts/KPIs
+function processOperationsData(data) {
+    const labels = [];
+    const vehicular = [], roadside = [], patient = [], medical = [], standby = [];
+    const others = [], clearing = [], firetruck = [], hauling = [], ledvan = [];
+    
+    // Variables to sum up the KPIs
+    let total1st = 0, total2nd = 0, total3rd = 0, totalOutside = 0;
+
+    data.forEach(row => {
+        if(row['MONTH']) { 
+            labels.push(row['MONTH']);
+            
+            // Chart Data
+            vehicular.push(Number(row['VEHICULAR ACCIDENT']) || 0);
+            roadside.push(Number(row['ROADSIDE ASSISTANCE']) || 0);
+            patient.push(Number(row['PATIENT TRANSPORT']) || 0);
+            medical.push(Number(row['MEDICAL']) || 0);
+            standby.push(Number(row['STANDBY MEDIC, MARSHAL & VIP']) || 0);
+            
+            others.push(Number(row['OTHERS']) || 0);
+            clearing.push(Number(row['CLEARING OPERATIONS']) || 0);
+            firetruck.push(Number(row['FIRETRUCK']) || 0);
+            hauling.push(Number(row['HAULING']) || 0);
+            ledvan.push(Number(row['LEDVAN TRUCK']) || 0);
+
+            // KPI Summation (Matches your sheet's exact column headers)
+            total1st += Number(row['# 1ST DISTRICT (TOTAL NO.)']) || 0;
+            total2nd += Number(row['# 2ND DISTRICT (TOTAL NO.)']) || 0;
+            total3rd += Number(row['# 3RD DISTRICT (TOTAL NO.)']) || 0;
+            totalOutside += Number(row['OUTSIDE TARLAC PROVINCE (TOTAL NO.)']) || 0;
+        }
+    });
+
+    // Update KPI Text on the page
+    document.getElementById('kpi-1st').innerText = total1st;
+    document.getElementById('kpi-2nd').innerText = total2nd;
+    document.getElementById('kpi-3rd').innerText = total3rd;
+    document.getElementById('kpi-outside').innerText = totalOutside;
+
+    // Draw the 5 standard single-bar charts
+    drawHorizontalBar('vehicularChart', labels, 'Vehicular Accident', vehicular, '#1a73e8');
+    drawHorizontalBar('roadsideChart', labels, 'Roadside Assistance', roadside, '#1a73e8');
+    drawHorizontalBar('patientChart', labels, 'Patient Transport', patient, '#1a73e8');
+    drawHorizontalBar('medicalChart', labels, 'Medical', medical, '#1a73e8');
+    drawHorizontalBar('standbyChart', labels, 'Standby Medic, Marshal & VIP', standby, '#1a73e8');
+
+    // Draw the combined multi-bar chart
+    drawCombinedBarChart('combinedChart', labels, others, clearing, firetruck, hauling, ledvan);
+}
+
+// Helper function: Single Horizontal Bar Chart
+function drawHorizontalBar(canvasId, labels, labelText, dataArr, color) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: ['January', 'February', 'March', 'April'],
-            datasets: [{ label: 'Vehicular Accident', data: [22, 16, 13, 6], backgroundColor: '#1a73e8' }]
+            labels: labels,
+            datasets: [{ label: labelText, data: dataArr, backgroundColor: color }]
         },
-        options: { indexAxis: 'y', responsive: true } 
+        options: { 
+            indexAxis: 'y', 
+            responsive: true, 
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'top', labels: { boxWidth: 20 } } }
+        }
     });
 }
 
-// 4. Populate the Table
-function populateVolunteerTable(data) {
-    const tbody = document.querySelector('#volunteerTable tbody');
-    tbody.innerHTML = ''; 
-    
-    data.forEach(row => {
-        // UPDATE THESE to exactly match your Google Sheet column headers
-        let orgName = row['Organization']; 
-        let orgCount = row['Count'];
-
-        if(orgName && orgCount) {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${orgName}</td><td>${orgCount}</td>`;
-            tbody.appendChild(tr);
+// Helper function: Multi-Dataset Horizontal Bar Chart
+function drawCombinedBarChart(canvasId, labels, others, clearing, firetruck, hauling, ledvan) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                { label: 'OTHERS', data: others, backgroundColor: '#1a73e8' },
+                { label: 'CLEARING OPE...', data: clearing, backgroundColor: '#00bcd4' },
+                { label: 'FIRETRUCK', data: firetruck, backgroundColor: '#e91e63' },
+                { label: 'HAULING', data: hauling, backgroundColor: '#ff9800' },
+                { label: 'LEDVAN TRUCK', data: ledvan, backgroundColor: '#ffc107' }
+            ]
+        },
+        options: { 
+            indexAxis: 'y', 
+            responsive: true, 
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 10 } } } }
         }
     });
 }
