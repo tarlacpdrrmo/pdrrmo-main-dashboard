@@ -4,8 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDRRMO Dashboard 2026</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 </head>
 <body>
@@ -49,7 +53,7 @@
                         </div>
                         
                         <div class="card pie-card">
-                            <h4>Total Services Per Month</h4>
+                            <h4>Total Services Catered Per Month</h4>
                             <div class="pie-wrapper">
                                 <canvas id="monthlyPieChart"></canvas>
                             </div>
@@ -99,18 +103,9 @@
                 </div>
             </section>
 
-            <section id="ews-map" class="panel iframe-panel" style="display:none;">
-                <iframe src="https://tarlacpdrrmo.github.io/tarlac-ews-map/" title="EWS Map"></iframe>
-            </section>
-
-            <section id="incident-map" class="panel iframe-panel" style="display:none;">
-                <iframe src="https://tarlacpdrrmo.github.io/tarlac-incidents/" title="Incident Heatmap"></iframe>
-            </section>
-
-            <section id="evac-map" class="panel iframe-panel" style="display:none;">
-                <iframe src="https://tarlacpdrrmo.github.io/tarlac-evacuation-centers/" title="Evacuation Centers Map"></iframe>
-            </section>
-
+            <section id="ews-map" class="panel iframe-panel" style="display:none;"><iframe src="https://tarlacpdrrmo.github.io/tarlac-ews-map/" title="EWS Map"></iframe></section>
+            <section id="incident-map" class="panel iframe-panel" style="display:none;"><iframe src="https://tarlacpdrrmo.github.io/tarlac-incidents/" title="Incident Heatmap"></iframe></section>
+            <section id="evac-map" class="panel iframe-panel" style="display:none;"><iframe src="https://tarlacpdrrmo.github.io/tarlac-evacuation-centers/" title="Evacuation Centers Map"></iframe></section>
         </main>
     </div>
     <script src="app.js"></script>
