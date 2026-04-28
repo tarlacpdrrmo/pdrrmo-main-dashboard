@@ -1,3 +1,6 @@
+// Register the DataLabels plugin for the Pie Chart
+Chart.register(ChartDataLabels);
+
 // 1. YOUR PUBLISHED GOOGLE SHEET CSV LINKS
 const sheetUrls = {
     operations: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEOujzNEOrDEv0W2CMKNDjXKW8WUusQkXmrNFuaR_Vh171r7rDsKpcCdwxwhWPqpjTr0iYICMVK5lv/pub?output=csv", // <-- RE-PASTE YOUR LINK HERE
@@ -33,7 +36,7 @@ function processOperationsData(data) {
     const vehicular = [], roadside = [], patient = [], medical = [], standby = [];
     const others = [], clearing = [], firetruck = [], hauling = [], ledvan = [];
     
-    // Array to hold the total sum of all services per month for the pie chart
+    // Array for the Pie Chart using the GRAND TOTAL column
     const monthlyTotalServices = [];
 
     let total1st = 0, total2nd = 0, total3rd = 0, totalOutside = 0;
@@ -42,27 +45,23 @@ function processOperationsData(data) {
         if(row['MONTH']) { 
             labels.push(row['MONTH']);
             
-            // Extract individual services
-            let v = Number(row['VEHICULAR ACCIDENT']) || 0;
-            let r = Number(row['ROADSIDE ASSISTANCE']) || 0;
-            let p = Number(row['PATIENT TRANSPORT']) || 0;
-            let m = Number(row['MEDICAL']) || 0;
-            let s = Number(row['STANDBY MEDIC, MARSHAL & VIP']) || 0;
-            let o = Number(row['OTHERS']) || 0;
-            let c = Number(row['CLEARING OPERATIONS']) || 0;
-            let f = Number(row['FIRETRUCK']) || 0;
-            let h = Number(row['HAULING']) || 0;
-            let l = Number(row['LEDVAN TRUCK']) || 0;
+            // Bar Chart Data Extraction
+            vehicular.push(Number(row['VEHICULAR ACCIDENT']) || 0);
+            roadside.push(Number(row['ROADSIDE ASSISTANCE']) || 0);
+            patient.push(Number(row['PATIENT TRANSPORT']) || 0);
+            medical.push(Number(row['MEDICAL']) || 0);
+            standby.push(Number(row['STANDBY MEDIC, MARSHAL & VIP']) || 0);
+            
+            others.push(Number(row['OTHERS']) || 0);
+            clearing.push(Number(row['CLEARING OPERATIONS']) || 0);
+            firetruck.push(Number(row['FIRETRUCK']) || 0);
+            hauling.push(Number(row['HAULING']) || 0);
+            ledvan.push(Number(row['LEDVAN TRUCK']) || 0);
 
-            // Push to arrays for bar charts
-            vehicular.push(v); roadside.push(r); patient.push(p); medical.push(m); standby.push(s);
-            others.push(o); clearing.push(c); firetruck.push(f); hauling.push(h); ledvan.push(l);
+            // PIE CHART FIX: Read the exact GRAND TOTAL column from your sheet
+            monthlyTotalServices.push(Number(row['GRAND TOTAL']) || 0);
 
-            // Calculate Grand Total for this specific month and save it for the pie chart
-            let monthTotal = v + r + p + m + s + o + c + f + h + l;
-            monthlyTotalServices.push(monthTotal);
-
-            // SMART KPI EXTRACTION
+            // KPI Extraction
             for (let key in row) {
                 let upperKey = key.toUpperCase();
                 if (upperKey.includes("1ST DISTRICT")) { total1st += Number(row[key]) || 0; }
@@ -79,21 +78,40 @@ function processOperationsData(data) {
     document.getElementById('kpi-3rd').innerText = total3rd;
     document.getElementById('kpi-outside').innerText = totalOutside;
 
-    // Draw the Monthly Pie Chart
+    // 5. Draw the Charts
     drawDonutChart('monthlyPieChart', labels, monthlyTotalServices);
 
-    // Draw the 5 standard single-bar charts
     drawHorizontalBar('vehicularChart', labels, 'Vehicular Accident', vehicular, '#1a73e8');
     drawHorizontalBar('roadsideChart', labels, 'Roadside Assistance', roadside, '#1a73e8');
     drawHorizontalBar('patientChart', labels, 'Patient Transport', patient, '#1a73e8');
     drawHorizontalBar('medicalChart', labels, 'Medical', medical, '#1a73e8');
     drawHorizontalBar('standbyChart', labels, 'Standby Medic, Marshal & VIP', standby, '#1a73e8');
 
-    // Draw the combined multi-bar chart
     drawCombinedBarChart('combinedChart', labels, others, clearing, firetruck, hauling, ledvan);
 }
 
-// Helper function: Donut/Pie Chart
+// ----------------------------------------------------
+// CHART GENERATION FUNCTIONS (Cleaned & Smoothed UI)
+// ----------------------------------------------------
+
+const commonChartOptions = {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        datalabels: { display: false }, // Turn off data labels for bar charts
+        legend: { 
+            position: 'top', 
+            labels: { boxWidth: 12, usePointStyle: true, font: { family: 'Inter', size: 11 } } 
+        }
+    },
+    scales: {
+        x: { grid: { display: false }, border: { display: false }, ticks: { font: { family: 'Inter' } } },
+        y: { grid: { display: false }, border: { display: false }, ticks: { font: { family: 'Inter' } } }
+    },
+    elements: { bar: { borderRadius: 3 } } // Smooth rounded corners on bars
+};
+
 function drawDonutChart(canvasId, labels, dataArr) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     new Chart(ctx, {
@@ -102,7 +120,6 @@ function drawDonutChart(canvasId, labels, dataArr) {
             labels: labels,
             datasets: [{
                 data: dataArr,
-                // Looker Studio Colors: Blue, Cyan, Pink, Orange
                 backgroundColor: ['#1a73e8', '#00bcd4', '#e91e63', '#ff9800', '#4caf50', '#9c27b0'],
                 borderWidth: 2,
                 borderColor: '#ffffff'
@@ -111,19 +128,17 @@ function drawDonutChart(canvasId, labels, dataArr) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            cutout: '60%', // Creates the empty center (donut effect)
+            cutout: '65%',
             plugins: {
-                legend: { display: false }, // Hidden to match your Looker image style
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            let label = context.label || '';
-                            if (label) { label += ': '; }
-                            let total = context.chart._metasets[context.datasetIndex].total;
-                            let value = context.parsed;
-                            let percentage = ((value / total) * 100).toFixed(1) + '%';
-                            return label + percentage + ' (' + value + ' total)';
-                        }
+                legend: { display: false },
+                datalabels: {
+                    color: '#ffffff',
+                    font: { weight: 'bold', family: 'Inter', size: 10 },
+                    formatter: (value, context) => {
+                        let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                        if (sum === 0) return '';
+                        let percentage = ((value * 100) / sum).toFixed(1) + '%';
+                        return percentage;
                     }
                 }
             }
@@ -131,25 +146,15 @@ function drawDonutChart(canvasId, labels, dataArr) {
     });
 }
 
-// Helper function: Single Horizontal Bar Chart
 function drawHorizontalBar(canvasId, labels, labelText, dataArr, color) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     new Chart(ctx, {
         type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{ label: labelText, data: dataArr, backgroundColor: color }]
-        },
-        options: { 
-            indexAxis: 'y', 
-            responsive: true, 
-            maintainAspectRatio: false,
-            plugins: { legend: { position: 'top', labels: { boxWidth: 20 } } }
-        }
+        data: { labels: labels, datasets: [{ label: labelText, data: dataArr, backgroundColor: color }] },
+        options: commonChartOptions
     });
 }
 
-// Helper function: Multi-Dataset Horizontal Bar Chart
 function drawCombinedBarChart(canvasId, labels, others, clearing, firetruck, hauling, ledvan) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     new Chart(ctx, {
@@ -164,14 +169,8 @@ function drawCombinedBarChart(canvasId, labels, others, clearing, firetruck, hau
                 { label: 'LEDVAN TRUCK', data: ledvan, backgroundColor: '#ffc107' }
             ]
         },
-        options: { 
-            indexAxis: 'y', 
-            responsive: true, 
-            maintainAspectRatio: false,
-            plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 10 } } } }
-        }
+        options: commonChartOptions
     });
 }
 
-// Start loading when page opens
 window.onload = loadAllData;
