@@ -15,28 +15,28 @@
 <body>
     <div class="dashboard-container">
         <nav class="sidebar">
-            <div class="brand">PDRRMO 2026</div>
             <ul>
                 <li class="section-title">Dashboards</li>
-                <li class="active" onclick="switchPanel('assets')">Assets & Personnel</li>
-                <li onclick="switchPanel('tracking')">Document Tracking</li>
-                <li onclick="switchPanel('volunteers')">Volunteer's Section</li>
+                <li class="active" onclick="scrollToSection('assets')">Assets & Personnel</li>
+                <li onclick="scrollToSection('tracking')">Document Tracking</li>
+                <li onclick="scrollToSection('volunteers')">Volunteer's Section</li>
                 
                 <li class="section-title">GIS & Maps</li>
-                <li onclick="switchPanel('ews-map')">Early Warning System</li>
-                <li onclick="switchPanel('incident-map')">Incident Heatmap</li>
-                <li onclick="switchPanel('evac-map')">Evacuation Centers</li>
+                <li onclick="scrollToSection('ews-map')">Early Warning System</li>
+                <li onclick="scrollToSection('incident-map')">Incident Heatmap</li>
+                <li onclick="scrollToSection('evac-map')">Evacuation Centers</li>
             </ul>
         </nav>
 
-        <main class="main-content">
+        <main class="main-content" id="scroll-area">
             
             <header class="page-header">
                 <h1>TARLAC PROVINCIAL DISASTER RISK REDUCTION & MANAGEMENT OFFICE</h1>
                 <h2>Analytical Dashboard</h2>
             </header>
             
-            <section id="assets" class="panel active-panel">
+            <section id="assets" class="panel">
+                <h3 class="panel-heading">Assets and Personnel Dispatched</h3>
                 <div class="assets-layout">
                     <div class="kpi-column">
                         <div class="card kpi-card">
@@ -75,7 +75,8 @@
                 </div>
             </section>
 
-            <section id="tracking" class="panel" style="display:none;">
+            <section id="tracking" class="panel">
+                <h3 class="panel-heading">Incoming Document Tracking</h3>
                 <div class="assets-layout top-summary">
                     <div class="card chart-card doc-pie-container"><canvas id="requestPieChart"></canvas></div>
                     <div class="kpi-grid">
@@ -86,7 +87,8 @@
                 </div>
             </section>
 
-            <section id="volunteers" class="panel" style="display:none;">
+            <section id="volunteers" class="panel">
+                <h3 class="panel-heading">Volunteer's Section</h3>
                 <div class="assets-layout top-summary">
                     <div class="card summary-card"><p>Total Volunteer Organizations</p><h3 id="vol-orgs">0</h3></div>
                     <div class="card summary-card"><p>Individual Volunteers</p><h3 class="orange" id="vol-ind">0</h3></div>
@@ -105,9 +107,21 @@
                 </div>
             </section>
 
-            <section id="ews-map" class="panel iframe-panel" style="display:none;"><iframe src="https://tarlacpdrrmo.github.io/tarlac-ews-map/" title="EWS Map"></iframe></section>
-            <section id="incident-map" class="panel iframe-panel" style="display:none;"><iframe src="https://tarlacpdrrmo.github.io/tarlac-incidents/" title="Incident Heatmap"></iframe></section>
-            <section id="evac-map" class="panel iframe-panel" style="display:none;"><iframe src="https://tarlacpdrrmo.github.io/tarlac-evacuation-centers/" title="Evacuation Centers Map"></iframe></section>
+            <section id="ews-map" class="panel iframe-panel">
+                <h3 class="panel-heading">Early Warning System Map</h3>
+                <iframe src="https://tarlacpdrrmo.github.io/tarlac-ews-map/" title="EWS Map"></iframe>
+            </section>
+            
+            <section id="incident-map" class="panel iframe-panel">
+                <h3 class="panel-heading">Incident Heatmap</h3>
+                <iframe src="https://tarlacpdrrmo.github.io/tarlac-incidents/" title="Incident Heatmap"></iframe>
+            </section>
+            
+            <section id="evac-map" class="panel iframe-panel">
+                <h3 class="panel-heading">Evacuation Centers</h3>
+                <iframe src="https://tarlacpdrrmo.github.io/tarlac-evacuation-centers/" title="Evacuation Centers Map"></iframe>
+            </section>
+            
         </main>
     </div>
     <script src="app.js"></script>
