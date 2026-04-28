@@ -54,11 +54,23 @@ function processOperationsData(data) {
             hauling.push(Number(row['HAULING']) || 0);
             ledvan.push(Number(row['LEDVAN TRUCK']) || 0);
 
-            // KPI Summation (Matches your sheet's exact column headers)
-            total1st += Number(row['# 1ST DISTRICT (TOTAL NO.)']) || 0;
-            total2nd += Number(row['# 2ND DISTRICT (TOTAL NO.)']) || 0;
-            total3rd += Number(row['# 3RD DISTRICT (TOTAL NO.)']) || 0;
-            totalOutside += Number(row['OUTSIDE TARLAC PROVINCE (TOTAL NO.)']) || 0;
+            // SMART KPI EXTRACTION: Search for keywords in the column headers
+            for (let key in row) {
+                let upperKey = key.toUpperCase();
+                
+                if (upperKey.includes("1ST DISTRICT")) {
+                    total1st += Number(row[key]) || 0;
+                }
+                if (upperKey.includes("2ND DISTRICT")) {
+                    total2nd += Number(row[key]) || 0;
+                }
+                if (upperKey.includes("3RD DISTRICT")) {
+                    total3rd += Number(row[key]) || 0;
+                }
+                if (upperKey.includes("OUTSIDE")) {
+                    totalOutside += Number(row[key]) || 0;
+                }
+            }
         }
     });
 
