@@ -1,6 +1,6 @@
 // 1. YOUR PUBLISHED GOOGLE SHEET CSV LINKS
 const sheetUrls = {
-    operations: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEOujzNEOrDEv0W2CMKNDjXKW8WUusQkXmrNFuaR_Vh171r7rDsKpcCdwxwhWPqpjTr0iYICMVK5lv/pub?output=csv", // <-- Put your Operations CSV link here
+    operations: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEOujzNEOrDEv0W2CMKNDjXKW8WUusQkXmrNFuaR_Vh171r7rDsKpcCdwxwhWPqpjTr0iYICMVK5lv/pub?output=csv", // <-- RE-PASTE YOUR LINK HERE
     documents: "", 
     volunteers: ""
 };
@@ -15,7 +15,6 @@ function switchPanel(panelId) {
 
 // 3. Fetch Data Logic
 function loadAllData() {
-    // Fetch Operations Data
     if(sheetUrls.operations.includes("http")) {
         Papa.parse(sheetUrls.operations, {
             download: true,
@@ -28,48 +27,48 @@ function loadAllData() {
     }
 }
 
-// 4. Process the Data and Draw the Charts/KPIs (UPDATED: Smart KPI Extraction)
+// 4. Process the Data and Draw the Charts/KPIs
 function processOperationsData(data) {
     const labels = [];
     const vehicular = [], roadside = [], patient = [], medical = [], standby = [];
     const others = [], clearing = [], firetruck = [], hauling = [], ledvan = [];
     
-    // Variables to sum up the KPIs
+    // Array to hold the total sum of all services per month for the pie chart
+    const monthlyTotalServices = [];
+
     let total1st = 0, total2nd = 0, total3rd = 0, totalOutside = 0;
 
     data.forEach(row => {
         if(row['MONTH']) { 
             labels.push(row['MONTH']);
             
-            // Chart Data
-            vehicular.push(Number(row['VEHICULAR ACCIDENT']) || 0);
-            roadside.push(Number(row['ROADSIDE ASSISTANCE']) || 0);
-            patient.push(Number(row['PATIENT TRANSPORT']) || 0);
-            medical.push(Number(row['MEDICAL']) || 0);
-            standby.push(Number(row['STANDBY MEDIC, MARSHAL & VIP']) || 0);
-            
-            others.push(Number(row['OTHERS']) || 0);
-            clearing.push(Number(row['CLEARING OPERATIONS']) || 0);
-            firetruck.push(Number(row['FIRETRUCK']) || 0);
-            hauling.push(Number(row['HAULING']) || 0);
-            ledvan.push(Number(row['LEDVAN TRUCK']) || 0);
+            // Extract individual services
+            let v = Number(row['VEHICULAR ACCIDENT']) || 0;
+            let r = Number(row['ROADSIDE ASSISTANCE']) || 0;
+            let p = Number(row['PATIENT TRANSPORT']) || 0;
+            let m = Number(row['MEDICAL']) || 0;
+            let s = Number(row['STANDBY MEDIC, MARSHAL & VIP']) || 0;
+            let o = Number(row['OTHERS']) || 0;
+            let c = Number(row['CLEARING OPERATIONS']) || 0;
+            let f = Number(row['FIRETRUCK']) || 0;
+            let h = Number(row['HAULING']) || 0;
+            let l = Number(row['LEDVAN TRUCK']) || 0;
 
-            // SMART KPI EXTRACTION: Search for keywords in the column headers
+            // Push to arrays for bar charts
+            vehicular.push(v); roadside.push(r); patient.push(p); medical.push(m); standby.push(s);
+            others.push(o); clearing.push(c); firetruck.push(f); hauling.push(h); ledvan.push(l);
+
+            // Calculate Grand Total for this specific month and save it for the pie chart
+            let monthTotal = v + r + p + m + s + o + c + f + h + l;
+            monthlyTotalServices.push(monthTotal);
+
+            // SMART KPI EXTRACTION
             for (let key in row) {
                 let upperKey = key.toUpperCase();
-                
-                if (upperKey.includes("1ST DISTRICT")) {
-                    total1st += Number(row[key]) || 0;
-                }
-                if (upperKey.includes("2ND DISTRICT")) {
-                    total2nd += Number(row[key]) || 0;
-                }
-                if (upperKey.includes("3RD DISTRICT")) {
-                    total3rd += Number(row[key]) || 0;
-                }
-                if (upperKey.includes("OUTSIDE")) {
-                    totalOutside += Number(row[key]) || 0;
-                }
+                if (upperKey.includes("1ST DISTRICT")) { total1st += Number(row[key]) || 0; }
+                if (upperKey.includes("2ND DISTRICT")) { total2nd += Number(row[key]) || 0; }
+                if (upperKey.includes("3RD DISTRICT")) { total3rd += Number(row[key]) || 0; }
+                if (upperKey.includes("OUTSIDE")) { totalOutside += Number(row[key]) || 0; }
             }
         }
     });
@@ -80,6 +79,9 @@ function processOperationsData(data) {
     document.getElementById('kpi-3rd').innerText = total3rd;
     document.getElementById('kpi-outside').innerText = totalOutside;
 
+    // Draw the Monthly Pie Chart
+    drawDonutChart('monthlyPieChart', labels, monthlyTotalServices);
+
     // Draw the 5 standard single-bar charts
     drawHorizontalBar('vehicularChart', labels, 'Vehicular Accident', vehicular, '#1a73e8');
     drawHorizontalBar('roadsideChart', labels, 'Roadside Assistance', roadside, '#1a73e8');
@@ -89,6 +91,44 @@ function processOperationsData(data) {
 
     // Draw the combined multi-bar chart
     drawCombinedBarChart('combinedChart', labels, others, clearing, firetruck, hauling, ledvan);
+}
+
+// Helper function: Donut/Pie Chart
+function drawDonutChart(canvasId, labels, dataArr) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: dataArr,
+                // Looker Studio Colors: Blue, Cyan, Pink, Orange
+                backgroundColor: ['#1a73e8', '#00bcd4', '#e91e63', '#ff9800', '#4caf50', '#9c27b0'],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '60%', // Creates the empty center (donut effect)
+            plugins: {
+                legend: { display: false }, // Hidden to match your Looker image style
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label || '';
+                            if (label) { label += ': '; }
+                            let total = context.chart._metasets[context.datasetIndex].total;
+                            let value = context.parsed;
+                            let percentage = ((value / total) * 100).toFixed(1) + '%';
+                            return label + percentage + ' (' + value + ' total)';
+                        }
+                    }
+                }
+            }
+        }
+    });
 }
 
 // Helper function: Single Horizontal Bar Chart
