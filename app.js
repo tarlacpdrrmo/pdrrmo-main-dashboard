@@ -28,7 +28,7 @@ function loadAllData() {
     }
 }
 
-// 4. Process the Data and Draw the Charts/KPIs
+// 4. Process the Data and Draw the Charts/KPIs (UPDATED: Smart KPI Extraction)
 function processOperationsData(data) {
     const labels = [];
     const vehicular = [], roadside = [], patient = [], medical = [], standby = [];
