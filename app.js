@@ -74,21 +74,17 @@ function loadAllData() {
     }
 }
 
-// 🟢 BULLETPROOF DATE PARSER (Fixes the Feb 26 Drop-off bug) 🟢
+// BULLETPROOF DATE PARSER
 function parseCustomDate(dateStr) {
     if (!dateStr) return null;
-    
-    // First, try standard JS parsing
     let d = new Date(dateStr);
     if (!isNaN(d.getTime())) return d;
     
-    // If standard fails (e.g., DD/MM/YYYY), force split and flip to MM/DD/YYYY
     let parts = dateStr.split(/[\/\-]/);
     if (parts.length === 3) {
         let fallbackDate = new Date(`${parts[1]}/${parts[0]}/${parts[2]}`);
         if (!isNaN(fallbackDate.getTime())) return fallbackDate;
     }
-    
     return null;
 }
 
@@ -104,38 +100,46 @@ function processDocumentsData(data) {
 
     data.forEach(row => {
         let rawOffice = row['Received From Office'] || row['RECEIVED FROM OFFICE'] || '';
-        let dateStr = row['Date Received'] || row['DATE RECEIVED'] || row['Date'] || '';
-        
         let keys = Object.keys(row);
-        let reqs = 0;
-
-        // 🔴 EXPLICIT COLUMN M OVERRIDE 🔴
-        // Target index 12 (which is the 13th column: Column M)
-        if (keys.length > 12 && Number(row[keys[12]]) > 0) {
-            reqs = Number(row[keys[12]]);
-        } else if (Number(row['Column M']) > 0) {
-            reqs = Number(row['Column M']);
-        } else if (Number(row['COLUMN M']) > 0) {
-            reqs = Number(row['COLUMN M']);
-        } else {
-            reqs = Number(row['Total Requests']) || Number(row['TOTAL REQUESTS']) || 0;
+        
+        // ----------------------------------------------------
+        // 🔴 STRICT KPI TARGETING: COLUMN C (Index 2) 🔴
+        // Scans Column C and takes the highest value (your 321 sum)
+        // ----------------------------------------------------
+        let colCValue = Number(row['TOTAL RECEIVED FROM OFFICE']) || Number(row['Column C']) || Number(row['COLUMN C']) || Number(row[keys[2]]) || 0;
+        if (colCValue > totalReq) {
+            totalReq = colCValue; 
         }
 
-        // Add valid row count to the master total
-        if (reqs > 0) {
-            totalReq += reqs; 
+        // Capture other KPIs (Only need to do this once when the summary row hits)
+        if (!totalsCaptured && (row['TOTAL ACTION TAKEN (OVERALL)'] || row['TOTAL REQUEST CATERED'])) {
+            totalAction = Number(row['TOTAL ACTION TAKEN (OVERALL)']) || 0;
+            catered = Number(row['TOTAL REQUEST CATERED']) || 0;
+            invAttended = Number(row['TOTAL INVITATION ATTENDED']) || 0;
+            notCatered = Number(row['TOTAL REQUEST NOT CATERED']) || 0;
+            others = Number(row['OTHERS, SPECIFY:']) || Number(row['OTHERS']) || 0;
+            invNotAttended = Number(row['TOTAL INVITATION NOT ATTENDED']) || 0;
+            cancelled = Number(row['TOTAL CANCELLED']) || 0;
+            noAction = Number(row['TOTAL NO ACTION']) || 0;
+            totalsCaptured = true;
         }
 
-        // 🟢 APPLY BULLETPROOF DATE PARSER 🟢
-        if (dateStr && reqs > 0) {
+        // ----------------------------------------------------
+        // 🔴 STRICT DATE TARGETING: COLUMN M (Index 12) 🔴
+        // ----------------------------------------------------
+        let dateStr = row['Column M'] || row['COLUMN M'] || row['Date Received'] || row['DATE RECEIVED'] || row[keys[12]] || '';
+        let rowCount = Number(row['Total Requests']) || Number(row['TOTAL REQUESTS']) || 1; // Metric count for the Y-Axis
+
+        if (dateStr) {
             let parsedDate = parseCustomDate(dateStr);
             if (parsedDate) {
-                globalLineData.push({ dateObj: parsedDate, count: reqs, timestamp: parsedDate.getTime() });
+                globalLineData.push({ dateObj: parsedDate, count: rowCount, timestamp: parsedDate.getTime() });
             }
         }
 
-        // PIE CHART LOGIC
-        if (rawOffice && reqs > 0) {
+        // PIE CHART SCRUBBER (As previously requested)
+        let officeReqs = Number(row['Total Requests']) || Number(row['TOTAL REQUESTS']) || 0;
+        if (rawOffice && officeReqs > 0) {
             let upperOffice = rawOffice.toUpperCase();
             let parentCategory = rawOffice; 
 
@@ -160,26 +164,12 @@ function processDocumentsData(data) {
                 }
             }
 
-            sourceMap[parentCategory] = (sourceMap[parentCategory] || 0) + reqs;
+            sourceMap[parentCategory] = (sourceMap[parentCategory] || 0) + officeReqs;
             if (!detailedPieData[parentCategory]) detailedPieData[parentCategory] = {};
-            detailedPieData[parentCategory][rawOffice] = (detailedPieData[parentCategory][rawOffice] || 0) + reqs;
-        }
-
-        // OTHER KPIs
-        if (!totalsCaptured && (row['TOTAL ACTION TAKEN (OVERALL)'] || row['TOTAL REQUEST CATERED'])) {
-            totalAction = Number(row['TOTAL ACTION TAKEN (OVERALL)']) || 0;
-            catered = Number(row['TOTAL REQUEST CATERED']) || 0;
-            invAttended = Number(row['TOTAL INVITATION ATTENDED']) || 0;
-            notCatered = Number(row['TOTAL REQUEST NOT CATERED']) || 0;
-            others = Number(row['OTHERS, SPECIFY:'] || row['OTHERS']) || 0;
-            invNotAttended = Number(row['TOTAL INVITATION NOT ATTENDED']) || 0;
-            cancelled = Number(row['TOTAL CANCELLED']) || 0;
-            noAction = Number(row['TOTAL NO ACTION']) || 0;
-            totalsCaptured = true;
+            detailedPieData[parentCategory][rawOffice] = (detailedPieData[parentCategory][rawOffice] || 0) + officeReqs;
         }
     });
 
-    // Pushing the targeted Column M / Total Request value to the dashboard
     document.getElementById('doc-kpi-request').innerText = totalReq; 
     document.getElementById('doc-kpi-action').innerText = totalAction;
     document.getElementById('doc-kpi-catered').innerText = catered;
@@ -198,14 +188,13 @@ function processDocumentsData(data) {
 
     drawInteractiveDonutChart('docSourcePieChart', mainPieLabels, mainPieData);
 
-    // Initial Load defaults to Daily view (So you see the full curve)
+    // Initial Load defaults to Daily view
     renderLineChartByTimeframe('daily');
 }
 
 function renderLineChartByTimeframe(timeframe) {
     let groupedObj = {};
     
-    // Sort chronologically based on the true timestamp
     let sortedData = [...globalLineData].sort((a, b) => a.timestamp - b.timestamp);
 
     sortedData.forEach(item => {
@@ -225,7 +214,7 @@ function renderLineChartByTimeframe(timeframe) {
     const dataValues = Object.values(groupedObj);
     
     if(labels.length === 0) {
-        drawLineChart('docDateLineChart', ['No Date Data Detected'], [0]);
+        drawLineChart('docDateLineChart', ['No Date Data Found in Column M'], [0]);
     } else {
         drawLineChart('docDateLineChart', labels, dataValues);
     }
@@ -389,10 +378,28 @@ function drawLineChart(canvasId, labels, dataArr) {
             maintainAspectRatio: false, 
             animation: { duration: 1000, easing: 'easeOutQuart' },
             interaction: { mode: 'index', intersect: false },
-            plugins: { datalabels: { display: false }, legend: { display: false }, tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.9)', titleFont: { family: 'Inter', size: 12 }, bodyFont: { family: 'Inter', size: 12 }, padding: 10, displayColors: false } }, 
+            plugins: { 
+                datalabels: { display: false }, 
+                legend: { display: false }, 
+                tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.9)', titleFont: { family: 'Inter', size: 12 }, bodyFont: { family: 'Inter', size: 12 }, padding: 10, displayColors: false } 
+            }, 
             scales: { 
-                x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 9 }, color: '#64748b', maxTicksLimit: 12 } }, 
-                y: { grid: { color: '#f1f5f9', drawBorder: false }, beginAtZero: true, ticks: { font: { family: 'Inter', size: 10 }, color: '#64748b' } } 
+                x: { 
+                    grid: { display: false }, 
+                    ticks: { font: { family: 'Inter', size: 9 }, color: '#64748b', maxTicksLimit: 12 } 
+                }, 
+                y: { 
+                    // 🔴 EXPLICIT Y-AXIS TITLE EXACTLY AS REQUESTED 🔴
+                    title: {
+                        display: true,
+                        text: 'Received From (OFFICE)',
+                        font: { family: 'Inter', size: 12, weight: '600', style: 'italic' },
+                        color: '#475569'
+                    },
+                    grid: { color: '#f1f5f9', drawBorder: false }, 
+                    beginAtZero: true, 
+                    ticks: { font: { family: 'Inter', size: 10 }, color: '#64748b' } 
+                } 
             } 
         }
     });
