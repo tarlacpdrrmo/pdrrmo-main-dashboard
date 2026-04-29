@@ -39,23 +39,23 @@ body {
 /* FIXED LOGO: Side-by-side Dual Logos */
 .sidebar-logo-container {
     display: flex;
-    flex-direction: row; /* Aligns them side-by-side */
+    flex-direction: row; 
     justify-content: center;
     align-items: center;
-    gap: 12px; /* Clean spacing between the two logos */
+    gap: 12px; 
     margin-bottom: 24px;
     padding: 10px 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05); 
     width: 100%;
 }
 .sidebar-logo-clean {
-    width: 70px; /* Scaled down slightly to fit both inside the 200px sidebar */
+    width: 70px; 
     display: flex;
     justify-content: center;
     align-items: center;
 }
 .sidebar-logo-clean img {
-    max-width: 70px !important; /* Force width */
+    max-width: 70px !important; 
     height: auto !important;
     object-fit: contain; 
     display: block;
@@ -112,16 +112,30 @@ body {
     scroll-behavior: smooth; 
 }
 
+/* 🟢 NEW: SLEEK, FULL-WIDTH, PROFESSIONAL HEADER 🟢 */
 .page-header { 
-    background: linear-gradient(135deg, #1e293b, #0f172a); 
-    text-align: center; 
-    padding: 16px 20px; 
-    margin-bottom: 24px; 
-    border-radius: 8px; 
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15); 
+    background: #ffffff; /* Clean white background */
+    text-align: left; /* Modern enterprise left-alignment */
+    padding: 20px 24px; 
+    margin: -16px -24px 24px -24px; /* Stretches edge-to-edge perfectly */
+    border-radius: 0; /* Removes the "floating box" look */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04); 
+    border-bottom: 1px solid #cbd5e1; /* Subtle divider line */
 }
-.page-header h1 { font-size: 1.2rem; color: #ffffff; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 4px; }
-.page-header h2 { font-size: 0.85rem; color: #94a3b8; font-weight: 600; letter-spacing: 1.5px; }
+.page-header h1 { 
+    font-size: 1.15rem; 
+    color: #0f172a; /* Sharp, deep slate color */
+    font-weight: 600; /* Smoother, semi-bold font (No more shouting) */
+    letter-spacing: -0.2px; /* Tight, modern kerning */
+    margin-bottom: 4px; 
+}
+.page-header h2 { 
+    font-size: 0.75rem; 
+    color: #64748b; 
+    font-weight: 500; /* Smooth medium weight */
+    letter-spacing: 1.5px; 
+    text-transform: uppercase;
+}
 
 /* --- PANELS & CARDS --- */
 .panel { 
