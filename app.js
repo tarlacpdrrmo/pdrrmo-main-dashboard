@@ -43,28 +43,50 @@ function loadAllData() {
     }
 }
 
-// 4. Process DOCUMENTS Data
+// 4. Process DOCUMENTS Data (UPDATED WITH SMART KEY & SORTING)
 function processDocumentsData(data) {
     let totalReq = 0, totalAction = 0, catered = 0, invAttended = 0;
     let notCatered = 0, others = 0, invNotAttended = 0, cancelled = 0, noAction = 0;
 
-    const sourceLabels = [];
-    const sourceData = [];
+    // Object to hold our grouped slices
+    let sourceMap = {};
     let totalsCaptured = false;
 
     data.forEach(row => {
-        // Pie Chart Extraction
         let office = row['Received From Office'] || row['RECEIVED FROM OFFICE'];
         let reqs = Number(row['Total Requests'] || row['TOTAL REQUESTS']) || 0;
 
         if (office && reqs > 0) {
-            sourceLabels.push(office);
-            sourceData.push(reqs);
+            // FIX 1: Manually add up the Total Requests column to bypass the sheet's 314 error
+            totalReq += reqs;
+
+            // FIX 2: Smart Grouping Logic
+            let upperOffice = office.toUpperCase();
+            let displayOffice = office;
+
+            // Group variations into clean categories
+            if (upperOffice.includes('PGT') || upperOffice.includes('PROVINCIAL GOV')) {
+                displayOffice = 'PGT Offices (Consolidated)';
+            } else if (upperOffice.includes('3RD MECH') || upperOffice.includes('MECHANIZED INFANTRY')) {
+                displayOffice = '3rd Mechanized Infantry (Consolidated)';
+            } else if (upperOffice.includes('522ND')) {
+                displayOffice = '522nd Engineer Battalion (Consolidated)';
+            } else if (upperOffice.includes('BFP')) {
+                displayOffice = 'BFP Tarlac';
+            } else if (upperOffice === 'N/A' || upperOffice.includes('PRIVATE')) {
+                displayOffice = 'N/A (Private Individuals)';
+            }
+
+            // Add the request count to the specific grouped category
+            if (sourceMap[displayOffice]) {
+                sourceMap[displayOffice] += reqs;
+            } else {
+                sourceMap[displayOffice] = reqs;
+            }
         }
 
-        // KPI Extraction (Grabbing the totals from the summary columns)
-        if (!totalsCaptured && (row['TOTAL RECEIVED FROM OFFICE'] || row['TOTAL RECEIVED'])) {
-            totalReq = Number(row['TOTAL RECEIVED FROM OFFICE'] || row['TOTAL RECEIVED']) || 0;
+        // Extract the remaining KPIs from the summary columns (only do this once)
+        if (!totalsCaptured && (row['TOTAL ACTION TAKEN (OVERALL)'] || row['TOTAL REQUEST CATERED'])) {
             totalAction = Number(row['TOTAL ACTION TAKEN (OVERALL)']) || 0;
             catered = Number(row['TOTAL REQUEST CATERED']) || 0;
             invAttended = Number(row['TOTAL INVITATION ATTENDED']) || 0;
@@ -78,7 +100,7 @@ function processDocumentsData(data) {
     });
 
     // Update KPIs on screen
-    document.getElementById('doc-kpi-request').innerText = totalReq;
+    document.getElementById('doc-kpi-request').innerText = totalReq; // This will now accurately show 321
     document.getElementById('doc-kpi-action').innerText = totalAction;
     document.getElementById('doc-kpi-catered').innerText = catered;
     document.getElementById('doc-kpi-inv-att').innerText = invAttended;
@@ -88,16 +110,24 @@ function processDocumentsData(data) {
     document.getElementById('doc-kpi-cancelled').innerText = cancelled;
     document.getElementById('doc-kpi-no-action').innerText = noAction;
 
+    // FIX 3: Convert the map to an array and sort it descending
+    let sortedSources = Object.keys(sourceMap).map(key => ({ label: key, value: sourceMap[key] }));
+    sortedSources.sort((a, b) => b.value - a.value);
+
+    // Split back into labels and data arrays for Chart.js
+    const sourceLabels = sortedSources.map(item => item.label);
+    const sourceData = sortedSources.map(item => item.value);
+
     // Draw the big pie chart
     drawBigDonutChart('docSourcePieChart', sourceLabels, sourceData);
 
-    // Placeholder data for the Line chart (Since Sheet2 does not contain raw dates)
+    // Placeholder data for the Line chart
     const dummyDates = ['Jan 12', 'Jan 23', 'Feb 3', 'Feb 14', 'Feb 25', 'Mar 8', 'Mar 19', 'Mar 30', 'Apr 10', 'Apr 21'];
     const dummyLineData = [2, 5, 1, 9, 3, 12, 2, 6, 1, 5];
     drawLineChart('docDateLineChart', dummyDates, dummyLineData);
 }
 
-// 5. Process OPERATIONS Data (Unchanged)
+// 5. Process OPERATIONS Data
 function processOperationsData(data) {
     const labels = [];
     const vehicular = [], roadside = [], patient = [], medical = [], standby = [];
@@ -149,7 +179,6 @@ const commonChartOptions = {
     elements: { bar: { borderRadius: 3 } } 
 };
 
-// Line Chart for the Document section
 function drawLineChart(canvasId, labels, dataArr) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     new Chart(ctx, {
@@ -166,10 +195,8 @@ function drawLineChart(canvasId, labels, dataArr) {
     });
 }
 
-// Large detailed Pie Chart for Documents
 function drawBigDonutChart(canvasId, labels, dataArr) {
     const ctx = document.getElementById(canvasId).getContext('2d');
-    // Generates a massive color palette to handle many different office sources
     const colorPalette = ['#e11d48', '#06b6d4', '#2563eb', '#ea580c', '#16a34a', '#9333ea', '#f43f5e', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#d946ef', '#f97316', '#14b8a6', '#6366f1'];
     
     new Chart(ctx, {
@@ -184,7 +211,7 @@ function drawBigDonutChart(canvasId, labels, dataArr) {
                     formatter: (value, context) => {
                         let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
                         let percent = ((value * 100) / sum).toFixed(1);
-                        return percent > 5 ? percent + '%' : ''; // Only show text if slice is > 5% so it doesn't overlap
+                        return percent > 4 ? percent + '%' : ''; // Hides tiny text to keep it clean
                     }
                 }
             }
@@ -192,7 +219,6 @@ function drawBigDonutChart(canvasId, labels, dataArr) {
     });
 }
 
-// Standard Pie Chart
 function drawDonutChart(canvasId, labels, dataArr) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     new Chart(ctx, {
