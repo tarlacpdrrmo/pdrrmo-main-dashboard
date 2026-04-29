@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDRRMO Analytical Dashboard</title>
-    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     
@@ -48,7 +47,6 @@
                             <div class="pie-wrapper"><canvas id="monthlyPieChart"></canvas></div>
                         </div>
                     </div>
-                    
                     <div class="charts-grid">
                         <div class="card chart-card"><canvas id="vehicularChart"></canvas></div>
                         <div class="card chart-card"><canvas id="roadsideChart"></canvas></div>
@@ -66,7 +64,10 @@
                     
                     <div class="tracking-charts">
                         <div class="card doc-chart-card">
-                            <h4 class="chart-title">Received Request from PDRRM Office:</h4>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                                <h4 class="chart-title" id="pieChartTitle" style="margin: 0;">Received Request from PDRRM Office:</h4>
+                                <button id="pieBackButton" style="display: none; padding: 6px 12px; font-size: 0.75rem; cursor: pointer; border: 1px solid #cbd5e1; border-radius: 4px; background: #f8fafc; color: #334155; font-weight: 700; transition: 0.2s;">&larr; Back to Main List</button>
+                            </div>
                             <div class="doc-pie-wrapper"><canvas id="docSourcePieChart"></canvas></div>
                         </div>
                         <div class="card doc-chart-card">
@@ -78,19 +79,14 @@
                     <div class="tracking-kpis">
                         <div class="card kpi-card-small"><p>Total Request</p><h3 class="green" id="doc-kpi-request">0</h3></div>
                         <div class="card kpi-card-small"><p>Total Action Taken (Overall)</p><h3 id="doc-kpi-action">0</h3></div>
-                        
                         <div class="card kpi-card-small"><p>Total Request Catered</p><h3 id="doc-kpi-catered">0</h3></div>
                         <div class="card kpi-card-small"><p>Total Invitation Attended</p><h3 id="doc-kpi-inv-att">0</h3></div>
-                        
                         <div class="card kpi-card-small"><p>Total Request Not Catered</p><h3 id="doc-kpi-not-catered">0</h3></div>
                         <div class="card kpi-card-small"><p>Others, Specify:</p><h3 id="doc-kpi-others">0</h3></div>
-                        
                         <div class="card kpi-card-small"><p>Total Invitation Not Attended</p><h3 id="doc-kpi-inv-not">0</h3></div>
                         <div class="card kpi-card-small"><p>Total Cancelled</p><h3 class="red" id="doc-kpi-cancelled">0</h3></div>
-                        
                         <div class="card kpi-card-small"><p>Total No Action</p><h3 id="doc-kpi-no-action">0</h3></div>
                     </div>
-
                 </div>
             </section>
 
