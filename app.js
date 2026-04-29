@@ -38,22 +38,18 @@ document.addEventListener("DOMContentLoaded", function() {
 
     panels.forEach(panel => observer.observe(panel));
 
-    // 🟢 NEW: LIVE CLOCK SCRIPT 🟢
     function updateClock() {
         const now = new Date();
-        
-        // Format time (HH:MM:SS AM/PM)
         let hours = now.getHours();
         let minutes = now.getMinutes();
         let seconds = now.getSeconds();
         const ampm = hours >= 12 ? 'PM' : 'AM';
         hours = hours % 12;
-        hours = hours ? hours : 12; // '0' should be '12'
+        hours = hours ? hours : 12; 
         minutes = minutes < 10 ? '0' + minutes : minutes;
         seconds = seconds < 10 ? '0' + seconds : seconds;
         const timeString = hours + ':' + minutes + ':' + seconds + ' ' + ampm;
         
-        // Format date (e.g., Monday, April 29, 2026)
         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         const dateString = now.toLocaleDateString('en-US', options);
         
@@ -64,9 +60,8 @@ document.addEventListener("DOMContentLoaded", function() {
         if(dateEl) dateEl.innerText = dateString;
     }
     setInterval(updateClock, 1000);
-    updateClock(); // Initialize immediately
+    updateClock(); 
 
-    // UI BUTTONS & FILTERS
     document.getElementById('pieBackButton').addEventListener('click', function() {
         if(docPieChartInstance) {
             docPieChartInstance.data.labels = mainPieLabels;
@@ -309,6 +304,9 @@ function processOperationsData(data) {
     const monthlyTotalServices = [];
 
     let total1st = 0, total2nd = 0, total3rd = 0, totalOutside = 0;
+    
+    // 🟢 NEW: Collect Overall Grand Total for Percentage calculations 🟢
+    let overallGrandTotal = 0;
 
     data.forEach(row => {
         if(row['MONTH']) { 
@@ -326,7 +324,9 @@ function processOperationsData(data) {
             hauling.push(Number(row['HAULING']) || 0);
             ledvan.push(Number(row['LEDVAN TRUCK']) || 0);
 
-            monthlyTotalServices.push(Number(row['GRAND TOTAL']) || 0);
+            let rowGrandTotal = Number(row['GRAND TOTAL']) || 0;
+            monthlyTotalServices.push(rowGrandTotal);
+            overallGrandTotal += rowGrandTotal; // 🟢 Add to overall Grand Total 🟢
 
             for (let key in row) {
                 let upperKey = key.toUpperCase();
@@ -338,12 +338,24 @@ function processOperationsData(data) {
         }
     });
 
-    document.getElementById('kpi-1st').innerText = total1st;
-    document.getElementById('kpi-2nd').innerText = total2nd;
-    document.getElementById('kpi-3rd').innerText = total3rd;
-    document.getElementById('kpi-outside').innerText = totalOutside;
+    // 🟢 NEW: Percentage Calculation & DOM Updates 🟢
+    let referenceTotal = overallGrandTotal > 0 ? overallGrandTotal : (total1st + total2nd + total3rd + totalOutside);
 
-    drawDonutChart('monthlyPieChart', labels, monthlyTotalServices);
+    document.getElementById('kpi-1st').innerText = total1st;
+    document.getElementById('pct-1st').innerText = referenceTotal > 0 ? ((total1st / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
+
+    document.getElementById('kpi-2nd').innerText = total2nd;
+    document.getElementById('pct-2nd').innerText = referenceTotal > 0 ? ((total2nd / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
+
+    document.getElementById('kpi-3rd').innerText = total3rd;
+    document.getElementById('pct-3rd').innerText = referenceTotal > 0 ? ((total3rd / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
+
+    document.getElementById('kpi-outside').innerText = totalOutside;
+    document.getElementById('pct-outside').innerText = referenceTotal > 0 ? ((totalOutside / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
+
+    // 🟢 UPDATED: Draw Donut Chart call to pass the Grand Total 🟢
+    drawDonutChart('monthlyPieChart', labels, monthlyTotalServices, overallGrandTotal);
+    
     drawHorizontalBar('vehicularChart', labels, 'Vehicular Accident', vehicular, '#2563eb');
     drawHorizontalBar('roadsideChart', labels, 'Roadside Assistance', roadside, '#2563eb');
     drawHorizontalBar('patientChart', labels, 'Patient Transport', patient, '#2563eb');
@@ -485,12 +497,62 @@ function drawLineChart(canvasId, labels, dataArr) {
     });
 }
 
-function drawDonutChart(canvasId, labels, dataArr) {
+// 🟢 UPDATED: Modern Colors, Thinner Ring, Custom Tooltip 🟢
+function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
     const ctx = document.getElementById(canvasId).getContext('2d');
+    const modernColors = ['#334155', '#657b3f', '#06b6d4', '#94a3b8', '#e11d48', '#ea580c'];
+
     new Chart(ctx, {
         type: 'doughnut',
-        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: ['#2563eb', '#06b6d4', '#e11d48', '#ea580c', '#16a34a', '#9333ea'], borderWidth: 2, borderColor: '#ffffff' }] },
-        options: { responsive: true, maintainAspectRatio: false, cutout: '65%', layout: { padding: 0 }, plugins: { legend: { display: false }, datalabels: { color: '#ffffff', font: { weight: '600', family: 'Inter', size: 9 }, formatter: (value, context) => { let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); if (sum === 0) return ''; return ((value * 100) / sum).toFixed(1) + '%'; } } } }
+        data: { 
+            labels: labels, 
+            datasets: [{ 
+                data: dataArr, 
+                backgroundColor: modernColors, 
+                borderWidth: 2, 
+                borderColor: '#ffffff' 
+            }] 
+        },
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            cutout: '75%', // Thinner ring
+            layout: { padding: 10 }, 
+            plugins: { 
+                legend: { display: false }, 
+                datalabels: { 
+                    color: '#475569', 
+                    font: { weight: '700', family: 'Inter', size: 9 }, 
+                    anchor: 'end',
+                    align: 'start',
+                    formatter: (value, context) => { 
+                        let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); 
+                        if (sum === 0) return ''; 
+                        let pct = ((value * 100) / sum).toFixed(1);
+                        return pct > 5 ? pct + '%' : ''; 
+                    } 
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    titleColor: '#0f172a',
+                    bodyColor: '#334155',
+                    borderColor: '#cbd5e1',
+                    borderWidth: 1,
+                    padding: 12,
+                    boxPadding: 6,
+                    callbacks: {
+                        label: function(context) {
+                            let val = context.raw;
+                            let pct = grandTotal > 0 ? ((val / grandTotal) * 100).toFixed(1) : 0;
+                            return [
+                                `MONTH: ${context.label} (${val} Services Catered)`,
+                                `Comparison vs Grand Total N: ${pct}%`
+                            ];
+                        }
+                    }
+                }
+            } 
+        }
     });
 }
 
