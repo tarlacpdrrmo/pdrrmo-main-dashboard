@@ -106,9 +106,6 @@ function loadAllData() {
     }
 }
 
-// ----------------------------------------------------
-// PROCESS VOLUNTEERS DATA 
-// ----------------------------------------------------
 function processVolunteersData(data) {
     let totalOrgs = 0;
     let totalIndividualsInOrgs = 0;
@@ -157,9 +154,6 @@ function processVolunteersData(data) {
     document.getElementById('vol-ind').innerText = grandTotalHumans.toLocaleString();
 }
 
-// ----------------------------------------------------
-// PROCESS DOCUMENTS DATA
-// ----------------------------------------------------
 function parseCustomDate(dateStr) {
     if (!dateStr) return null;
     let d = new Date(dateStr);
@@ -263,7 +257,7 @@ function processDocumentsData(data) {
     mainPieLabels = sortedSources.map(item => item.label);
     mainPieData = sortedSources.map(item => item.value);
 
-    drawInteractiveDonutChart('docSourcePieChart', mainPieLabels, mainPieData);
+    drawInteractiveDonutChart('docSourcePieChart', mainPieLabels, mainPieData); // Keeps Document Tracking Donut untouched
     renderLineChartByTimeframe('daily');
 }
 
@@ -293,9 +287,6 @@ function renderLineChartByTimeframe(timeframe) {
     }
 }
 
-// ----------------------------------------------------
-// 🟢 NEW: RENDER TREND FULL-WIDTH FOOTER LOGIC 🟢
-// ----------------------------------------------------
 function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = false) {
     const el = document.getElementById(elementId);
     if (!el) return;
@@ -317,7 +308,7 @@ function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = fa
 
     const diff = current - previous;
     let trendHtml = '';
-    let bgColor = '#64748b'; // Default Slate Grey
+    let bgColor = '#64748b'; 
 
     if (dataArray.length < 2) {
         trendHtml = `<span>No prior data</span>`;
@@ -328,20 +319,17 @@ function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = fa
     }
 
     let symbol = '—';
-    let diffColor = '#ffffff';
     let sign = diff > 0 ? '+' : '';
 
-    // Modern Up/Down SVG Icons
     const arrowUp = `<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>`;
     const arrowDown = `<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"></path></svg>`;
 
-    // Determine the footer background color
     if (diff > 0) {
         symbol = arrowUp;
-        bgColor = inverseColors ? '#ef4444' : '#10b981'; // Red if bad, Green if good
+        bgColor = inverseColors ? '#ef4444' : '#10b981'; 
     } else if (diff < 0) {
         symbol = arrowDown;
-        bgColor = inverseColors ? '#10b981' : '#ef4444'; // Green if good, Red if bad
+        bgColor = inverseColors ? '#10b981' : '#ef4444'; 
         sign = '-'; 
     }
 
@@ -370,9 +358,6 @@ function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = fa
     `;
 }
 
-// ----------------------------------------------------
-// PROCESS OPERATIONS DATA 
-// ----------------------------------------------------
 function processOperationsData(data) {
     const labels = [];
     const vehicular = [], roadside = [], patient = [], medical = [], standby = [];
@@ -426,7 +411,6 @@ function processOperationsData(data) {
     document.getElementById('kpi-outside').innerText = totalOutside;
     document.getElementById('pct-outside').innerText = referenceTotal > 0 ? ((totalOutside / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
 
-    // 🟢 Generate Footers instead of Headers 🟢
     renderTrendFooter('trend-vehicular', vehicular, labels, true); 
     renderTrendFooter('trend-roadside', roadside, labels, false); 
     renderTrendFooter('trend-patient', patient, labels, true);      
@@ -449,10 +433,6 @@ function processOperationsData(data) {
     
     drawCombinedBarChart('combinedChart', labels, others, clearing, firetruck, hauling, ledvan);
 }
-
-// ----------------------------------------------------
-// CHART GENERATORS & TOOLTIP CONFIGURATION
-// ----------------------------------------------------
 
 const sharedTooltipConfig = {
     backgroundColor: function(context) {
@@ -606,31 +586,41 @@ function drawLineChart(canvasId, labels, dataArr) {
     });
 }
 
+// 🟢 UPDATED: Solid Pie Chart with clean animated hover scaling 🟢
 function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     const vibrantColors = ['#2563eb', '#06b6d4', '#e11d48', '#ea580c', '#16a34a', '#9333ea'];
+    
+    const gtEl = document.getElementById('pie-grand-total');
+    if(gtEl) gtEl.innerText = grandTotal.toLocaleString();
 
     new Chart(ctx, {
-        type: 'doughnut',
+        type: 'pie', // Changed from doughnut to pie
         data: { 
             labels: labels, 
             datasets: [{ 
                 data: dataArr, 
                 backgroundColor: vibrantColors, 
                 borderWidth: 2, 
-                borderColor: '#ffffff' 
+                borderColor: '#ffffff',
+                hoverOffset: 12 // Smooth, clean scale effect on hover 
             }] 
         },
         options: { 
             responsive: true, 
             maintainAspectRatio: false, 
-            cutout: '55%', 
             layout: { padding: 15 }, 
+            animation: {
+                animateScale: true,
+                animateRotate: true,
+                duration: 500,
+                easing: 'easeOutQuart'
+            },
             plugins: { 
                 legend: { display: false }, 
                 datalabels: { 
                     color: '#ffffff', 
-                    font: { weight: '700', family: 'Inter', size: 10 }, 
+                    font: { weight: '700', family: 'Inter', size: 12 }, 
                     anchor: 'center',
                     align: 'center',
                     formatter: (value, context) => { 
