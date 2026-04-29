@@ -23,8 +23,8 @@ body {
 /* --- SIDEBAR --- */
 .sidebar { 
     width: 200px; 
-    min-width: 200px; /* BULLETPROOF LOCK */
-    max-width: 200px; /* BULLETPROOF LOCK */
+    min-width: 200px; 
+    max-width: 200px; 
     background-color: #1e293b; 
     padding: 20px 12px; 
     border-right: none; 
@@ -33,27 +33,29 @@ body {
     flex-shrink: 0; 
     display: flex;
     flex-direction: column; 
-    overflow: hidden; /* Prevents anything from spilling out */
+    overflow: hidden; 
 }
 
-/* FIXED LOGO: Hard-locked to a small size */
+/* FIXED LOGO: Side-by-side Dual Logos */
 .sidebar-logo-container {
     display: flex;
+    flex-direction: row; /* Aligns them side-by-side */
     justify-content: center;
     align-items: center;
+    gap: 12px; /* Clean spacing between the two logos */
     margin-bottom: 24px;
     padding: 10px 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05); 
     width: 100%;
 }
 .sidebar-logo-clean {
-    width: 90px; 
+    width: 70px; /* Scaled down slightly to fit both inside the 200px sidebar */
     display: flex;
     justify-content: center;
     align-items: center;
 }
 .sidebar-logo-clean img {
-    max-width: 90px !important; /* FORCE maximum width */
+    max-width: 70px !important; /* Force width */
     height: auto !important;
     object-fit: contain; 
     display: block;
