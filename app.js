@@ -3,7 +3,7 @@ Chart.register(ChartDataLabels);
 // 1. YOUR PUBLISHED GOOGLE SHEET CSV LINKS
 const sheetUrls = {
     operations: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEOujzNEOrDEv0W2CMKNDjXKW8WUusQkXmrNFuaR_Vh171r7rDsKpcCdwxwhWPqpjTr0iYICMVK5lv/pub?output=csv", // <-- MUST BE FILLED
-    documents: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS4FYdO-pxACzJxrw7vEMLJKsxgEBQm_8Afh_hsKFxhxA3eiJz5kNZLkr3ArNmoEIVo5BtPBbNIz-oz/pub?gid=433918484&single=true&output=csv",   // <-- MUST POINT SPECIFICALLY TO SHEET 2
+    documents: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS4FYdO-pxACzJxrw7vEMLJKsxgEBQm_8Afh_hsKFxhxA3eiJz5kNZLkr3ArNmoEIVo5BtPBbNIz-oz/pub?gid=433918484&single=true&output=csv",   // <-- MUST BE FILLED
     volunteers: ""
 };
 
@@ -74,7 +74,25 @@ function loadAllData() {
     }
 }
 
-// 3. Process DOCUMENTS Data (EXPLICITLY TARGETING COLUMN C)
+// 🟢 BULLETPROOF DATE PARSER (Fixes the Feb 26 Drop-off bug) 🟢
+function parseCustomDate(dateStr) {
+    if (!dateStr) return null;
+    
+    // First, try standard JS parsing
+    let d = new Date(dateStr);
+    if (!isNaN(d.getTime())) return d;
+    
+    // If standard fails (e.g., DD/MM/YYYY), force split and flip to MM/DD/YYYY
+    let parts = dateStr.split(/[\/\-]/);
+    if (parts.length === 3) {
+        let fallbackDate = new Date(`${parts[1]}/${parts[0]}/${parts[2]}`);
+        if (!isNaN(fallbackDate.getTime())) return fallbackDate;
+    }
+    
+    return null;
+}
+
+// 3. Process DOCUMENTS Data
 function processDocumentsData(data) {
     let totalReq = 0, totalAction = 0, catered = 0, invAttended = 0;
     let notCatered = 0, others = 0, invNotAttended = 0, cancelled = 0, noAction = 0;
@@ -89,39 +107,29 @@ function processDocumentsData(data) {
         let dateStr = row['Date Received'] || row['DATE RECEIVED'] || row['Date'] || '';
         
         let keys = Object.keys(row);
-        let reqs = Number(row['Total Requests']) || Number(row['TOTAL REQUESTS']) || 0;
+        let reqs = 0;
 
-        // 🔴 EXPLICIT COLUMN C TARGETING FOR TOTAL REQUESTS 🔴
-        // This looks directly at the 3rd column (Index 2) OR the specific header name
-        if (!totalsCaptured) {
-            let colCValue = 0;
-            if (keys.length > 2) {
-                colCValue = Number(row[keys[2]]); // Explicitly grabs Column C
-            }
-            if (isNaN(colCValue) || colCValue === 0) {
-                colCValue = Number(row['TOTAL RECEIVED FROM OFFICE']) || Number(row['Column C']) || 0;
-            }
-
-            if (colCValue > 0) {
-                totalReq = colCValue; // Locks the KPI to Column C
-                
-                // Also capture the rest of the summary row
-                totalAction = Number(row['TOTAL ACTION TAKEN (OVERALL)']) || 0;
-                catered = Number(row['TOTAL REQUEST CATERED']) || 0;
-                invAttended = Number(row['TOTAL INVITATION ATTENDED']) || 0;
-                notCatered = Number(row['TOTAL REQUEST NOT CATERED']) || 0;
-                others = Number(row['OTHERS, SPECIFY:'] || row['OTHERS']) || 0;
-                invNotAttended = Number(row['TOTAL INVITATION NOT ATTENDED']) || 0;
-                cancelled = Number(row['TOTAL CANCELLED']) || 0;
-                noAction = Number(row['TOTAL NO ACTION']) || 0;
-                totalsCaptured = true;
-            }
+        // 🔴 EXPLICIT COLUMN M OVERRIDE 🔴
+        // Target index 12 (which is the 13th column: Column M)
+        if (keys.length > 12 && Number(row[keys[12]]) > 0) {
+            reqs = Number(row[keys[12]]);
+        } else if (Number(row['Column M']) > 0) {
+            reqs = Number(row['Column M']);
+        } else if (Number(row['COLUMN M']) > 0) {
+            reqs = Number(row['COLUMN M']);
+        } else {
+            reqs = Number(row['Total Requests']) || Number(row['TOTAL REQUESTS']) || 0;
         }
 
-        // LINE CHART DATE AGGREGATION
+        // Add valid row count to the master total
+        if (reqs > 0) {
+            totalReq += reqs; 
+        }
+
+        // 🟢 APPLY BULLETPROOF DATE PARSER 🟢
         if (dateStr && reqs > 0) {
-            let parsedDate = new Date(dateStr);
-            if (!isNaN(parsedDate.getTime())) {
+            let parsedDate = parseCustomDate(dateStr);
+            if (parsedDate) {
                 globalLineData.push({ dateObj: parsedDate, count: reqs, timestamp: parsedDate.getTime() });
             }
         }
@@ -156,9 +164,22 @@ function processDocumentsData(data) {
             if (!detailedPieData[parentCategory]) detailedPieData[parentCategory] = {};
             detailedPieData[parentCategory][rawOffice] = (detailedPieData[parentCategory][rawOffice] || 0) + reqs;
         }
+
+        // OTHER KPIs
+        if (!totalsCaptured && (row['TOTAL ACTION TAKEN (OVERALL)'] || row['TOTAL REQUEST CATERED'])) {
+            totalAction = Number(row['TOTAL ACTION TAKEN (OVERALL)']) || 0;
+            catered = Number(row['TOTAL REQUEST CATERED']) || 0;
+            invAttended = Number(row['TOTAL INVITATION ATTENDED']) || 0;
+            notCatered = Number(row['TOTAL REQUEST NOT CATERED']) || 0;
+            others = Number(row['OTHERS, SPECIFY:'] || row['OTHERS']) || 0;
+            invNotAttended = Number(row['TOTAL INVITATION NOT ATTENDED']) || 0;
+            cancelled = Number(row['TOTAL CANCELLED']) || 0;
+            noAction = Number(row['TOTAL NO ACTION']) || 0;
+            totalsCaptured = true;
+        }
     });
 
-    // Pushing the targeted Column C value to the dashboard
+    // Pushing the targeted Column M / Total Request value to the dashboard
     document.getElementById('doc-kpi-request').innerText = totalReq; 
     document.getElementById('doc-kpi-action').innerText = totalAction;
     document.getElementById('doc-kpi-catered').innerText = catered;
@@ -177,21 +198,23 @@ function processDocumentsData(data) {
 
     drawInteractiveDonutChart('docSourcePieChart', mainPieLabels, mainPieData);
 
-    renderLineChartByTimeframe('monthly');
+    // Initial Load defaults to Daily view (So you see the full curve)
+    renderLineChartByTimeframe('daily');
 }
 
-// 🟢 LINE CHART RENDERER 🟢
 function renderLineChartByTimeframe(timeframe) {
     let groupedObj = {};
+    
+    // Sort chronologically based on the true timestamp
     let sortedData = [...globalLineData].sort((a, b) => a.timestamp - b.timestamp);
 
     sortedData.forEach(item => {
         let key = "";
         if (timeframe === 'monthly') {
-            key = item.dateObj.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+            key = item.dateObj.toLocaleString('en-US', { month: 'short', year: 'numeric' });
         } else if (timeframe === 'yearly') {
             key = item.dateObj.getFullYear().toString();
-        } else { 
+        } else { // daily
             key = item.dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         }
         
@@ -202,7 +225,7 @@ function renderLineChartByTimeframe(timeframe) {
     const dataValues = Object.values(groupedObj);
     
     if(labels.length === 0) {
-        drawLineChart('docDateLineChart', ['No Date Data Detected in Sheet'], [0]);
+        drawLineChart('docDateLineChart', ['No Date Data Detected'], [0]);
     } else {
         drawLineChart('docDateLineChart', labels, dataValues);
     }
