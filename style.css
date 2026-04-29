@@ -13,7 +13,7 @@ body { background-color: #f1f5f9; color: #334155; overflow: hidden; font-size: 1
 .main-content { flex: 1; padding: 40px; overflow-y: auto; scroll-behavior: smooth; position: relative; }
 .page-header { background-color: #444444; text-align: center; padding: 24px 20px; margin-bottom: 40px; border-radius: 8px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3); position: sticky; top: 0px; z-index: 100; }
 .page-header h1 { font-size: 1.5rem; color: #ffffff; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 4px; }
-.page-header h2 { font-size: 1.1rem; color: #ffffff; font-weight: 700; font-style: italic; letter-spacing: 1px; }
+.page-header h2 { font-size: 1.1rem; color: #ffffff; font-weight: 700; letter-spacing: 1px; }
 
 .panel { padding-bottom: 60px; margin-bottom: 40px; border-bottom: 1px dashed #cbd5e1; scroll-margin-top: 140px; }
 .panel:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 20px; }
@@ -75,3 +75,12 @@ td { font-size: 0.85rem; color: #0f172a; font-weight: 500; }
 
 .iframe-panel { height: 75vh; }
 .iframe-panel iframe { width: 100%; height: calc(100% - 30px); border: none; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); }
+
+/* --- NEW UI: EMPTY STATE STYLING --- */
+.empty-state-card { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 20px; text-align: center; background-color: #ffffff; }
+.empty-state-icon { width: 72px; height: 72px; background-color: #eff6ff; color: #2563eb; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; padding: 16px; }
+.empty-state-title { font-size: 1.25rem; color: #0f172a; font-weight: 700; margin-bottom: 12px; }
+.empty-state-desc { color: #64748b; font-size: 0.9rem; max-width: 420px; line-height: 1.6; margin-bottom: 30px; }
+.empty-state-cta { display: inline-flex; align-items: center; gap: 8px; background-color: #2563eb; color: #ffffff; font-weight: 600; font-size: 0.85rem; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; transition: background-color 0.2s ease, transform 0.1s ease; }
+.empty-state-cta:hover { background-color: #1d4ed8; transform: translateY(-1px); }
+.empty-state-cta:active { transform: translateY(1px); }
