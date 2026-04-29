@@ -112,29 +112,58 @@ body {
     scroll-behavior: smooth; 
 }
 
-/* 🟢 NEW: SLEEK, FULL-WIDTH, PROFESSIONAL HEADER 🟢 */
+/* 🟢 UPDATED: HEADER WITH CLOCK FLEXBOX 🟢 */
 .page-header { 
-    background: #ffffff; /* Clean white background */
-    text-align: left; /* Modern enterprise left-alignment */
+    background: #ffffff; 
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     padding: 20px 24px; 
-    margin: -16px -24px 24px -24px; /* Stretches edge-to-edge perfectly */
-    border-radius: 0; /* Removes the "floating box" look */
+    margin: -16px -24px 24px -24px; 
+    border-radius: 0; 
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04); 
-    border-bottom: 1px solid #cbd5e1; /* Subtle divider line */
+    border-bottom: 1px solid #cbd5e1; 
 }
-.page-header h1 { 
+.header-titles {
+    display: flex;
+    flex-direction: column;
+}
+.header-titles h1 { 
     font-size: 1.15rem; 
-    color: #0f172a; /* Sharp, deep slate color */
-    font-weight: 600; /* Smoother, semi-bold font (No more shouting) */
-    letter-spacing: -0.2px; /* Tight, modern kerning */
+    color: #0f172a; 
+    font-weight: 600; 
+    letter-spacing: -0.2px; 
     margin-bottom: 4px; 
 }
-.page-header h2 { 
+.header-titles h2 { 
     font-size: 0.75rem; 
     color: #64748b; 
-    font-weight: 500; /* Smooth medium weight */
+    font-weight: 500; 
     letter-spacing: 1.5px; 
     text-transform: uppercase;
+}
+
+/* 🟢 NEW: LIVE CLOCK UI 🟢 */
+.header-clock {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+#live-time {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #1e293b;
+    letter-spacing: 0.5px;
+    font-variant-numeric: tabular-nums; /* Prevents text jumping when seconds tick */
+}
+#live-date {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 4px;
 }
 
 /* --- PANELS & CARDS --- */
