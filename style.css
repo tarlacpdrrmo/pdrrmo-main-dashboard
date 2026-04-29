@@ -219,18 +219,15 @@ body {
 .kpi-column { display: flex; flex-direction: column; gap: 12px; width: 180px; flex-shrink: 0; }
 .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; flex: 1; }
 
-/* 🟢 UPDATED: SMALLER LETTERS & 70% OPACITY 🟢 */
 .kpi-card h4 { 
     font-size: 0.55rem; 
-    color: rgba(71, 85, 105, 0.7); /* 70% Opacity */
+    color: rgba(71, 85, 105, 0.7); 
     margin-bottom: 4px; 
     text-transform: uppercase; 
     font-weight: 800; 
     letter-spacing: 0.5px; 
 }
 .kpi-card .big-number { font-size: 1.5rem; font-weight: 800; color: #0f172a; line-height: 1; }
-
-/* 🟢 NEW: Percentage text styling 🟢 */
 .kpi-percent {
     font-size: 0.55rem;
     color: #64748b;
@@ -238,15 +235,16 @@ body {
     font-weight: 600;
 }
 
-/* 🟢 STRICT: RED ONLY ON OUTSIDE TARLAC BOX 🟢 */
-.outside-card h4 { color: rgba(220, 38, 38, 0.7); } /* 70% opacity red */
+.outside-card h4 { color: rgba(220, 38, 38, 0.7); } 
 .outside-card .red { color: #dc2626; }
 .outside-card .red-pct { color: #dc2626; }
 
-
 .pie-card { display: flex; flex-direction: column; }
 .pie-card h4 { font-size: 0.55rem; color: rgba(71, 85, 105, 0.7); margin-bottom: 12px; text-transform: uppercase; font-weight: 800; text-align: center; letter-spacing: 0.5px; }
-.pie-wrapper { position: relative; height: 130px; width: 100%; display: flex; justify-content: center; align-items: center; }
+
+/* 🟢 UPDATED: Increased height to 170px to prevent the tooltip from clipping off the top/bottom 🟢 */
+.pie-wrapper { position: relative; height: 170px; width: 100%; display: flex; justify-content: center; align-items: center; }
+
 .chart-card { min-height: 160px; position: relative; display: flex; align-items: center; justify-content: center; }
 
 /* --- DOCUMENT TRACKING LAYOUT --- */
