@@ -3,7 +3,7 @@ Chart.register(ChartDataLabels);
 // 1. YOUR PUBLISHED GOOGLE SHEET CSV LINKS
 const sheetUrls = {
     operations: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEOujzNEOrDEv0W2CMKNDjXKW8WUusQkXmrNFuaR_Vh171r7rDsKpcCdwxwhWPqpjTr0iYICMVK5lv/pub?output=csv", // <-- MUST BE FILLED
-    documents: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS4FYdO-pxACzJxrw7vEMLJKsxgEBQm_8Afh_hsKFxhxA3eiJz5kNZLkr3ArNmoEIVo5BtPBbNIz-oz/pub?gid=433918484&single=true&output=csv",   // <-- MUST BE FILLED
+    documents: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS4FYdO-pxACzJxrw7vEMLJKsxgEBQm_8Afh_hsKFxhxA3eiJz5kNZLkr3ArNmoEIVo5BtPBbNIz-oz/pub?gid=433918484&single=true&output=csv",   // <-- MUST POINT SPECIFICALLY TO SHEET 2
     volunteers: ""
 };
 
@@ -74,7 +74,7 @@ function loadAllData() {
     }
 }
 
-// 3. Process DOCUMENTS Data
+// 3. Process DOCUMENTS Data (EXPLICITLY TARGETING COLUMN C)
 function processDocumentsData(data) {
     let totalReq = 0, totalAction = 0, catered = 0, invAttended = 0;
     let notCatered = 0, others = 0, invNotAttended = 0, cancelled = 0, noAction = 0;
@@ -88,18 +88,37 @@ function processDocumentsData(data) {
         let rawOffice = row['Received From Office'] || row['RECEIVED FROM OFFICE'] || '';
         let dateStr = row['Date Received'] || row['DATE RECEIVED'] || row['Date'] || '';
         
-        // 🔴 EXPLICIT COLUMN M OVERRIDE 🔴
-        // Forcing the code to count whatever number is in Column M (or fallback to Total Requests)
-        let reqs = 0;
-        if (row['Column M'] !== undefined) { reqs = Number(row['Column M']); }
-        else if (row['COLUMN M'] !== undefined) { reqs = Number(row['COLUMN M']); }
-        else { reqs = Number(row['Total Requests']) || Number(row['TOTAL REQUESTS']) || 0; }
+        let keys = Object.keys(row);
+        let reqs = Number(row['Total Requests']) || Number(row['TOTAL REQUESTS']) || 0;
 
-        if (reqs > 0) {
-            totalReq += reqs; 
+        // 🔴 EXPLICIT COLUMN C TARGETING FOR TOTAL REQUESTS 🔴
+        // This looks directly at the 3rd column (Index 2) OR the specific header name
+        if (!totalsCaptured) {
+            let colCValue = 0;
+            if (keys.length > 2) {
+                colCValue = Number(row[keys[2]]); // Explicitly grabs Column C
+            }
+            if (isNaN(colCValue) || colCValue === 0) {
+                colCValue = Number(row['TOTAL RECEIVED FROM OFFICE']) || Number(row['Column C']) || 0;
+            }
+
+            if (colCValue > 0) {
+                totalReq = colCValue; // Locks the KPI to Column C
+                
+                // Also capture the rest of the summary row
+                totalAction = Number(row['TOTAL ACTION TAKEN (OVERALL)']) || 0;
+                catered = Number(row['TOTAL REQUEST CATERED']) || 0;
+                invAttended = Number(row['TOTAL INVITATION ATTENDED']) || 0;
+                notCatered = Number(row['TOTAL REQUEST NOT CATERED']) || 0;
+                others = Number(row['OTHERS, SPECIFY:'] || row['OTHERS']) || 0;
+                invNotAttended = Number(row['TOTAL INVITATION NOT ATTENDED']) || 0;
+                cancelled = Number(row['TOTAL CANCELLED']) || 0;
+                noAction = Number(row['TOTAL NO ACTION']) || 0;
+                totalsCaptured = true;
+            }
         }
 
-        // DATE LOGIC (Improved handling for Feb to April data)
+        // LINE CHART DATE AGGREGATION
         if (dateStr && reqs > 0) {
             let parsedDate = new Date(dateStr);
             if (!isNaN(parsedDate.getTime())) {
@@ -137,21 +156,9 @@ function processDocumentsData(data) {
             if (!detailedPieData[parentCategory]) detailedPieData[parentCategory] = {};
             detailedPieData[parentCategory][rawOffice] = (detailedPieData[parentCategory][rawOffice] || 0) + reqs;
         }
-
-        // OTHER KPIs
-        if (!totalsCaptured && (row['TOTAL ACTION TAKEN (OVERALL)'] || row['TOTAL REQUEST CATERED'])) {
-            totalAction = Number(row['TOTAL ACTION TAKEN (OVERALL)']) || 0;
-            catered = Number(row['TOTAL REQUEST CATERED']) || 0;
-            invAttended = Number(row['TOTAL INVITATION ATTENDED']) || 0;
-            notCatered = Number(row['TOTAL REQUEST NOT CATERED']) || 0;
-            others = Number(row['OTHERS, SPECIFY:'] || row['OTHERS']) || 0;
-            invNotAttended = Number(row['TOTAL INVITATION NOT ATTENDED']) || 0;
-            cancelled = Number(row['TOTAL CANCELLED']) || 0;
-            noAction = Number(row['TOTAL NO ACTION']) || 0;
-            totalsCaptured = true;
-        }
     });
 
+    // Pushing the targeted Column C value to the dashboard
     document.getElementById('doc-kpi-request').innerText = totalReq; 
     document.getElementById('doc-kpi-action').innerText = totalAction;
     document.getElementById('doc-kpi-catered').innerText = catered;
@@ -170,15 +177,12 @@ function processDocumentsData(data) {
 
     drawInteractiveDonutChart('docSourcePieChart', mainPieLabels, mainPieData);
 
-    // Initial Load defaults to Monthly as requested
     renderLineChartByTimeframe('monthly');
 }
 
-// 🟢 RESPONSIVE LINE CHART RENDERER 🟢
+// 🟢 LINE CHART RENDERER 🟢
 function renderLineChartByTimeframe(timeframe) {
     let groupedObj = {};
-    
-    // Ensure chronological sorting
     let sortedData = [...globalLineData].sort((a, b) => a.timestamp - b.timestamp);
 
     sortedData.forEach(item => {
@@ -187,7 +191,7 @@ function renderLineChartByTimeframe(timeframe) {
             key = item.dateObj.toLocaleString('en-US', { month: 'long', year: 'numeric' });
         } else if (timeframe === 'yearly') {
             key = item.dateObj.getFullYear().toString();
-        } else { // daily
+        } else { 
             key = item.dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         }
         
@@ -197,7 +201,6 @@ function renderLineChartByTimeframe(timeframe) {
     const labels = Object.keys(groupedObj);
     const dataValues = Object.values(groupedObj);
     
-    // If no valid dates were found (e.g., if using a summary sheet without dates), push a fallback message
     if(labels.length === 0) {
         drawLineChart('docDateLineChart', ['No Date Data Detected in Sheet'], [0]);
     } else {
