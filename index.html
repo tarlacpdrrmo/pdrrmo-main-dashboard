@@ -117,12 +117,13 @@
                         </div>
                         
                         <div class="card pie-card">
-                            <h4>Total Services Catered</h4>
+                            <h4 class="card-inner-title" style="padding: 10px 0 0 0; text-align: center;">Total Services Catered</h4>
                             <div class="pie-wrapper"><canvas id="monthlyPieChart"></canvas></div>
+                            <!-- 🟢 NEW: Grand Total display element 🟢 -->
+                            <div id="pie-grand-total" class="pie-grand-total">0</div>
                         </div>
                     </div>
                     
-                    <!-- 🟢 UPDATED: New Full-Width Footer Layout 🟢 -->
                     <div class="charts-grid">
                         <div class="card chart-card flex-col p-0">
                             <h4 class="card-inner-title">Vehicular Accident</h4>
