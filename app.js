@@ -305,7 +305,6 @@ function processOperationsData(data) {
 
     let total1st = 0, total2nd = 0, total3rd = 0, totalOutside = 0;
     
-    // 🟢 NEW: Collect Overall Grand Total for Percentage calculations 🟢
     let overallGrandTotal = 0;
 
     data.forEach(row => {
@@ -326,7 +325,7 @@ function processOperationsData(data) {
 
             let rowGrandTotal = Number(row['GRAND TOTAL']) || 0;
             monthlyTotalServices.push(rowGrandTotal);
-            overallGrandTotal += rowGrandTotal; // 🟢 Add to overall Grand Total 🟢
+            overallGrandTotal += rowGrandTotal; 
 
             for (let key in row) {
                 let upperKey = key.toUpperCase();
@@ -338,7 +337,6 @@ function processOperationsData(data) {
         }
     });
 
-    // 🟢 NEW: Percentage Calculation & DOM Updates 🟢
     let referenceTotal = overallGrandTotal > 0 ? overallGrandTotal : (total1st + total2nd + total3rd + totalOutside);
 
     document.getElementById('kpi-1st').innerText = total1st;
@@ -353,7 +351,6 @@ function processOperationsData(data) {
     document.getElementById('kpi-outside').innerText = totalOutside;
     document.getElementById('pct-outside').innerText = referenceTotal > 0 ? ((totalOutside / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
 
-    // 🟢 UPDATED: Draw Donut Chart call to pass the Grand Total 🟢
     drawDonutChart('monthlyPieChart', labels, monthlyTotalServices, overallGrandTotal);
     
     drawHorizontalBar('vehicularChart', labels, 'Vehicular Accident', vehicular, '#2563eb');
@@ -497,10 +494,10 @@ function drawLineChart(canvasId, labels, dataArr) {
     });
 }
 
-// 🟢 UPDATED: Modern Colors, Thinner Ring, Custom Tooltip 🟢
+// 🟢 UPDATED: Restored vibrant colors, thicker ring (cutout: 55%), and fixed unclipped tooltip 🟢
 function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
     const ctx = document.getElementById(canvasId).getContext('2d');
-    const modernColors = ['#334155', '#657b3f', '#06b6d4', '#94a3b8', '#e11d48', '#ea580c'];
+    const vibrantColors = ['#2563eb', '#06b6d4', '#e11d48', '#ea580c', '#16a34a', '#9333ea'];
 
     new Chart(ctx, {
         type: 'doughnut',
@@ -508,7 +505,7 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
             labels: labels, 
             datasets: [{ 
                 data: dataArr, 
-                backgroundColor: modernColors, 
+                backgroundColor: vibrantColors, 
                 borderWidth: 2, 
                 borderColor: '#ffffff' 
             }] 
@@ -516,15 +513,15 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
         options: { 
             responsive: true, 
             maintainAspectRatio: false, 
-            cutout: '75%', // Thinner ring
-            layout: { padding: 10 }, 
+            cutout: '55%', /* Thicker ring to show off colors */
+            layout: { padding: 15 }, /* Extra padding so the popup doesn't hit the ceiling */
             plugins: { 
                 legend: { display: false }, 
                 datalabels: { 
-                    color: '#475569', 
-                    font: { weight: '700', family: 'Inter', size: 9 }, 
-                    anchor: 'end',
-                    align: 'start',
+                    color: '#ffffff', /* Changed to white so it reads clearly over vibrant colors */
+                    font: { weight: '700', family: 'Inter', size: 10 }, 
+                    anchor: 'center',
+                    align: 'center',
                     formatter: (value, context) => { 
                         let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); 
                         if (sum === 0) return ''; 
@@ -538,15 +535,16 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
                     bodyColor: '#334155',
                     borderColor: '#cbd5e1',
                     borderWidth: 1,
-                    padding: 12,
-                    boxPadding: 6,
+                    padding: 10,
                     callbacks: {
                         label: function(context) {
                             let val = context.raw;
                             let pct = grandTotal > 0 ? ((val / grandTotal) * 100).toFixed(1) : 0;
+                            // Split into three shorter lines so the box is smaller and doesn't clip
                             return [
-                                `MONTH: ${context.label} (${val} Services Catered)`,
-                                `Comparison vs Grand Total N: ${pct}%`
+                                `MONTH: ${context.label}`,
+                                `${val} Services Catered`,
+                                `vs Grand Total: ${pct}%`
                             ];
                         }
                     }
