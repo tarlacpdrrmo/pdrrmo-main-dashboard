@@ -295,6 +295,52 @@ function renderLineChartByTimeframe(timeframe) {
 }
 
 // ----------------------------------------------------
+// 🟢 NEW: DYNAMIC TREND HEADER LOGIC 🟢
+// ----------------------------------------------------
+function renderTrendHeader(elementId, title, dataArray, isCombined = false) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+
+    let current = 0;
+    let previous = 0;
+
+    if (dataArray.length >= 2) {
+        current = dataArray[dataArray.length - 1];
+        previous = dataArray[dataArray.length - 2];
+    } else if (dataArray.length === 1) {
+        current = dataArray[0];
+    }
+
+    const diff = current - previous;
+    let trendHtml = '';
+
+    if (dataArray.length < 2) {
+        trendHtml = `<span class="trend-neutral">No prior data</span>`;
+    } else if (diff > 0) {
+        const pct = previous > 0 ? Math.round((diff / previous) * 100) : 100;
+        trendHtml = `<span class="trend-up">▲ ${diff} (+${pct}%)</span>`;
+    } else if (diff < 0) {
+        const pct = previous > 0 ? Math.round((Math.abs(diff) / previous) * 100) : 100;
+        trendHtml = `<span class="trend-down">▼ ${Math.abs(diff)} (-${pct}%)</span>`;
+    } else {
+        trendHtml = `<span class="trend-neutral">— 0 (0%)</span>`;
+    }
+
+    // Keep the colored dot for single charts so it matches the bar color
+    let dotHtml = isCombined ? '' : `<span style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color:#2563eb; margin-right:8px;"></span>`;
+
+    el.innerHTML = `
+        <div style="display:flex; align-items:center;">
+            ${dotHtml}
+            <span style="font-weight:800; color:#1e293b; font-size:0.75rem; text-transform:uppercase;">${title}</span>
+        </div>
+        <div style="font-size:0.7rem; font-weight:600;">
+            ${trendHtml}
+        </div>
+    `;
+}
+
+// ----------------------------------------------------
 // PROCESS OPERATIONS DATA 
 // ----------------------------------------------------
 function processOperationsData(data) {
@@ -304,7 +350,6 @@ function processOperationsData(data) {
     const monthlyTotalServices = [];
 
     let total1st = 0, total2nd = 0, total3rd = 0, totalOutside = 0;
-    
     let overallGrandTotal = 0;
 
     data.forEach(row => {
@@ -351,13 +396,29 @@ function processOperationsData(data) {
     document.getElementById('kpi-outside').innerText = totalOutside;
     document.getElementById('pct-outside').innerText = referenceTotal > 0 ? ((totalOutside / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
 
+    // 🟢 NEW: Generate Dynamic Trend Headers 🟢
+    renderTrendHeader('trend-vehicular', 'Vehicular Accident', vehicular);
+    renderTrendHeader('trend-roadside', 'Roadside Assistance', roadside);
+    renderTrendHeader('trend-patient', 'Patient Transport', patient);
+    renderTrendHeader('trend-medical', 'Medical', medical);
+    renderTrendHeader('trend-standby', 'Standby Medic, Marshal & VIP', standby);
+    
+    const combinedTotal = [];
+    for(let i=0; i<labels.length; i++) {
+         combinedTotal.push(others[i] + clearing[i] + firetruck[i] + hauling[i] + ledvan[i]);
+    }
+    renderTrendHeader('trend-combined', 'Other Services (Combined)', combinedTotal, true);
+
     drawDonutChart('monthlyPieChart', labels, monthlyTotalServices, overallGrandTotal);
     
-    drawHorizontalBar('vehicularChart', labels, 'Vehicular Accident', vehicular, '#2563eb');
-    drawHorizontalBar('roadsideChart', labels, 'Roadside Assistance', roadside, '#2563eb');
-    drawHorizontalBar('patientChart', labels, 'Patient Transport', patient, '#2563eb');
-    drawHorizontalBar('medicalChart', labels, 'Medical', medical, '#2563eb');
-    drawHorizontalBar('standbyChart', labels, 'Standby Medic, Marshal & VIP', standby, '#2563eb');
+    // 🟢 UPDATED: Draw functions now use the new single options to hide duplicate legends 🟢
+    drawHorizontalBar('vehicularChart', labels, 'Vehicular Accident', vehicular, '#2563eb', singleBarOptions);
+    drawHorizontalBar('roadsideChart', labels, 'Roadside Assistance', roadside, '#2563eb', singleBarOptions);
+    drawHorizontalBar('patientChart', labels, 'Patient Transport', patient, '#2563eb', singleBarOptions);
+    drawHorizontalBar('medicalChart', labels, 'Medical', medical, '#2563eb', singleBarOptions);
+    drawHorizontalBar('standbyChart', labels, 'Standby Medic, Marshal & VIP', standby, '#2563eb', singleBarOptions);
+    
+    // Combined chart keeps its legend so users know the colors
     drawCombinedBarChart('combinedChart', labels, others, clearing, firetruck, hauling, ledvan);
 }
 
@@ -494,7 +555,6 @@ function drawLineChart(canvasId, labels, dataArr) {
     });
 }
 
-// 🟢 UPDATED: Restored vibrant colors, thicker ring (cutout: 55%), and fixed unclipped tooltip 🟢
 function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     const vibrantColors = ['#2563eb', '#06b6d4', '#e11d48', '#ea580c', '#16a34a', '#9333ea'];
@@ -513,12 +573,12 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
         options: { 
             responsive: true, 
             maintainAspectRatio: false, 
-            cutout: '55%', /* Thicker ring to show off colors */
-            layout: { padding: 15 }, /* Extra padding so the popup doesn't hit the ceiling */
+            cutout: '55%', 
+            layout: { padding: 15 }, 
             plugins: { 
                 legend: { display: false }, 
                 datalabels: { 
-                    color: '#ffffff', /* Changed to white so it reads clearly over vibrant colors */
+                    color: '#ffffff', 
                     font: { weight: '700', family: 'Inter', size: 10 }, 
                     anchor: 'center',
                     align: 'center',
@@ -540,7 +600,6 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
                         label: function(context) {
                             let val = context.raw;
                             let pct = grandTotal > 0 ? ((val / grandTotal) * 100).toFixed(1) : 0;
-                            // Split into three shorter lines so the box is smaller and doesn't clip
                             return [
                                 `MONTH: ${context.label}`,
                                 `${val} Services Catered`,
@@ -554,16 +613,24 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
     });
 }
 
-const commonChartOptions = {
+// 🟢 NEW: Separate Options to hide legend on single charts, but keep on combined 🟢
+const singleBarOptions = {
+    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+    plugins: { datalabels: { display: false }, legend: { display: false } },
+    scales: { x: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } }, y: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } } },
+    elements: { bar: { borderRadius: 3 } } 
+};
+
+const combinedBarOptions = {
     indexAxis: 'y', responsive: true, maintainAspectRatio: false,
     plugins: { datalabels: { display: false }, legend: { position: 'top', labels: { boxWidth: 10, usePointStyle: true, font: { family: 'Inter', size: 10 } } } },
     scales: { x: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } }, y: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } } },
     elements: { bar: { borderRadius: 3 } } 
 };
 
-function drawHorizontalBar(canvasId, labels, labelText, dataArr, color) {
+function drawHorizontalBar(canvasId, labels, labelText, dataArr, color, optionsObj) {
     const ctx = document.getElementById(canvasId).getContext('2d');
-    new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [{ label: labelText, data: dataArr, backgroundColor: color, maxBarThickness: 20 }] }, options: commonChartOptions });
+    new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [{ label: labelText, data: dataArr, backgroundColor: color, maxBarThickness: 20 }] }, options: optionsObj });
 }
 
 function drawCombinedBarChart(canvasId, labels, others, clearing, firetruck, hauling, ledvan) {
@@ -580,7 +647,7 @@ function drawCombinedBarChart(canvasId, labels, others, clearing, firetruck, hau
                 { label: 'LEDVAN TRUCK', data: ledvan, backgroundColor: '#eab308', maxBarThickness: 20 }
             ]
         },
-        options: commonChartOptions
+        options: combinedBarOptions
     });
 }
 
