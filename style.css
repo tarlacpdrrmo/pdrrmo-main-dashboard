@@ -221,7 +221,6 @@ body {
 
 .flex-col { display: flex; flex-direction: column; align-items: stretch; }
 
-/* 🟢 NEW: Utility classes to structure the full-width footer cards 🟢 */
 .p-0 { padding: 0 !important; overflow: hidden; }
 .card-inner-title {
     font-size: 0.75rem; 
@@ -240,15 +239,13 @@ body {
 }
 
 /* Tooltip Logic */
-.has-tooltip {
-    position: relative;
-}
+.has-tooltip { position: relative; }
 .custom-tooltip {
     visibility: hidden;
     opacity: 0;
     position: absolute;
-    bottom: 110%; /* Positions slightly above the footer bar */
-    right: 0; /* Anchor it to the right edge so it doesn't clip off the screen */
+    bottom: 110%; 
+    right: 0; 
     background-color: #1e293b; 
     color: #ffffff;
     text-align: left;
@@ -267,7 +264,7 @@ body {
     transform: translateY(-4px); 
 }
 
-
+/* 🟢 NEW: Clean, smooth hover scale on numbers (no bouncing) 🟢 */
 .kpi-card h4 { 
     font-size: 0.55rem; 
     color: rgba(71, 85, 105, 0.7); 
@@ -276,16 +273,40 @@ body {
     font-weight: 800; 
     letter-spacing: 0.5px; 
 }
-.kpi-card .big-number { font-size: 1.5rem; font-weight: 800; color: #0f172a; line-height: 1; }
+.kpi-card .big-number { 
+    font-size: 1.5rem; 
+    font-weight: 800; 
+    color: #0f172a; 
+    line-height: 1; 
+    display: inline-block; 
+    transition: transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+.kpi-card:hover .big-number {
+    transform: scale(1.08); /* Clean, professional scaling */
+}
 .kpi-percent { font-size: 0.55rem; color: #64748b; margin-top: 4px; font-weight: 600; }
 
 .outside-card h4 { color: rgba(220, 38, 38, 0.7); } 
 .outside-card .red { color: #dc2626; }
 .outside-card .red-pct { color: #dc2626; }
 
-.pie-card { display: flex; flex-direction: column; }
-.pie-card h4 { font-size: 0.55rem; color: rgba(71, 85, 105, 0.7); margin-bottom: 12px; text-transform: uppercase; font-weight: 800; text-align: center; letter-spacing: 0.5px; }
-.pie-wrapper { position: relative; height: 170px; width: 100%; display: flex; justify-content: center; align-items: center; }
+.pie-card { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.pie-wrapper { position: relative; height: 160px; width: 100%; display: flex; justify-content: center; align-items: center; }
+
+/* 🟢 NEW: Dedicated styling for the Grand Total below the pie chart 🟢 */
+.pie-grand-total {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #0f172a;
+    text-align: center;
+    margin-top: 8px;
+    letter-spacing: 0.5px;
+    display: inline-block;
+    transition: transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+.pie-card:hover .pie-grand-total {
+    transform: scale(1.08);
+}
 
 
 /* --- DOCUMENT TRACKING LAYOUT --- */
