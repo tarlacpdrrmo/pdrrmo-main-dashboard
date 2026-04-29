@@ -2,9 +2,9 @@ Chart.register(ChartDataLabels);
 
 // 1. YOUR PUBLISHED GOOGLE SHEET CSV LINKS
 const sheetUrls = {
-    operations: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEOujzNEOrDEv0W2CMKNDjXKW8WUusQkXmrNFuaR_Vh171r7rDsKpcCdwxwhWPqpjTr0iYICMVK5lv/pub?output=csv", // <-- 1st Link
-    documents: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS4FYdO-pxACzJxrw7vEMLJKsxgEBQm_8Afh_hsKFxhxA3eiJz5kNZLkr3ArNmoEIVo5BtPBbNIz-oz/pub?gid=433918484&single=true&output=csv",   // <-- 2nd Link
-    volunteers: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQu11mhIuAL2jr_ZrMze5ZhXRk6puER_QUBVLlm6gfRq88sa1FrfFlRRjL3pvlyYfO4Mb3GwF_nZpA7/pub?gid=0&single=true&output=csv"  // <-- 3RD LINK (NEW!)
+    operations: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEOujzNEOrDEv0W2CMKNDjXKW8WUusQkXmrNFuaR_Vh171r7rDsKpcCdwxwhWPqpjTr0iYICMVK5lv/pub?output=csv", // <-- MUST BE FILLED
+    documents: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS4FYdO-pxACzJxrw7vEMLJKsxgEBQm_8Afh_hsKFxhxA3eiJz5kNZLkr3ArNmoEIVo5BtPBbNIz-oz/pub?gid=433918484&single=true&output=csv",   // <-- MUST BE FILLED
+    volunteers: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQu11mhIuAL2jr_ZrMze5ZhXRk6puER_QUBVLlm6gfRq88sa1FrfFlRRjL3pvlyYfO4Mb3GwF_nZpA7/pub?gid=0&single=true&output=csv"  // <-- 🔴 MUST BE FILLED FOR VOLUNTEER PAGE 🔴
 };
 
 let docPieChartInstance = null;
@@ -54,11 +54,10 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
-// 2. DATA FETCH ENGINE
+// 2. DATA FETCH ENGINE (Live Auto-Update Logic)
 function loadAllData() {
     const cacheBuster = new Date().getTime(); 
 
-    // Fetch Operations
     if(sheetUrls.operations.includes("http")) {
         const opSeparator = sheetUrls.operations.includes("?") ? "&" : "?";
         Papa.parse(sheetUrls.operations + opSeparator + "t=" + cacheBuster, { 
@@ -67,7 +66,6 @@ function loadAllData() {
         });
     }
     
-    // Fetch Documents
     if(sheetUrls.documents.includes("http")) {
         const docSeparator = sheetUrls.documents.includes("?") ? "&" : "?";
         Papa.parse(sheetUrls.documents + docSeparator + "t=" + cacheBuster, { 
@@ -76,7 +74,7 @@ function loadAllData() {
         });
     }
 
-    // 🟢 NEW: Fetch Volunteers
+    // 🔴 FETCH VOLUNTEERS DATA 🔴
     if(sheetUrls.volunteers.includes("http")) {
         const volSeparator = sheetUrls.volunteers.includes("?") ? "&" : "?";
         Papa.parse(sheetUrls.volunteers + volSeparator + "t=" + cacheBuster, { 
@@ -86,35 +84,49 @@ function loadAllData() {
     }
 }
 
+// ----------------------------------------------------
 // 🟢 NEW: PROCESS VOLUNTEERS DATA 🟢
+// ----------------------------------------------------
 function processVolunteersData(data) {
     let totalOrgs = 0;
-    let totalIndividuals = 0;
-    
+    let totalIndividualsInOrgs = 0;
+    let standaloneIndividuals = 0;
+
     const tbody = document.querySelector('#volunteerTable tbody');
-    tbody.innerHTML = ''; // Clears the loading state
+    tbody.innerHTML = ''; // Clears the table ready for fresh data
 
     data.forEach(row => {
         let keys = Object.keys(row);
-        if (keys.length === 0) return;
+        // We need the sheet to have enough columns to reach F, G, and I
+        if (keys.length < 6) return;
 
-        // Smart Scanner: Grabs the first column for Name, and second for Count
-        let orgName = row['List of Organization'] || row['ORGANIZATION'] || row['Organization'] || row[keys[0]] || '';
-        let count = Number(row['Total Count']) || Number(row['TOTAL COUNT']) || Number(row['Count']) || Number(row[keys[1]]) || 0;
+        // 🔴 STRICT TARGETING: Scans explicitly for your Column F, G, and I headers
+        let orgKey = keys.find(k => k.toUpperCase().includes('LIST OF ORGANIZATION')) || keys[5]; // Column F
+        let countKey = keys.find(k => k.toUpperCase().includes('TOTAL COUNT VOLUNTEER')) || keys[6]; // Column G
+        let individualKey = keys.find(k => k.toUpperCase().includes('INDIVIDUAL VOLUNTEER')) || keys[8]; // Column I
 
-        // Filters out empty rows or "Total" summary rows from the sheet
-        if (orgName && count > 0 && !orgName.toUpperCase().includes('TOTAL')) {
-            totalOrgs++; // Each valid row is 1 organization
-            totalIndividuals += count; // Add the people
+        let orgName = row[orgKey] ? row[orgKey].trim() : '';
+        let orgCount = Number(row[countKey]) || 0;
+        let standaloneCount = Number(row[individualKey]) || 0;
 
-            // Build the table row
+        // Capture Standalone Individuals (Usually only in row 2, column I)
+        if (standaloneCount > 0) {
+            standaloneIndividuals += standaloneCount;
+        }
+
+        // Build the Organization Table & Count
+        if (orgName && orgCount > 0 && !orgName.toUpperCase().includes('TOTAL')) {
+            totalOrgs++; // Each row is 1 organization
+            totalIndividualsInOrgs += orgCount; // Sums up the people inside the orgs
+
+            // Inject into HTML Table
             let tr = document.createElement('tr');
             
             let tdName = document.createElement('td');
             tdName.innerText = orgName;
             
             let tdCount = document.createElement('td');
-            tdCount.innerText = count.toLocaleString(); // Adds commas to big numbers
+            tdCount.innerText = orgCount.toLocaleString(); // Adds comma formatting
             
             tr.appendChild(tdName);
             tr.appendChild(tdCount);
@@ -122,13 +134,16 @@ function processVolunteersData(data) {
         }
     });
 
-    // Push KPIs to the dashboard
+    // The grand total of all human volunteers (People in orgs + Standalone people)
+    let grandTotalHumans = totalIndividualsInOrgs + standaloneIndividuals;
+
+    // Push final numbers to the Dashboard KPIs
     document.getElementById('vol-orgs').innerText = totalOrgs.toLocaleString(); 
-    document.getElementById('vol-ind').innerText = totalIndividuals.toLocaleString();
+    document.getElementById('vol-ind').innerText = grandTotalHumans.toLocaleString();
 }
 
 // ----------------------------------------------------
-// PROCESS DOCUMENTS DATA (Preserved from earlier)
+// PROCESS DOCUMENTS DATA
 // ----------------------------------------------------
 function parseCustomDate(dateStr) {
     if (!dateStr) return null;
@@ -264,7 +279,7 @@ function renderLineChartByTimeframe(timeframe) {
 }
 
 // ----------------------------------------------------
-// PROCESS OPERATIONS DATA (Preserved from earlier)
+// PROCESS OPERATIONS DATA 
 // ----------------------------------------------------
 function processOperationsData(data) {
     const labels = [];
