@@ -4,7 +4,7 @@ Chart.register(ChartDataLabels);
 const sheetUrls = {
     operations: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEOujzNEOrDEv0W2CMKNDjXKW8WUusQkXmrNFuaR_Vh171r7rDsKpcCdwxwhWPqpjTr0iYICMVK5lv/pub?output=csv", // <-- MUST BE FILLED
     documents: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS4FYdO-pxACzJxrw7vEMLJKsxgEBQm_8Afh_hsKFxhxA3eiJz5kNZLkr3ArNmoEIVo5BtPBbNIz-oz/pub?gid=433918484&single=true&output=csv",   // <-- MUST BE FILLED
-    volunteers: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQu11mhIuAL2jr_ZrMze5ZhXRk6puER_QUBVLlm6gfRq88sa1FrfFlRRjL3pvlyYfO4Mb3GwF_nZpA7/pub?gid=0&single=true&output=csv"  // <-- 🔴 MUST BE FILLED FOR VOLUNTEER PAGE 🔴
+    volunteers: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQu11mhIuAL2jr_ZrMze5ZhXRk6puER_QUBVLlm6gfRq88sa1FrfFlRRjL3pvlyYfO4Mb3GwF_nZpA7/pub?gid=0&single=true&output=csv"  // <-- MUST BE FILLED 
 };
 
 let docPieChartInstance = null;
@@ -38,6 +38,35 @@ document.addEventListener("DOMContentLoaded", function() {
 
     panels.forEach(panel => observer.observe(panel));
 
+    // 🟢 NEW: LIVE CLOCK SCRIPT 🟢
+    function updateClock() {
+        const now = new Date();
+        
+        // Format time (HH:MM:SS AM/PM)
+        let hours = now.getHours();
+        let minutes = now.getMinutes();
+        let seconds = now.getSeconds();
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12; // '0' should be '12'
+        minutes = minutes < 10 ? '0' + minutes : minutes;
+        seconds = seconds < 10 ? '0' + seconds : seconds;
+        const timeString = hours + ':' + minutes + ':' + seconds + ' ' + ampm;
+        
+        // Format date (e.g., Monday, April 29, 2026)
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        const dateString = now.toLocaleDateString('en-US', options);
+        
+        const timeEl = document.getElementById('live-time');
+        const dateEl = document.getElementById('live-date');
+        
+        if(timeEl) timeEl.innerText = timeString;
+        if(dateEl) dateEl.innerText = dateString;
+    }
+    setInterval(updateClock, 1000);
+    updateClock(); // Initialize immediately
+
+    // UI BUTTONS & FILTERS
     document.getElementById('pieBackButton').addEventListener('click', function() {
         if(docPieChartInstance) {
             docPieChartInstance.data.labels = mainPieLabels;
@@ -74,7 +103,6 @@ function loadAllData() {
         });
     }
 
-    // 🔴 FETCH VOLUNTEERS DATA 🔴
     if(sheetUrls.volunteers.includes("http")) {
         const volSeparator = sheetUrls.volunteers.includes("?") ? "&" : "?";
         Papa.parse(sheetUrls.volunteers + volSeparator + "t=" + cacheBuster, { 
@@ -85,7 +113,7 @@ function loadAllData() {
 }
 
 // ----------------------------------------------------
-// 🟢 NEW: PROCESS VOLUNTEERS DATA 🟢
+// PROCESS VOLUNTEERS DATA 
 // ----------------------------------------------------
 function processVolunteersData(data) {
     let totalOrgs = 0;
@@ -93,40 +121,35 @@ function processVolunteersData(data) {
     let standaloneIndividuals = 0;
 
     const tbody = document.querySelector('#volunteerTable tbody');
-    tbody.innerHTML = ''; // Clears the table ready for fresh data
+    tbody.innerHTML = ''; 
 
     data.forEach(row => {
         let keys = Object.keys(row);
-        // We need the sheet to have enough columns to reach F, G, and I
         if (keys.length < 6) return;
 
-        // 🔴 STRICT TARGETING: Scans explicitly for your Column F, G, and I headers
-        let orgKey = keys.find(k => k.toUpperCase().includes('LIST OF ORGANIZATION')) || keys[5]; // Column F
-        let countKey = keys.find(k => k.toUpperCase().includes('TOTAL COUNT VOLUNTEER')) || keys[6]; // Column G
-        let individualKey = keys.find(k => k.toUpperCase().includes('INDIVIDUAL VOLUNTEER')) || keys[8]; // Column I
+        let orgKey = keys.find(k => k.toUpperCase().includes('LIST OF ORGANIZATION')) || keys[5]; 
+        let countKey = keys.find(k => k.toUpperCase().includes('TOTAL COUNT VOLUNTEER')) || keys[6]; 
+        let individualKey = keys.find(k => k.toUpperCase().includes('INDIVIDUAL VOLUNTEER')) || keys[8]; 
 
         let orgName = row[orgKey] ? row[orgKey].trim() : '';
         let orgCount = Number(row[countKey]) || 0;
         let standaloneCount = Number(row[individualKey]) || 0;
 
-        // Capture Standalone Individuals (Usually only in row 2, column I)
         if (standaloneCount > 0) {
             standaloneIndividuals += standaloneCount;
         }
 
-        // Build the Organization Table & Count
         if (orgName && orgCount > 0 && !orgName.toUpperCase().includes('TOTAL')) {
-            totalOrgs++; // Each row is 1 organization
-            totalIndividualsInOrgs += orgCount; // Sums up the people inside the orgs
+            totalOrgs++; 
+            totalIndividualsInOrgs += orgCount; 
 
-            // Inject into HTML Table
             let tr = document.createElement('tr');
             
             let tdName = document.createElement('td');
             tdName.innerText = orgName;
             
             let tdCount = document.createElement('td');
-            tdCount.innerText = orgCount.toLocaleString(); // Adds comma formatting
+            tdCount.innerText = orgCount.toLocaleString(); 
             
             tr.appendChild(tdName);
             tr.appendChild(tdCount);
@@ -134,10 +157,8 @@ function processVolunteersData(data) {
         }
     });
 
-    // The grand total of all human volunteers (People in orgs + Standalone people)
     let grandTotalHumans = totalIndividualsInOrgs + standaloneIndividuals;
 
-    // Push final numbers to the Dashboard KPIs
     document.getElementById('vol-orgs').innerText = totalOrgs.toLocaleString(); 
     document.getElementById('vol-ind').innerText = grandTotalHumans.toLocaleString();
 }
