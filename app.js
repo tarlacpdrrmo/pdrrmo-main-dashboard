@@ -2,9 +2,9 @@ Chart.register(ChartDataLabels);
 
 // 1. YOUR PUBLISHED GOOGLE SHEET CSV LINKS
 const sheetUrls = {
-    operations: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEOujzNEOrDEv0W2CMKNDjXKW8WUusQkXmrNFuaR_Vh171r7rDsKpcCdwxwhWPqpjTr0iYICMVK5lv/pub?output=csv", // <-- MUST BE FILLED
-    documents: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS4FYdO-pxACzJxrw7vEMLJKsxgEBQm_8Afh_hsKFxhxA3eiJz5kNZLkr3ArNmoEIVo5BtPBbNIz-oz/pub?gid=433918484&single=true&output=csv",   // <-- MUST BE FILLED
-    volunteers: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQu11mhIuAL2jr_ZrMze5ZhXRk6puER_QUBVLlm6gfRq88sa1FrfFlRRjL3pvlyYfO4Mb3GwF_nZpA7/pub?gid=0&single=true&output=csv"  // <-- MUST BE FILLED 
+    operations: "PASTE_OPERATIONS_CSV_LINK_HERE", // <-- MUST BE FILLED
+    documents: "PASTE_DOCUMENTS_CSV_LINK_HERE",   // <-- MUST BE FILLED
+    volunteers: "PASTE_VOLUNTEERS_CSV_LINK_HERE"  // <-- MUST BE FILLED 
 };
 
 let docPieChartInstance = null;
@@ -294,7 +294,7 @@ function renderLineChartByTimeframe(timeframe) {
 }
 
 // ----------------------------------------------------
-// 🟢 UPDATED: DYNAMIC TREND HEADER LOGIC W/ INVERSE COLORS 🟢
+// TREND HEADER LOGIC 
 // ----------------------------------------------------
 function renderTrendHeader(elementId, title, dataArray, labelsArray, isCombined = false, inverseColors = false) {
     const el = document.getElementById(elementId);
@@ -326,13 +326,12 @@ function renderTrendHeader(elementId, title, dataArray, labelsArray, isCombined 
         let diffColor = '#94a3b8';
         let sign = diff > 0 ? '+' : '';
 
-        // 🟢 INVERSE COLOR LOGIC applied here 🟢
         if (diff > 0) {
-            trendClass = inverseColors ? 'trend-down' : 'trend-up'; // 'trend-down' triggers red styling
+            trendClass = inverseColors ? 'trend-down' : 'trend-up'; 
             symbol = '▲';
             diffColor = inverseColors ? '#f87171' : '#4ade80';
         } else if (diff < 0) {
-            trendClass = inverseColors ? 'trend-up' : 'trend-down'; // 'trend-up' triggers green styling
+            trendClass = inverseColors ? 'trend-up' : 'trend-down'; 
             symbol = '▼';
             diffColor = inverseColors ? '#4ade80' : '#f87171';
             sign = '-'; 
@@ -427,12 +426,11 @@ function processOperationsData(data) {
     document.getElementById('kpi-outside').innerText = totalOutside;
     document.getElementById('pct-outside').innerText = referenceTotal > 0 ? ((totalOutside / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
 
-    // 🟢 UPDATED: Sent the 'inverseColors' flag (true/false) to the relevant categories 🟢
-    renderTrendHeader('trend-vehicular', 'Vehicular Accident', vehicular, labels, false, true); // Inverse = True
-    renderTrendHeader('trend-roadside', 'Roadside Assistance', roadside, labels, false, false); // Inverse = False
-    renderTrendHeader('trend-patient', 'Patient Transport', patient, labels, false, true);      // Inverse = True
-    renderTrendHeader('trend-medical', 'Medical', medical, labels, false, true);                // Inverse = True
-    renderTrendHeader('trend-standby', 'Standby Medic, Marshal & VIP', standby, labels, false, false); // Inverse = False
+    renderTrendHeader('trend-vehicular', 'Vehicular Accident', vehicular, labels, false, true); 
+    renderTrendHeader('trend-roadside', 'Roadside Assistance', roadside, labels, false, false); 
+    renderTrendHeader('trend-patient', 'Patient Transport', patient, labels, false, true);      
+    renderTrendHeader('trend-medical', 'Medical', medical, labels, false, true);                
+    renderTrendHeader('trend-standby', 'Standby Medic, Marshal & VIP', standby, labels, false, false); 
     
     const combinedTotal = [];
     for(let i=0; i<labels.length; i++) {
@@ -452,8 +450,32 @@ function processOperationsData(data) {
 }
 
 // ----------------------------------------------------
-// CHART GENERATORS
+// CHART GENERATORS & TOOLTIP CONFIGURATION
 // ----------------------------------------------------
+
+// 🟢 NEW: Unified, smooth, dynamic tooltip configuration applied to all charts 🟢
+const sharedTooltipConfig = {
+    backgroundColor: function(context) {
+        // Dynamically detects the color of the bar/slice being hovered
+        if (context.tooltip.labelColors && context.tooltip.labelColors.length > 0) {
+            const color = context.tooltip.labelColors[0].backgroundColor;
+            return color ? color : 'rgba(30, 41, 59, 0.95)';
+        }
+        return 'rgba(30, 41, 59, 0.95)';
+    },
+    titleColor: '#ffffff',
+    bodyColor: '#ffffff',
+    titleFont: { family: 'Inter', size: 11, weight: '800' },
+    bodyFont: { family: 'Inter', size: 11, weight: '600' },
+    padding: 10,
+    cornerRadius: 6,
+    displayColors: false, // Hides the clunky inner color square
+    borderColor: 'rgba(255, 255, 255, 0.4)', // Subtle white border
+    borderWidth: 1,
+    caretSize: 6,
+    caretPadding: 6
+};
+
 const pieColorPalette = ['#e11d48', '#06b6d4', '#2563eb', '#ea580c', '#16a34a', '#9333ea', '#f43f5e', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#d946ef', '#f97316', '#14b8a6', '#6366f1'];
 
 function drawInteractiveDonutChart(canvasId, labels, dataArr) {
@@ -495,13 +517,14 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr) {
                     }
                 },
                 tooltip: {
+                    ...sharedTooltipConfig, // Applies the smooth styling
                     callbacks: {
                         label: function(context) {
                             let suffix = '';
                             if (document.getElementById('pieBackButton').style.display !== 'block' && detailedPieData[context.label] && Object.keys(detailedPieData[context.label]).length > 1) {
-                                suffix = ' (Click to zoom into breakdown)';
+                                suffix = ' (Click to zoom)';
                             }
-                            return ' ' + context.label + ': ' + context.raw + ' requests' + suffix;
+                            return `${context.raw} requests ${suffix}`;
                         }
                     }
                 }
@@ -561,7 +584,7 @@ function drawLineChart(canvasId, labels, dataArr) {
             plugins: { 
                 datalabels: { display: false }, 
                 legend: { display: false }, 
-                tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.9)', titleFont: { family: 'Inter', size: 12 }, bodyFont: { family: 'Inter', size: 12 }, padding: 10, displayColors: false } 
+                tooltip: sharedTooltipConfig // Applies the smooth styling
             }, 
             scales: { 
                 x: { 
@@ -619,18 +642,12 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
                     } 
                 },
                 tooltip: {
-                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                    titleColor: '#0f172a',
-                    bodyColor: '#334155',
-                    borderColor: '#cbd5e1',
-                    borderWidth: 1,
-                    padding: 10,
+                    ...sharedTooltipConfig, // Applies the dynamic color background
                     callbacks: {
                         label: function(context) {
                             let val = context.raw;
                             let pct = grandTotal > 0 ? ((val / grandTotal) * 100).toFixed(1) : 0;
                             return [
-                                `MONTH: ${context.label}`,
                                 `${val} Services Catered`,
                                 `vs Grand Total: ${pct}%`
                             ];
@@ -644,14 +661,16 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
 
 const singleBarOptions = {
     indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-    plugins: { datalabels: { display: false }, legend: { display: false } },
+    layout: { padding: { top: 15, right: 25, bottom: 10, left: 10 } }, // Prevents tooltips from getting cut off at the edges
+    plugins: { datalabels: { display: false }, legend: { display: false }, tooltip: sharedTooltipConfig },
     scales: { x: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } }, y: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } } },
     elements: { bar: { borderRadius: 3 } } 
 };
 
 const combinedBarOptions = {
     indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-    plugins: { datalabels: { display: false }, legend: { position: 'top', labels: { boxWidth: 10, usePointStyle: true, font: { family: 'Inter', size: 10 } } } },
+    layout: { padding: { top: 15, right: 25, bottom: 10, left: 10 } }, // Prevents tooltips from getting cut off at the edges
+    plugins: { datalabels: { display: false }, legend: { position: 'top', labels: { boxWidth: 10, usePointStyle: true, font: { family: 'Inter', size: 10 } } }, tooltip: sharedTooltipConfig },
     scales: { x: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } }, y: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } } },
     elements: { bar: { borderRadius: 3 } } 
 };
