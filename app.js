@@ -78,7 +78,6 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
-// 2. DATA FETCH ENGINE (Live Auto-Update Logic)
 function loadAllData() {
     const cacheBuster = new Date().getTime(); 
 
@@ -295,20 +294,26 @@ function renderLineChartByTimeframe(timeframe) {
 }
 
 // ----------------------------------------------------
-// 🟢 NEW: DYNAMIC TREND HEADER LOGIC 🟢
+// 🟢 UPDATED: DYNAMIC TOOLTIP LOGIC FOR TREND HEADERS 🟢
 // ----------------------------------------------------
-function renderTrendHeader(elementId, title, dataArray, isCombined = false) {
+function renderTrendHeader(elementId, title, dataArray, labelsArray, isCombined = false) {
     const el = document.getElementById(elementId);
     if (!el) return;
 
     let current = 0;
     let previous = 0;
+    let currentLabel = 'Current Month';
+    let prevLabel = 'Previous Month';
 
-    if (dataArray.length >= 2) {
+    // Extract exact data and exact month names
+    if (dataArray.length >= 2 && labelsArray.length >= 2) {
         current = dataArray[dataArray.length - 1];
         previous = dataArray[dataArray.length - 2];
+        currentLabel = labelsArray[labelsArray.length - 1];
+        prevLabel = labelsArray[labelsArray.length - 2];
     } else if (dataArray.length === 1) {
         current = dataArray[0];
+        currentLabel = labelsArray[0];
     }
 
     const diff = current - previous;
@@ -316,17 +321,33 @@ function renderTrendHeader(elementId, title, dataArray, isCombined = false) {
 
     if (dataArray.length < 2) {
         trendHtml = `<span class="trend-neutral">No prior data</span>`;
-    } else if (diff > 0) {
-        const pct = previous > 0 ? Math.round((diff / previous) * 100) : 100;
-        trendHtml = `<span class="trend-up">▲ ${diff} (+${pct}%)</span>`;
-    } else if (diff < 0) {
-        const pct = previous > 0 ? Math.round((Math.abs(diff) / previous) * 100) : 100;
-        trendHtml = `<span class="trend-down">▼ ${Math.abs(diff)} (-${pct}%)</span>`;
     } else {
-        trendHtml = `<span class="trend-neutral">— 0 (0%)</span>`;
+        let trendClass = diff > 0 ? 'trend-up' : (diff < 0 ? 'trend-down' : 'trend-neutral');
+        let symbol = diff > 0 ? '▲' : (diff < 0 ? '▼' : '—');
+        let diffStr = diff > 0 ? `+${diff}` : diff;
+        let pct = previous > 0 ? Math.round((Math.abs(diff) / previous) * 100) : (diff > 0 ? 100 : 0);
+        let sign = diff > 0 ? '+' : (diff < 0 ? '-' : '');
+        let diffColor = diff > 0 ? '#4ade80' : (diff < 0 ? '#f87171' : '#94a3b8');
+
+        // Build the dynamic Tooltip HTML
+        let tooltipHtml = `
+            <div class="custom-tooltip">
+                <div style="color:#94a3b8; font-size:0.55rem; text-transform:uppercase; margin-bottom:6px; letter-spacing:0.5px;">Monthly Comparison</div>
+                <div style="display:flex; justify-content:space-between; gap:20px; margin-bottom:2px;"><span>${currentLabel}:</span> <strong>${current}</strong></div>
+                <div style="display:flex; justify-content:space-between; gap:20px; margin-bottom:2px;"><span>${prevLabel}:</span> <strong>${previous}</strong></div>
+                <div style="border-top:1px solid #334155; margin-top:6px; padding-top:6px; display:flex; justify-content:space-between; gap:20px;"><span>Difference:</span> <strong style="color:${diffColor}">${diffStr}</strong></div>
+            </div>
+        `;
+
+        // Wrap the arrow inside the hover-able tooltip container
+        trendHtml = `
+            <span class="${trendClass} has-tooltip">
+                ${symbol} ${Math.abs(diff)} (${sign}${pct}%)
+                ${tooltipHtml}
+            </span>
+        `;
     }
 
-    // Keep the colored dot for single charts so it matches the bar color
     let dotHtml = isCombined ? '' : `<span style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color:#2563eb; margin-right:8px;"></span>`;
 
     el.innerHTML = `
@@ -396,29 +417,27 @@ function processOperationsData(data) {
     document.getElementById('kpi-outside').innerText = totalOutside;
     document.getElementById('pct-outside').innerText = referenceTotal > 0 ? ((totalOutside / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
 
-    // 🟢 NEW: Generate Dynamic Trend Headers 🟢
-    renderTrendHeader('trend-vehicular', 'Vehicular Accident', vehicular);
-    renderTrendHeader('trend-roadside', 'Roadside Assistance', roadside);
-    renderTrendHeader('trend-patient', 'Patient Transport', patient);
-    renderTrendHeader('trend-medical', 'Medical', medical);
-    renderTrendHeader('trend-standby', 'Standby Medic, Marshal & VIP', standby);
+    // 🟢 UPDATED: Passing the 'labels' array into the trend headers 🟢
+    renderTrendHeader('trend-vehicular', 'Vehicular Accident', vehicular, labels);
+    renderTrendHeader('trend-roadside', 'Roadside Assistance', roadside, labels);
+    renderTrendHeader('trend-patient', 'Patient Transport', patient, labels);
+    renderTrendHeader('trend-medical', 'Medical', medical, labels);
+    renderTrendHeader('trend-standby', 'Standby Medic, Marshal & VIP', standby, labels);
     
     const combinedTotal = [];
     for(let i=0; i<labels.length; i++) {
          combinedTotal.push(others[i] + clearing[i] + firetruck[i] + hauling[i] + ledvan[i]);
     }
-    renderTrendHeader('trend-combined', 'Other Services (Combined)', combinedTotal, true);
+    renderTrendHeader('trend-combined', 'Other Services (Combined)', combinedTotal, labels, true);
 
     drawDonutChart('monthlyPieChart', labels, monthlyTotalServices, overallGrandTotal);
     
-    // 🟢 UPDATED: Draw functions now use the new single options to hide duplicate legends 🟢
     drawHorizontalBar('vehicularChart', labels, 'Vehicular Accident', vehicular, '#2563eb', singleBarOptions);
     drawHorizontalBar('roadsideChart', labels, 'Roadside Assistance', roadside, '#2563eb', singleBarOptions);
     drawHorizontalBar('patientChart', labels, 'Patient Transport', patient, '#2563eb', singleBarOptions);
     drawHorizontalBar('medicalChart', labels, 'Medical', medical, '#2563eb', singleBarOptions);
     drawHorizontalBar('standbyChart', labels, 'Standby Medic, Marshal & VIP', standby, '#2563eb', singleBarOptions);
     
-    // Combined chart keeps its legend so users know the colors
     drawCombinedBarChart('combinedChart', labels, others, clearing, firetruck, hauling, ledvan);
 }
 
@@ -613,7 +632,6 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
     });
 }
 
-// 🟢 NEW: Separate Options to hide legend on single charts, but keep on combined 🟢
 const singleBarOptions = {
     indexAxis: 'y', responsive: true, maintainAspectRatio: false,
     plugins: { datalabels: { display: false }, legend: { display: false } },
