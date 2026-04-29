@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDRRMO Analytical Dashboard</title>
+    <title>PDRRMO Analytical Report</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -19,7 +18,6 @@
                 <li class="active" onclick="scrollToSection('assets')">Assets & Personnel</li>
                 <li onclick="scrollToSection('tracking')">Document Tracking</li>
                 <li onclick="scrollToSection('volunteers')">Volunteer's Section</li>
-                
                 <li class="section-title">GIS & Maps</li>
                 <li onclick="scrollToSection('ews-map')">Early Warning System</li>
                 <li onclick="scrollToSection('incident-map')">Incident Heatmap</li>
@@ -28,7 +26,6 @@
         </nav>
 
         <main class="main-content" id="scroll-area">
-            
             <header class="page-header">
                 <h1>TARLAC PROVINCIAL DISASTER RISK REDUCTION AND MANAGEMENT OFFICE</h1>
                 <h2>ANALYTICAL REPORT</h2>
@@ -38,10 +35,10 @@
                 <h3 class="panel-heading">Assets and Personnel Dispatched</h3>
                 <div class="assets-layout">
                     <div class="kpi-column">
-                        <div class="card kpi-card"><h4>1st District (Total No.)</h4><p class="big-number" id="kpi-1st">0</p></div>
-                        <div class="card kpi-card"><h4>2nd District (Total No.)</h4><p class="big-number red" id="kpi-2nd">0</p></div>
-                        <div class="card kpi-card"><h4>3rd District (Total No.)</h4><p class="big-number" id="kpi-3rd">0</p></div>
-                        <div class="card kpi-card"><h4>Outside Tarlac Province</h4><p class="big-number" id="kpi-outside">0</p></div>
+                        <div class="card kpi-card"><h4>1st District</h4><p class="big-number" id="kpi-1st">0</p></div>
+                        <div class="card kpi-card"><h4>2nd District</h4><p class="big-number red" id="kpi-2nd">0</p></div>
+                        <div class="card kpi-card"><h4>3rd District</h4><p class="big-number" id="kpi-3rd">0</p></div>
+                        <div class="card kpi-card"><h4>Outside Tarlac</h4><p class="big-number" id="kpi-outside">0</p></div>
                         <div class="card pie-card">
                             <h4>Total Services Catered</h4>
                             <div class="pie-wrapper"><canvas id="monthlyPieChart"></canvas></div>
@@ -61,14 +58,16 @@
             <section id="tracking" class="panel">
                 <h3 class="panel-heading">Incoming Document Tracking</h3>
                 <div class="tracking-layout">
-                    
                     <div class="tracking-charts">
                         <div class="card doc-chart-card">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                                <h4 class="chart-title" id="pieChartTitle" style="margin: 0;">Received Request from PDRRM Office:</h4>
-                                <button id="pieBackButton" style="display: none; padding: 6px 12px; font-size: 0.75rem; cursor: pointer; border: 1px solid #cbd5e1; border-radius: 4px; background: #f8fafc; color: #334155; font-weight: 700; transition: 0.2s;">&larr; Back to Main List</button>
+                            <div class="chart-header-actions">
+                                <h4 class="chart-title" id="pieChartTitle">Received Request from PDRRM Office:</h4>
+                                <button id="pieBackButton" class="btn-back">Show All Categories</button>
                             </div>
-                            <div class="doc-pie-wrapper"><canvas id="docSourcePieChart"></canvas></div>
+                            <div class="interactive-pie-container">
+                                <div class="doc-pie-wrapper"><canvas id="docSourcePieChart"></canvas></div>
+                                <div class="scrollable-legend" id="customLegend"></div>
+                            </div>
                         </div>
                         <div class="card doc-chart-card">
                             <h4 class="chart-title">Received per Date:</h4>
@@ -78,14 +77,14 @@
 
                     <div class="tracking-kpis">
                         <div class="card kpi-card-small"><p>Total Request</p><h3 class="green" id="doc-kpi-request">0</h3></div>
-                        <div class="card kpi-card-small"><p>Total Action Taken (Overall)</p><h3 id="doc-kpi-action">0</h3></div>
-                        <div class="card kpi-card-small"><p>Total Request Catered</p><h3 id="doc-kpi-catered">0</h3></div>
-                        <div class="card kpi-card-small"><p>Total Invitation Attended</p><h3 id="doc-kpi-inv-att">0</h3></div>
-                        <div class="card kpi-card-small"><p>Total Request Not Catered</p><h3 id="doc-kpi-not-catered">0</h3></div>
-                        <div class="card kpi-card-small"><p>Others, Specify:</p><h3 id="doc-kpi-others">0</h3></div>
-                        <div class="card kpi-card-small"><p>Total Invitation Not Attended</p><h3 id="doc-kpi-inv-not">0</h3></div>
-                        <div class="card kpi-card-small"><p>Total Cancelled</p><h3 class="red" id="doc-kpi-cancelled">0</h3></div>
-                        <div class="card kpi-card-small"><p>Total No Action</p><h3 id="doc-kpi-no-action">0</h3></div>
+                        <div class="card kpi-card-small"><p>Action Taken</p><h3 id="doc-kpi-action">0</h3></div>
+                        <div class="card kpi-card-small"><p>Catered</p><h3 id="doc-kpi-catered">0</h3></div>
+                        <div class="card kpi-card-small"><p>Inv. Attended</p><h3 id="doc-kpi-inv-att">0</h3></div>
+                        <div class="card kpi-card-small"><p>Not Catered</p><h3 id="doc-kpi-not-catered">0</h3></div>
+                        <div class="card kpi-card-small"><p>Others</p><h3 id="doc-kpi-others">0</h3></div>
+                        <div class="card kpi-card-small"><p>Inv. Not Attended</p><h3 id="doc-kpi-inv-not">0</h3></div>
+                        <div class="card kpi-card-small"><p>Cancelled</p><h3 class="red" id="doc-kpi-cancelled">0</h3></div>
+                        <div class="card kpi-card-small"><p>No Action</p><h3 id="doc-kpi-no-action">0</h3></div>
                     </div>
                 </div>
             </section>
@@ -93,21 +92,20 @@
             <section id="volunteers" class="panel">
                 <h3 class="panel-heading">Volunteer's Section</h3>
                 <div class="assets-layout top-summary">
-                    <div class="card summary-card"><p>Total Volunteer Organizations</p><h3 id="vol-orgs">0</h3></div>
-                    <div class="card summary-card"><p>Individual Volunteers</p><h3 class="orange" id="vol-ind">0</h3></div>
+                    <div class="card summary-card"><p>Volunteer Orgs</p><h3 id="vol-orgs">0</h3></div>
+                    <div class="card summary-card"><p>Indiv. Volunteers</p><h3 class="orange" id="vol-ind">0</h3></div>
                 </div>
                 <div class="card table-card mt-2" style="max-height: 400px; overflow-y: auto;">
                     <table id="volunteerTable">
-                        <thead><tr><th>List of Organization</th><th>Total Count</th></tr></thead>
+                        <thead><tr><th>Organization</th><th>Count</th></tr></thead>
                         <tbody></tbody>
                     </table>
                 </div>
             </section>
-
-            <section id="ews-map" class="panel iframe-panel"><h3 class="panel-heading">Early Warning System Map</h3><iframe src="https://tarlacpdrrmo.github.io/tarlac-ews-map/" title="EWS Map"></iframe></section>
-            <section id="incident-map" class="panel iframe-panel"><h3 class="panel-heading">Incident Heatmap</h3><iframe src="https://tarlacpdrrmo.github.io/tarlac-incidents/" title="Incident Heatmap"></iframe></section>
-            <section id="evac-map" class="panel iframe-panel"><h3 class="panel-heading">Evacuation Centers</h3><iframe src="https://tarlacpdrrmo.github.io/tarlac-evacuation-centers/" title="Evacuation Centers Map"></iframe></section>
             
+            <section id="ews-map" class="panel iframe-panel"><h3 class="panel-heading">Early Warning System Map</h3><iframe src="https://tarlacpdrrmo.github.io/tarlac-ews-map/"></iframe></section>
+            <section id="incident-map" class="panel iframe-panel"><h3 class="panel-heading">Incident Heatmap</h3><iframe src="https://tarlacpdrrmo.github.io/tarlac-incidents/"></iframe></section>
+            <section id="evac-map" class="panel iframe-panel"><h3 class="panel-heading">Evacuation Centers</h3><iframe src="https://tarlacpdrrmo.github.io/tarlac-evacuation-centers/"></iframe></section>
         </main>
     </div>
     <script src="app.js"></script>
