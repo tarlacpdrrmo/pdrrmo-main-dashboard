@@ -2,9 +2,9 @@ Chart.register(ChartDataLabels);
 
 // 1. YOUR PUBLISHED GOOGLE SHEET CSV LINKS
 const sheetUrls = {
-    operations: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEOujzNEOrDEv0W2CMKNDjXKW8WUusQkXmrNFuaR_Vh171r7rDsKpcCdwxwhWPqpjTr0iYICMVK5lv/pub?output=csv", // <-- MUST BE FILLED
-    documents: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS4FYdO-pxACzJxrw7vEMLJKsxgEBQm_8Afh_hsKFxhxA3eiJz5kNZLkr3ArNmoEIVo5BtPBbNIz-oz/pub?gid=433918484&single=true&output=csv",   // <-- MUST BE FILLED
-    volunteers: ""
+    operations: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEOujzNEOrDEv0W2CMKNDjXKW8WUusQkXmrNFuaR_Vh171r7rDsKpcCdwxwhWPqpjTr0iYICMVK5lv/pub?output=csv", // <-- 1st Link
+    documents: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS4FYdO-pxACzJxrw7vEMLJKsxgEBQm_8Afh_hsKFxhxA3eiJz5kNZLkr3ArNmoEIVo5BtPBbNIz-oz/pub?gid=433918484&single=true&output=csv",   // <-- 2nd Link
+    volunteers: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQu11mhIuAL2jr_ZrMze5ZhXRk6puER_QUBVLlm6gfRq88sa1FrfFlRRjL3pvlyYfO4Mb3GwF_nZpA7/pub?gid=0&single=true&output=csv"  // <-- 3RD LINK (NEW!)
 };
 
 let docPieChartInstance = null;
@@ -54,9 +54,11 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
+// 2. DATA FETCH ENGINE
 function loadAllData() {
     const cacheBuster = new Date().getTime(); 
 
+    // Fetch Operations
     if(sheetUrls.operations.includes("http")) {
         const opSeparator = sheetUrls.operations.includes("?") ? "&" : "?";
         Papa.parse(sheetUrls.operations + opSeparator + "t=" + cacheBuster, { 
@@ -65,6 +67,7 @@ function loadAllData() {
         });
     }
     
+    // Fetch Documents
     if(sheetUrls.documents.includes("http")) {
         const docSeparator = sheetUrls.documents.includes("?") ? "&" : "?";
         Papa.parse(sheetUrls.documents + docSeparator + "t=" + cacheBuster, { 
@@ -72,9 +75,61 @@ function loadAllData() {
             complete: function(results) { processDocumentsData(results.data); } 
         });
     }
+
+    // 🟢 NEW: Fetch Volunteers
+    if(sheetUrls.volunteers.includes("http")) {
+        const volSeparator = sheetUrls.volunteers.includes("?") ? "&" : "?";
+        Papa.parse(sheetUrls.volunteers + volSeparator + "t=" + cacheBuster, { 
+            download: true, header: true, skipEmptyLines: true, 
+            complete: function(results) { processVolunteersData(results.data); } 
+        });
+    }
 }
 
-// BULLETPROOF DATE PARSER
+// 🟢 NEW: PROCESS VOLUNTEERS DATA 🟢
+function processVolunteersData(data) {
+    let totalOrgs = 0;
+    let totalIndividuals = 0;
+    
+    const tbody = document.querySelector('#volunteerTable tbody');
+    tbody.innerHTML = ''; // Clears the loading state
+
+    data.forEach(row => {
+        let keys = Object.keys(row);
+        if (keys.length === 0) return;
+
+        // Smart Scanner: Grabs the first column for Name, and second for Count
+        let orgName = row['List of Organization'] || row['ORGANIZATION'] || row['Organization'] || row[keys[0]] || '';
+        let count = Number(row['Total Count']) || Number(row['TOTAL COUNT']) || Number(row['Count']) || Number(row[keys[1]]) || 0;
+
+        // Filters out empty rows or "Total" summary rows from the sheet
+        if (orgName && count > 0 && !orgName.toUpperCase().includes('TOTAL')) {
+            totalOrgs++; // Each valid row is 1 organization
+            totalIndividuals += count; // Add the people
+
+            // Build the table row
+            let tr = document.createElement('tr');
+            
+            let tdName = document.createElement('td');
+            tdName.innerText = orgName;
+            
+            let tdCount = document.createElement('td');
+            tdCount.innerText = count.toLocaleString(); // Adds commas to big numbers
+            
+            tr.appendChild(tdName);
+            tr.appendChild(tdCount);
+            tbody.appendChild(tr);
+        }
+    });
+
+    // Push KPIs to the dashboard
+    document.getElementById('vol-orgs').innerText = totalOrgs.toLocaleString(); 
+    document.getElementById('vol-ind').innerText = totalIndividuals.toLocaleString();
+}
+
+// ----------------------------------------------------
+// PROCESS DOCUMENTS DATA (Preserved from earlier)
+// ----------------------------------------------------
 function parseCustomDate(dateStr) {
     if (!dateStr) return null;
     let d = new Date(dateStr);
@@ -88,7 +143,6 @@ function parseCustomDate(dateStr) {
     return null;
 }
 
-// 3. Process DOCUMENTS Data
 function processDocumentsData(data) {
     let totalReq = 0, totalAction = 0, catered = 0, invAttended = 0;
     let notCatered = 0, others = 0, invNotAttended = 0, cancelled = 0, noAction = 0;
@@ -102,33 +156,27 @@ function processDocumentsData(data) {
         let rawOffice = row['Received From Office'] || row['RECEIVED FROM OFFICE'] || '';
         let keys = Object.keys(row);
         
-        // ----------------------------------------------------
-        // 🔴 STRICT KPI TARGETING: COLUMN C (Index 2) 🔴
-        // Scans Column C and takes the highest value (your 321 sum)
-        // ----------------------------------------------------
-        let colCValue = Number(row['TOTAL RECEIVED FROM OFFICE']) || Number(row['Column C']) || Number(row['COLUMN C']) || Number(row[keys[2]]) || 0;
-        if (colCValue > totalReq) {
-            totalReq = colCValue; 
+        if (!totalsCaptured) {
+            let colCValue = Number(row['TOTAL RECEIVED FROM OFFICE']) || Number(row['Column C']) || Number(row['COLUMN C']) || Number(row[keys[2]]) || 0;
+            if (colCValue > totalReq) {
+                totalReq = colCValue; 
+            }
+
+            if (row['TOTAL ACTION TAKEN (OVERALL)'] || row['TOTAL REQUEST CATERED']) {
+                totalAction = Number(row['TOTAL ACTION TAKEN (OVERALL)']) || 0;
+                catered = Number(row['TOTAL REQUEST CATERED']) || 0;
+                invAttended = Number(row['TOTAL INVITATION ATTENDED']) || 0;
+                notCatered = Number(row['TOTAL REQUEST NOT CATERED']) || 0;
+                others = Number(row['OTHERS, SPECIFY:']) || Number(row['OTHERS']) || 0;
+                invNotAttended = Number(row['TOTAL INVITATION NOT ATTENDED']) || 0;
+                cancelled = Number(row['TOTAL CANCELLED']) || 0;
+                noAction = Number(row['TOTAL NO ACTION']) || 0;
+                totalsCaptured = true;
+            }
         }
 
-        // Capture other KPIs (Only need to do this once when the summary row hits)
-        if (!totalsCaptured && (row['TOTAL ACTION TAKEN (OVERALL)'] || row['TOTAL REQUEST CATERED'])) {
-            totalAction = Number(row['TOTAL ACTION TAKEN (OVERALL)']) || 0;
-            catered = Number(row['TOTAL REQUEST CATERED']) || 0;
-            invAttended = Number(row['TOTAL INVITATION ATTENDED']) || 0;
-            notCatered = Number(row['TOTAL REQUEST NOT CATERED']) || 0;
-            others = Number(row['OTHERS, SPECIFY:']) || Number(row['OTHERS']) || 0;
-            invNotAttended = Number(row['TOTAL INVITATION NOT ATTENDED']) || 0;
-            cancelled = Number(row['TOTAL CANCELLED']) || 0;
-            noAction = Number(row['TOTAL NO ACTION']) || 0;
-            totalsCaptured = true;
-        }
-
-        // ----------------------------------------------------
-        // 🔴 STRICT DATE TARGETING: COLUMN M (Index 12) 🔴
-        // ----------------------------------------------------
         let dateStr = row['Column M'] || row['COLUMN M'] || row['Date Received'] || row['DATE RECEIVED'] || row[keys[12]] || '';
-        let rowCount = Number(row['Total Requests']) || Number(row['TOTAL REQUESTS']) || 1; // Metric count for the Y-Axis
+        let rowCount = Number(row['Total Requests']) || Number(row['TOTAL REQUESTS']) || 1; 
 
         if (dateStr) {
             let parsedDate = parseCustomDate(dateStr);
@@ -137,7 +185,6 @@ function processDocumentsData(data) {
             }
         }
 
-        // PIE CHART SCRUBBER (As previously requested)
         let officeReqs = Number(row['Total Requests']) || Number(row['TOTAL REQUESTS']) || 0;
         if (rawOffice && officeReqs > 0) {
             let upperOffice = rawOffice.toUpperCase();
@@ -187,14 +234,11 @@ function processDocumentsData(data) {
     mainPieData = sortedSources.map(item => item.value);
 
     drawInteractiveDonutChart('docSourcePieChart', mainPieLabels, mainPieData);
-
-    // Initial Load defaults to Daily view
     renderLineChartByTimeframe('daily');
 }
 
 function renderLineChartByTimeframe(timeframe) {
     let groupedObj = {};
-    
     let sortedData = [...globalLineData].sort((a, b) => a.timestamp - b.timestamp);
 
     sortedData.forEach(item => {
@@ -206,7 +250,6 @@ function renderLineChartByTimeframe(timeframe) {
         } else { // daily
             key = item.dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         }
-        
         groupedObj[key] = (groupedObj[key] || 0) + item.count;
     });
 
@@ -220,7 +263,9 @@ function renderLineChartByTimeframe(timeframe) {
     }
 }
 
-
+// ----------------------------------------------------
+// PROCESS OPERATIONS DATA (Preserved from earlier)
+// ----------------------------------------------------
 function processOperationsData(data) {
     const labels = [];
     const vehicular = [], roadside = [], patient = [], medical = [], standby = [];
@@ -389,7 +434,6 @@ function drawLineChart(canvasId, labels, dataArr) {
                     ticks: { font: { family: 'Inter', size: 9 }, color: '#64748b', maxTicksLimit: 12 } 
                 }, 
                 y: { 
-                    // 🔴 EXPLICIT Y-AXIS TITLE EXACTLY AS REQUESTED 🔴
                     title: {
                         display: true,
                         text: 'Received From (OFFICE)',
