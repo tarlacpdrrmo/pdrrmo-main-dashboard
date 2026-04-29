@@ -2,194 +2,302 @@ Chart.register(ChartDataLabels);
 
 // 1. YOUR PUBLISHED GOOGLE SHEET CSV LINKS
 const sheetUrls = {
-    operations: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEOujzNEOrDEv0W2CMKNDjXKW8WUusQkXmrNFuaR_Vh171r7rDsKpcCdwxwhWPqpjTr0iYICMVK5lv/pub?output=csv", 
-    documents: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS4FYdO-pxACzJxrw7vEMLJKsxgEBQm_8Afh_hsKFxhxA3eiJz5kNZLkr3ArNmoEIVo5BtPBbNIz-oz/pub?gid=433918484&single=true&output=csv",   
+    operations: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEOujzNEOrDEv0W2CMKNDjXKW8WUusQkXmrNFuaR_Vh171r7rDsKpcCdwxwhWPqpjTr0iYICMVK5lv/pub?output=csv", // <-- MUST BE FILLED
+    documents: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS4FYdO-pxACzJxrw7vEMLJKsxgEBQm_8Afh_hsKFxhxA3eiJz5kNZLkr3ArNmoEIVo5BtPBbNIz-oz/pub?gid=433918484&single=true&output=csv",   // <-- MUST BE FILLED
     volunteers: ""
 };
 
-let docPieInstance = null;
-let mainViewLabels = [];
-let mainViewData = [];
-let detailDataMap = {}; // Stores breakdown for each category
+let docPieChartInstance = null;
+let mainPieLabels = [];
+let mainPieData = [];
+let detailedPieData = {};
 
-function scrollToSection(id) {
-    const el = document.getElementById(id);
-    if(el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+function scrollToSection(panelId) {
+    const section = document.getElementById(panelId);
+    if(section) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 }
 
-// 2. Load Data with Cache Buster
+document.addEventListener("DOMContentLoaded", function() {
+    const panels = document.querySelectorAll('.panel');
+    const navLinks = document.querySelectorAll('.sidebar li:not(.section-title)');
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                navLinks.forEach(link => link.classList.remove('active'));
+                const id = entry.target.getAttribute('id');
+                const activeLink = document.querySelector(`.sidebar li[onclick="scrollToSection('${id}')"]`);
+                if(activeLink) activeLink.classList.add('active');
+            }
+        });
+    }, { threshold: 0.3 }); 
+
+    panels.forEach(panel => observer.observe(panel));
+
+    // Back Button Logic
+    document.getElementById('pieBackButton').addEventListener('click', function() {
+        if(docPieChartInstance) {
+            docPieChartInstance.data.labels = mainPieLabels;
+            docPieChartInstance.data.datasets[0].data = mainPieData;
+            docPieChartInstance.update();
+        }
+        this.style.display = 'none';
+        document.getElementById('pieChartTitle').innerText = 'Received Request from PDRRM Office:';
+        updateCustomLegend(mainPieLabels, mainPieData);
+    });
+});
+
+// 2. Data Fetch with Cache Buster
 function loadAllData() {
-    const t = new Date().getTime();
+    const cacheBuster = new Date().getTime(); 
+
     if(sheetUrls.operations.includes("http")) {
-        Papa.parse(sheetUrls.operations + "?t=" + t, { download: true, header: true, complete: res => processOps(res.data) });
+        Papa.parse(sheetUrls.operations + "?t=" + cacheBuster, { 
+            download: true, header: true, skipEmptyLines: true, 
+            complete: function(results) { processOperationsData(results.data); } 
+        });
     }
     if(sheetUrls.documents.includes("http")) {
-        Papa.parse(sheetUrls.documents + "?t=" + t, { download: true, header: true, complete: res => processDocs(res.data) });
+        Papa.parse(sheetUrls.documents + "?t=" + cacheBuster, { 
+            download: true, header: true, skipEmptyLines: true, 
+            complete: function(results) { processDocumentsData(results.data); } 
+        });
     }
 }
 
-// 3. Process Tracking Data (Smart Key Consolidation)
-function processDocs(data) {
-    let totalManual = 0;
-    let mainMap = {};
-    detailDataMap = {};
+// 3. Process DOCUMENTS (Smart Consolidation + Reads 314 from summary)
+function processDocumentsData(data) {
+    let totalReq = 0, totalAction = 0, catered = 0, invAttended = 0;
+    let notCatered = 0, others = 0, invNotAttended = 0, cancelled = 0, noAction = 0;
+
+    let sourceMap = {};
+    detailedPieData = {};
+    let totalsCaptured = false;
 
     data.forEach(row => {
-        const office = row['Received From Office'] || "";
-        const count = Number(row['Total Requests']) || 0;
+        let rawOffice = row['Received From Office'] || row['RECEIVED FROM OFFICE'];
+        let reqs = Number(row['Total Requests'] || row['TOTAL REQUESTS']) || 0;
 
-        if (office && count > 0) {
-            totalManual += count; // Calculating the 321 fix
+        if (rawOffice && reqs > 0) {
+            let upperOffice = rawOffice.toUpperCase();
+            let parentCategory = rawOffice;
 
-            // Smart Grouping Logic
-            let category = office;
-            const upper = office.toUpperCase();
+            if (upperOffice.includes('PGT') || upperOffice.includes('PROVINCIAL GOV')) {
+                parentCategory = 'PGT Offices (Consolidated)';
+            } else if (upperOffice.includes('3RD MECH') || upperOffice.includes('MECHANIZED INFANTRY')) {
+                parentCategory = '3rd Mechanized Infantry (Consolidated)';
+            } else if (upperOffice.includes('522ND')) {
+                parentCategory = '522nd Engineer Battalion (Consolidated)';
+            } else if (upperOffice.includes('BFP')) {
+                parentCategory = 'BFP Tarlac (Consolidated)';
+            } else if (upperOffice === 'N/A' || upperOffice.includes('PRIVATE')) {
+                parentCategory = 'N/A (Private Individuals)';
+            }
 
-            if (upper.includes('PGT') || upper.includes('PROVINCIAL GOV')) category = 'PGT Offices (Consolidated)';
-            else if (upper.includes('3RD MECH') || upper.includes('MECHANIZED INFANTRY')) category = '3rd Mechanized Infantry';
-            else if (upper.includes('522ND')) category = '522nd Engineer Bn';
-            else if (upper.includes('BFP')) category = 'BFP Tarlac';
-            else if (upper === 'N/A') category = 'Private / NA';
-
-            mainMap[category] = (mainMap[category] || 0) + count;
-            
-            if(!detailDataMap[category]) detailDataMap[category] = {};
-            detailDataMap[category][office] = (detailDataMap[category][office] || 0) + count;
+            sourceMap[parentCategory] = (sourceMap[parentCategory] || 0) + reqs;
+            if (!detailedPieData[parentCategory]) detailedPieData[parentCategory] = {};
+            detailedPieData[parentCategory][rawOffice] = (detailedPieData[parentCategory][rawOffice] || 0) + reqs;
         }
 
-        // Set KPIs from Summary Row
-        if (row['TOTAL ACTION TAKEN (OVERALL)']) {
-            document.getElementById('doc-kpi-action').innerText = row['TOTAL ACTION TAKEN (OVERALL)'];
-            document.getElementById('doc-kpi-catered').innerText = row['TOTAL REQUEST CATERED'] || 0;
-            document.getElementById('doc-kpi-inv-att').innerText = row['TOTAL INVITATION ATTENDED'] || 0;
-            document.getElementById('doc-kpi-not-catered').innerText = row['TOTAL REQUEST NOT CATERED'] || 0;
-            document.getElementById('doc-kpi-others').innerText = row['OTHERS, SPECIFY:'] || 0;
-            document.getElementById('doc-kpi-inv-not').innerText = row['TOTAL INVITATION NOT ATTENDED'] || 0;
-            document.getElementById('doc-kpi-cancelled').innerText = row['TOTAL CANCELLED'] || 0;
-            document.getElementById('doc-kpi-no-action').innerText = row['TOTAL NO ACTION'] || 0;
+        if (!totalsCaptured && (row['TOTAL RECEIVED FROM OFFICE'] || row['TOTAL ACTION TAKEN (OVERALL)'] || row['TOTAL REQUEST CATERED'])) {
+            totalReq = Number(row['TOTAL RECEIVED FROM OFFICE'] || row['TOTAL RECEIVED']) || 0;
+            totalAction = Number(row['TOTAL ACTION TAKEN (OVERALL)']) || 0;
+            catered = Number(row['TOTAL REQUEST CATERED']) || 0;
+            invAttended = Number(row['TOTAL INVITATION ATTENDED']) || 0;
+            notCatered = Number(row['TOTAL REQUEST NOT CATERED']) || 0;
+            others = Number(row['OTHERS, SPECIFY:'] || row['OTHERS']) || 0;
+            invNotAttended = Number(row['TOTAL INVITATION NOT ATTENDED']) || 0;
+            cancelled = Number(row['TOTAL CANCELLED']) || 0;
+            noAction = Number(row['TOTAL NO ACTION']) || 0;
+            totalsCaptured = true;
         }
     });
 
-    document.getElementById('doc-kpi-request').innerText = totalManual;
+    document.getElementById('doc-kpi-request').innerText = totalReq; 
+    document.getElementById('doc-kpi-action').innerText = totalAction;
+    document.getElementById('doc-kpi-catered').innerText = catered;
+    document.getElementById('doc-kpi-inv-att').innerText = invAttended;
+    document.getElementById('doc-kpi-not-catered').innerText = notCatered;
+    document.getElementById('doc-kpi-others').innerText = others;
+    document.getElementById('doc-kpi-inv-not').innerText = invNotAttended;
+    document.getElementById('doc-kpi-cancelled').innerText = cancelled;
+    document.getElementById('doc-kpi-no-action').innerText = noAction;
 
-    // Sort Descending
-    const sorted = Object.entries(mainMap).sort((a, b) => b[1] - a[1]);
-    mainViewLabels = sorted.map(x => x[0]);
-    mainViewData = sorted.map(x => x[1]);
+    let sortedSources = Object.keys(sourceMap).map(key => ({ label: key, value: sourceMap[key] }));
+    sortedSources.sort((a, b) => b.value - a.value);
 
-    drawInteractivePie('docSourcePieChart', mainViewLabels, mainViewData);
-    
-    // Placeholder Line
-    drawLine('docDateLineChart', ['Jan', 'Feb', 'Mar', 'Apr'], [10, 15, 8, 12]);
+    mainPieLabels = sortedSources.map(item => item.label);
+    mainPieData = sortedSources.map(item => item.value);
+
+    drawInteractiveDonutChart('docSourcePieChart', mainPieLabels, mainPieData);
+
+    const dummyDates = ['Jan 12', 'Jan 23', 'Feb 3', 'Feb 14', 'Feb 25', 'Mar 8', 'Mar 19', 'Mar 30', 'Apr 10', 'Apr 21'];
+    const dummyLineData = [2, 5, 1, 9, 3, 12, 2, 6, 1, 5];
+    drawLineChart('docDateLineChart', dummyDates, dummyLineData);
 }
 
-// 4. Interactive Drill-Down Pie Logic
-function drawInteractivePie(id, labels, data) {
-    const ctx = document.getElementById(id).getContext('2d');
-    if(docPieInstance) docPieInstance.destroy();
+// 4. Process OPERATIONS Data (Restored fully)
+function processOperationsData(data) {
+    const labels = [];
+    const vehicular = [], roadside = [], patient = [], medical = [], standby = [];
+    const others = [], clearing = [], firetruck = [], hauling = [], ledvan = [];
+    const monthlyTotalServices = [];
 
-    const colors = ['#2563eb', '#06b6d4', '#e11d48', '#ea580c', '#16a34a', '#9333ea', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6'];
+    let total1st = 0, total2nd = 0, total3rd = 0, totalOutside = 0;
 
-    docPieInstance = new Chart(ctx, {
+    data.forEach(row => {
+        if(row['MONTH']) { 
+            labels.push(row['MONTH']);
+            
+            vehicular.push(Number(row['VEHICULAR ACCIDENT']) || 0);
+            roadside.push(Number(row['ROADSIDE ASSISTANCE']) || 0);
+            patient.push(Number(row['PATIENT TRANSPORT']) || 0);
+            medical.push(Number(row['MEDICAL']) || 0);
+            standby.push(Number(row['STANDBY MEDIC, MARSHAL & VIP']) || 0);
+            
+            others.push(Number(row['OTHERS']) || 0);
+            clearing.push(Number(row['CLEARING OPERATIONS']) || 0);
+            firetruck.push(Number(row['FIRETRUCK']) || 0);
+            hauling.push(Number(row['HAULING']) || 0);
+            ledvan.push(Number(row['LEDVAN TRUCK']) || 0);
+
+            monthlyTotalServices.push(Number(row['GRAND TOTAL']) || 0);
+
+            for (let key in row) {
+                let upperKey = key.toUpperCase();
+                if (upperKey.includes("1ST DISTRICT")) { total1st += Number(row[key]) || 0; }
+                if (upperKey.includes("2ND DISTRICT")) { total2nd += Number(row[key]) || 0; }
+                if (upperKey.includes("3RD DISTRICT")) { total3rd += Number(row[key]) || 0; }
+                if (upperKey.includes("OUTSIDE")) { totalOutside += Number(row[key]) || 0; }
+            }
+        }
+    });
+
+    document.getElementById('kpi-1st').innerText = total1st;
+    document.getElementById('kpi-2nd').innerText = total2nd;
+    document.getElementById('kpi-3rd').innerText = total3rd;
+    document.getElementById('kpi-outside').innerText = totalOutside;
+
+    drawDonutChart('monthlyPieChart', labels, monthlyTotalServices);
+    drawHorizontalBar('vehicularChart', labels, 'Vehicular Accident', vehicular, '#2563eb');
+    drawHorizontalBar('roadsideChart', labels, 'Roadside Assistance', roadside, '#2563eb');
+    drawHorizontalBar('patientChart', labels, 'Patient Transport', patient, '#2563eb');
+    drawHorizontalBar('medicalChart', labels, 'Medical', medical, '#2563eb');
+    drawHorizontalBar('standbyChart', labels, 'Standby Medic, Marshal & VIP', standby, '#2563eb');
+    drawCombinedBarChart('combinedChart', labels, others, clearing, firetruck, hauling, ledvan);
+}
+
+// ----------------------------------------------------
+// CHART GENERATORS
+// ----------------------------------------------------
+const pieColorPalette = ['#e11d48', '#06b6d4', '#2563eb', '#ea580c', '#16a34a', '#9333ea', '#f43f5e', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#d946ef', '#f97316', '#14b8a6', '#6366f1'];
+
+function drawInteractiveDonutChart(canvasId, labels, dataArr) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    if(docPieChartInstance) docPieChartInstance.destroy();
+    
+    docPieChartInstance = new Chart(ctx, {
         type: 'doughnut',
-        data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 1, borderColor: '#fff' }] },
+        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: pieColorPalette, borderWidth: 1, borderColor: '#ffffff', hoverOffset: 8 }] },
         options: {
             responsive: true, maintainAspectRatio: false, cutout: '55%',
-            onClick: (e, elements) => {
-                if (elements.length > 0) {
-                    const idx = elements[0].index;
-                    const cat = docPieInstance.data.labels[idx];
-                    if (detailDataMap[cat] && Object.keys(detailDataMap[cat]).length > 1) {
-                        const subData = Object.entries(detailDataMap[cat]).sort((a,b) => b[1]-a[1]);
-                        docPieInstance.data.labels = subData.map(x => x[0]);
-                        docPieInstance.data.datasets[0].data = subData.map(x => x[1]);
-                        docPieInstance.update();
+            onClick: (event, elements, chart) => {
+                if (elements[0]) {
+                    const index = elements[0].index;
+                    const label = chart.data.labels[index];
+                    
+                    if (detailedPieData[label] && Object.keys(detailedPieData[label]).length > 1 && document.getElementById('pieBackButton').style.display !== 'block') {
+                        let subData = detailedPieData[label];
+                        let sortedSub = Object.keys(subData).map(key => ({ l: key, v: subData[key] })).sort((a, b) => b.v - a.v);
+                        
+                        chart.data.labels = sortedSub.map(i => i.l);
+                        chart.data.datasets[0].data = sortedSub.map(i => i.v);
+                        chart.update(); 
+
+                        document.getElementById('pieChartTitle').innerText = 'Breakdown: ' + label;
                         document.getElementById('pieBackButton').style.display = 'block';
-                        document.getElementById('pieChartTitle').innerText = 'Breakdown: ' + cat;
-                        updateLegend(subData.map(x => x[0]), subData.map(x => x[1]), colors);
+                        updateCustomLegend(chart.data.labels, chart.data.datasets[0].data);
                     }
                 }
             },
             plugins: {
                 legend: { display: false },
                 datalabels: {
-                    color: '#fff', font: { weight: '700', size: 10 },
-                    formatter: (v, ctx) => {
-                        let sum = ctx.chart.data.datasets[0].data.reduce((a,b) => a+b, 0);
-                        return ((v*100)/sum).toFixed(1) + '%';
+                    color: '#ffffff', font: { weight: '700', family: 'Inter', size: 10 },
+                    formatter: (value, context) => {
+                        let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                        let percent = ((value * 100) / sum).toFixed(1);
+                        return percent > 4 ? percent + '%' : ''; 
                     }
                 }
             }
         }
     });
-
-    updateLegend(labels, data, colors);
+    updateCustomLegend(labels, dataArr);
 }
 
-// Function to update the custom side-legend with animation
-function updateLegend(labels, data, colors) {
-    const legendEl = document.getElementById('customLegend');
-    legendEl.innerHTML = '';
-    labels.forEach((label, i) => {
-        const item = document.createElement('div');
-        item.className = 'legend-item';
-        item.innerHTML = `
-            <div class="legend-color" style="background:${colors[i % colors.length]}"></div>
-            <div class="legend-text">${label}</div>
-            <div class="legend-val">${data[i]}</div>
+function updateCustomLegend(labels, data) {
+    const legendContainer = document.getElementById('customLegend');
+    legendContainer.innerHTML = '';
+    labels.forEach((label, index) => {
+        let color = pieColorPalette[index % pieColorPalette.length];
+        legendContainer.innerHTML += `
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: ${color}"></div>
+                <div class="legend-text" title="${label}">${label}</div>
+                <div class="legend-val">${data[index]}</div>
+            </div>
         `;
-        legendEl.appendChild(item);
     });
 }
 
-// Reset Drill-down
-document.getElementById('pieBackButton').addEventListener('click', function() {
-    docPieInstance.data.labels = mainViewLabels;
-    docPieInstance.data.datasets[0].data = mainViewData;
-    docPieInstance.update();
-    this.style.display = 'none';
-    document.getElementById('pieChartTitle').innerText = 'Received Request from PDRRM Office:';
-    updateLegend(mainViewLabels, mainViewData, ['#2563eb', '#06b6d4', '#e11d48', '#ea580c', '#16a34a', '#9333ea', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6']);
-});
-
-// Assets panel chart logic (Simplified for copy-paste)
-function processOps(data) {
-    let t1=0, t2=0, t3=0, to=0;
-    const months = [], veh = [];
-    data.forEach(r => {
-        if(r['MONTH']) {
-            months.push(r['MONTH']);
-            veh.push(Number(r['VEHICULAR ACCIDENT']) || 0);
-            t1 += Number(r['# 1ST DISTRICT (TOTAL NO.)']) || 0;
-            t2 += Number(r['# 2ND DISTRICT (TOTAL NO.)']) || 0;
-            t3 += Number(r['# 3RD DISTRICT (TOTAL NO.)']) || 0;
-            to += Number(r['OUTSIDE TARLAC PROVINCE (TOTAL NO.)']) || 0;
-        }
-    });
-    document.getElementById('kpi-1st').innerText = t1;
-    document.getElementById('kpi-2nd').innerText = t2;
-    document.getElementById('kpi-3rd').innerText = t3;
-    document.getElementById('kpi-outside').innerText = to;
-    
-    drawBar('vehicularChart', months, 'Vehicular Accidents', veh);
-    // Add other charts as needed...
-}
-
-function drawBar(id, labels, label, data) {
-    const ctx = document.getElementById(id).getContext('2d');
-    new Chart(ctx, {
-        type: 'bar',
-        data: { labels, datasets: [{ label, data, backgroundColor: '#2563eb', maxBarThickness: 15 }] },
-        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { grid: { display: false } }, y: { grid: { display: false } } } }
-    });
-}
-
-function drawLine(id, labels, data) {
-    const ctx = document.getElementById(id).getContext('2d');
+function drawLineChart(canvasId, labels, dataArr) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
     new Chart(ctx, {
         type: 'line',
-        data: { labels, datasets: [{ data, borderColor: '#2563eb', tension: 0.3, pointRadius: 2 }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        data: { labels: labels, datasets: [{ label: 'Received (OFFICE)', data: dataArr, borderColor: '#2563eb', backgroundColor: '#2563eb', borderWidth: 2, pointRadius: 3, tension: 0.1 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { datalabels: { display: false }, legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 10 } } }, y: { grid: { color: '#e2e8f0' }, border: { dash: [4, 4] }, ticks: { font: { family: 'Inter', size: 10 } } } } }
+    });
+}
+
+function drawDonutChart(canvasId, labels, dataArr) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: ['#2563eb', '#06b6d4', '#e11d48', '#ea580c', '#16a34a', '#9333ea'], borderWidth: 2, borderColor: '#ffffff' }] },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '65%', layout: { padding: 0 }, plugins: { legend: { display: false }, datalabels: { color: '#ffffff', font: { weight: '600', family: 'Inter', size: 9 }, formatter: (value, context) => { let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); if (sum === 0) return ''; return ((value * 100) / sum).toFixed(1) + '%'; } } } }
+    });
+}
+
+const commonChartOptions = {
+    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+    plugins: { datalabels: { display: false }, legend: { position: 'top', labels: { boxWidth: 10, usePointStyle: true, font: { family: 'Inter', size: 10 } } } },
+    scales: { x: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } }, y: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } } },
+    elements: { bar: { borderRadius: 3 } } 
+};
+
+function drawHorizontalBar(canvasId, labels, labelText, dataArr, color) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [{ label: labelText, data: dataArr, backgroundColor: color, maxBarThickness: 20 }] }, options: commonChartOptions });
+}
+
+function drawCombinedBarChart(canvasId, labels, others, clearing, firetruck, hauling, ledvan) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                { label: 'OTHERS', data: others, backgroundColor: '#2563eb', maxBarThickness: 20 },
+                { label: 'CLEARING OPE...', data: clearing, backgroundColor: '#06b6d4', maxBarThickness: 20 },
+                { label: 'FIRETRUCK', data: firetruck, backgroundColor: '#e11d48', maxBarThickness: 20 },
+                { label: 'HAULING', data: hauling, backgroundColor: '#ea580c', maxBarThickness: 20 },
+                { label: 'LEDVAN TRUCK', data: ledvan, backgroundColor: '#eab308', maxBarThickness: 20 }
+            ]
+        },
+        options: commonChartOptions
     });
 }
 
