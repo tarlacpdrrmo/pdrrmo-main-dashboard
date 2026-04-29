@@ -15,7 +15,6 @@
         <!-- Sidebar Navigation -->
         <nav class="sidebar">
             
-            <!-- FIXED: Swapped Logo Order -->
             <div class="sidebar-logo-container">
                 <div class="sidebar-logo-clean">
                     <img src="tarlac_official_seal.png" alt="Tarlac Official Seal">
@@ -93,11 +92,31 @@
             <section id="assets" class="panel">
                 <h3 class="panel-heading">Assets and Personnel Dispatched</h3>
                 <div class="assets-layout">
+                    
                     <div class="kpi-column">
-                        <div class="card kpi-card"><h4>1st District (Total No.)</h4><p class="big-number" id="kpi-1st">0</p></div>
-                        <div class="card kpi-card"><h4>2nd District (Total No.)</h4><p class="big-number red" id="kpi-2nd">0</p></div>
-                        <div class="card kpi-card"><h4>3rd District (Total No.)</h4><p class="big-number" id="kpi-3rd">0</p></div>
-                        <div class="card kpi-card"><h4>Outside Tarlac Province</h4><p class="big-number" id="kpi-outside">0</p></div>
+                        <div class="card kpi-card">
+                            <h4>1st District (Total No.)</h4>
+                            <p class="big-number" id="kpi-1st">0</p>
+                            <p class="kpi-percent" id="pct-1st">0% of Grand Total</p>
+                        </div>
+                        <div class="card kpi-card">
+                            <h4>2nd District (Total No.)</h4>
+                            <p class="big-number" id="kpi-2nd">0</p>
+                            <p class="kpi-percent" id="pct-2nd">0% of Grand Total</p>
+                        </div>
+                        <div class="card kpi-card">
+                            <h4>3rd District (Total No.)</h4>
+                            <p class="big-number" id="kpi-3rd">0</p>
+                            <p class="kpi-percent" id="pct-3rd">0% of Grand Total</p>
+                        </div>
+                        
+                        <!-- 🔴 RED TEXT ONLY ON OUTSIDE TARLAC 🔴 -->
+                        <div class="card kpi-card outside-card">
+                            <h4>Outside Tarlac Province</h4>
+                            <p class="big-number red" id="kpi-outside">0</p>
+                            <p class="kpi-percent red-pct" id="pct-outside">0% of Grand Total</p>
+                        </div>
+                        
                         <div class="card pie-card">
                             <h4>Total Services Catered</h4>
                             <div class="pie-wrapper"><canvas id="monthlyPieChart"></canvas></div>
