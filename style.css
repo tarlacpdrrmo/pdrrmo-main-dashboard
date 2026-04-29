@@ -41,6 +41,10 @@ body { background-color: #f1f5f9; color: #334155; overflow: hidden; font-size: 1
 .btn-back { display: none; padding: 6px 12px; font-size: 0.75rem; cursor: pointer; border: 1px solid #cbd5e1; border-radius: 4px; background: #f8fafc; color: #334155; font-weight: 700; transition: 0.2s; }
 .btn-back:hover { background-color: #e2e8f0; }
 
+/* Filter Dropdown Styling */
+.chart-filter { padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 0.75rem; color: #334155; background: #fff; cursor: pointer; font-weight: 600; outline: none; transition: 0.2s; }
+.chart-filter:hover { border-color: #94a3b8; }
+
 .interactive-pie-container { display: flex; gap: 20px; height: 320px; align-items: stretch; }
 .doc-pie-wrapper { flex: 1; height: 100%; position: relative; cursor: pointer; }
 .scrollable-legend { width: 220px; overflow-y: auto; padding-right: 10px; font-size: 0.75rem; border-left: 1px solid #f1f5f9; padding-left: 10px; }
