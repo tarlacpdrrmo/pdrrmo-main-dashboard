@@ -7,7 +7,12 @@ const sheetUrls = {
     volunteers: ""
 };
 
-// 2. Navigation Logic (Smooth Scroll)
+// Global variables to hold pie chart states for drill-down functionality
+let docPieChartInstance = null;
+let mainPieLabels = [];
+let mainPieData = [];
+let detailedPieData = {};
+
 function scrollToSection(panelId) {
     const section = document.getElementById(panelId);
     if(section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -29,63 +34,72 @@ document.addEventListener("DOMContentLoaded", function() {
     }, { threshold: 0.3 }); 
 
     panels.forEach(panel => observer.observe(panel));
+
+    // Back Button Logic for Drill-down Pie Chart
+    document.getElementById('pieBackButton').addEventListener('click', function() {
+        if(docPieChartInstance) {
+            docPieChartInstance.data.labels = mainPieLabels;
+            docPieChartInstance.data.datasets[0].data = mainPieData;
+            docPieChartInstance.update();
+        }
+        this.style.display = 'none';
+        document.getElementById('pieChartTitle').innerText = 'Received Request from PDRRM Office:';
+    });
 });
 
-// 3. Fetch Data Logic
 function loadAllData() {
-    // Fetch Operations
     if(sheetUrls.operations.includes("http")) {
         Papa.parse(sheetUrls.operations, { download: true, header: true, skipEmptyLines: true, complete: function(results) { processOperationsData(results.data); } });
     }
-    // Fetch Documents
     if(sheetUrls.documents.includes("http")) {
         Papa.parse(sheetUrls.documents, { download: true, header: true, skipEmptyLines: true, complete: function(results) { processDocumentsData(results.data); } });
     }
 }
 
-// 4. Process DOCUMENTS Data (UPDATED WITH SMART KEY & SORTING)
+// 4. Process DOCUMENTS Data (Includes Math Fix & Interactive Grouping)
 function processDocumentsData(data) {
     let totalReq = 0, totalAction = 0, catered = 0, invAttended = 0;
     let notCatered = 0, others = 0, invNotAttended = 0, cancelled = 0, noAction = 0;
 
-    // Object to hold our grouped slices
     let sourceMap = {};
+    detailedPieData = {};
     let totalsCaptured = false;
 
     data.forEach(row => {
-        let office = row['Received From Office'] || row['RECEIVED FROM OFFICE'];
+        let rawOffice = row['Received From Office'] || row['RECEIVED FROM OFFICE'];
         let reqs = Number(row['Total Requests'] || row['TOTAL REQUESTS']) || 0;
 
-        if (office && reqs > 0) {
-            // FIX 1: Manually add up the Total Requests column to bypass the sheet's 314 error
+        // FIX 1: Math calculation - Add every valid number directly to bypass the sheet's 314 error
+        if (reqs > 0) {
             totalReq += reqs;
-
-            // FIX 2: Smart Grouping Logic
-            let upperOffice = office.toUpperCase();
-            let displayOffice = office;
-
-            // Group variations into clean categories
-            if (upperOffice.includes('PGT') || upperOffice.includes('PROVINCIAL GOV')) {
-                displayOffice = 'PGT Offices (Consolidated)';
-            } else if (upperOffice.includes('3RD MECH') || upperOffice.includes('MECHANIZED INFANTRY')) {
-                displayOffice = '3rd Mechanized Infantry (Consolidated)';
-            } else if (upperOffice.includes('522ND')) {
-                displayOffice = '522nd Engineer Battalion (Consolidated)';
-            } else if (upperOffice.includes('BFP')) {
-                displayOffice = 'BFP Tarlac';
-            } else if (upperOffice === 'N/A' || upperOffice.includes('PRIVATE')) {
-                displayOffice = 'N/A (Private Individuals)';
-            }
-
-            // Add the request count to the specific grouped category
-            if (sourceMap[displayOffice]) {
-                sourceMap[displayOffice] += reqs;
-            } else {
-                sourceMap[displayOffice] = reqs;
-            }
         }
 
-        // Extract the remaining KPIs from the summary columns (only do this once)
+        if (rawOffice && reqs > 0) {
+            // FIX 2: Smart Grouping Logic
+            let upperOffice = rawOffice.toUpperCase();
+            let parentCategory = rawOffice;
+
+            if (upperOffice.includes('PGT') || upperOffice.includes('PROVINCIAL GOV')) {
+                parentCategory = 'PGT Offices (Consolidated)';
+            } else if (upperOffice.includes('3RD MECH') || upperOffice.includes('MECHANIZED INFANTRY')) {
+                parentCategory = '3rd Mechanized Infantry (Consolidated)';
+            } else if (upperOffice.includes('522ND')) {
+                parentCategory = '522nd Engineer Battalion (Consolidated)';
+            } else if (upperOffice.includes('BFP')) {
+                parentCategory = 'BFP Tarlac (Consolidated)';
+            } else if (upperOffice === 'N/A' || upperOffice.includes('PRIVATE')) {
+                parentCategory = 'N/A (Private Individuals)';
+            }
+
+            // Aggregate Main slices
+            sourceMap[parentCategory] = (sourceMap[parentCategory] || 0) + reqs;
+
+            // Aggregate Hidden Drill-down data
+            if (!detailedPieData[parentCategory]) detailedPieData[parentCategory] = {};
+            detailedPieData[parentCategory][rawOffice] = (detailedPieData[parentCategory][rawOffice] || 0) + reqs;
+        }
+
+        // Extract KPIs from summary columns (runs only once)
         if (!totalsCaptured && (row['TOTAL ACTION TAKEN (OVERALL)'] || row['TOTAL REQUEST CATERED'])) {
             totalAction = Number(row['TOTAL ACTION TAKEN (OVERALL)']) || 0;
             catered = Number(row['TOTAL REQUEST CATERED']) || 0;
@@ -99,8 +113,7 @@ function processDocumentsData(data) {
         }
     });
 
-    // Update KPIs on screen
-    document.getElementById('doc-kpi-request').innerText = totalReq; // This will now accurately show 321
+    document.getElementById('doc-kpi-request').innerText = totalReq; // Will now equal 321
     document.getElementById('doc-kpi-action').innerText = totalAction;
     document.getElementById('doc-kpi-catered').innerText = catered;
     document.getElementById('doc-kpi-inv-att').innerText = invAttended;
@@ -110,24 +123,24 @@ function processDocumentsData(data) {
     document.getElementById('doc-kpi-cancelled').innerText = cancelled;
     document.getElementById('doc-kpi-no-action').innerText = noAction;
 
-    // FIX 3: Convert the map to an array and sort it descending
+    // Convert map to array and sort descending so largest slices are first
     let sortedSources = Object.keys(sourceMap).map(key => ({ label: key, value: sourceMap[key] }));
     sortedSources.sort((a, b) => b.value - a.value);
 
-    // Split back into labels and data arrays for Chart.js
-    const sourceLabels = sortedSources.map(item => item.label);
-    const sourceData = sortedSources.map(item => item.value);
+    // Save global state for back button functionality
+    mainPieLabels = sortedSources.map(item => item.label);
+    mainPieData = sortedSources.map(item => item.value);
 
-    // Draw the big pie chart
-    drawBigDonutChart('docSourcePieChart', sourceLabels, sourceData);
+    // Draw the Interactive Pie Chart
+    drawInteractiveDonutChart('docSourcePieChart', mainPieLabels, mainPieData);
 
-    // Placeholder data for the Line chart
+    // Dummy data for Line Chart
     const dummyDates = ['Jan 12', 'Jan 23', 'Feb 3', 'Feb 14', 'Feb 25', 'Mar 8', 'Mar 19', 'Mar 30', 'Apr 10', 'Apr 21'];
     const dummyLineData = [2, 5, 1, 9, 3, 12, 2, 6, 1, 5];
     drawLineChart('docDateLineChart', dummyDates, dummyLineData);
 }
 
-// 5. Process OPERATIONS Data
+// 5. Process OPERATIONS Data (Unchanged)
 function processOperationsData(data) {
     const labels = [];
     const vehicular = [], roadside = [], patient = [], medical = [], standby = [];
@@ -179,43 +192,74 @@ const commonChartOptions = {
     elements: { bar: { borderRadius: 3 } } 
 };
 
-function drawLineChart(canvasId, labels, dataArr) {
+// DRILL-DOWN INTERACTIVE PIE CHART
+function drawInteractiveDonutChart(canvasId, labels, dataArr) {
     const ctx = document.getElementById(canvasId).getContext('2d');
-    new Chart(ctx, {
-        type: 'line',
-        data: { labels: labels, datasets: [{ label: 'Received (OFFICE)', data: dataArr, borderColor: '#2563eb', backgroundColor: '#2563eb', borderWidth: 2, pointRadius: 3, tension: 0.1 }] },
+    if(docPieChartInstance) docPieChartInstance.destroy(); // Clear previous rendering
+
+    const colorPalette = ['#e11d48', '#06b6d4', '#2563eb', '#ea580c', '#16a34a', '#9333ea', '#f43f5e', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#d946ef', '#f97316', '#14b8a6', '#6366f1'];
+    
+    docPieChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: colorPalette, borderWidth: 1, borderColor: '#ffffff', hoverOffset: 10 }] },
         options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { datalabels: { display: false }, legend: { display: false } },
-            scales: {
-                x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 10 } } },
-                y: { grid: { color: '#e2e8f0' }, border: { dash: [4, 4] }, ticks: { font: { family: 'Inter', size: 10 } } }
+            responsive: true, maintainAspectRatio: false, cutout: '55%',
+            onClick: (event, elements, chart) => {
+                // If a user clicks a slice
+                if (elements[0]) {
+                    const index = elements[0].index;
+                    const label = chart.data.labels[index];
+                    
+                    // Check if the clicked slice has a breakdown available and we are not already looking at it
+                    if (detailedPieData[label] && Object.keys(detailedPieData[label]).length > 1 && document.getElementById('pieBackButton').style.display !== 'block') {
+                        let subData = detailedPieData[label];
+                        
+                        // Sort breakdown items
+                        let sortedSub = Object.keys(subData).map(key => ({ l: key, v: subData[key] })).sort((a, b) => b.v - a.v);
+                        
+                        chart.data.labels = sortedSub.map(i => i.l);
+                        chart.data.datasets[0].data = sortedSub.map(i => i.v);
+                        chart.update(); // Animates the zoom automatically
+
+                        // Show Back button and update title
+                        document.getElementById('pieChartTitle').innerText = 'Breakdown: ' + label;
+                        document.getElementById('pieBackButton').style.display = 'block';
+                    }
+                }
+            },
+            plugins: {
+                legend: { position: 'right', labels: { boxWidth: 10, usePointStyle: true, font: { family: 'Inter', size: 10 } } },
+                datalabels: {
+                    color: '#ffffff', font: { weight: '700', family: 'Inter', size: 10 },
+                    formatter: (value, context) => {
+                        let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                        let percent = ((value * 100) / sum).toFixed(1);
+                        return percent > 4 ? percent + '%' : ''; // Only display label if it fits cleanly
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let suffix = '';
+                            // Tell the user they can click it if they are on the main view
+                            if (document.getElementById('pieBackButton').style.display !== 'block' && detailedPieData[context.label] && Object.keys(detailedPieData[context.label]).length > 1) {
+                                suffix = ' (Click to zoom & view breakdown)';
+                            }
+                            return ' ' + context.label + ': ' + context.raw + ' requests' + suffix;
+                        }
+                    }
+                }
             }
         }
     });
 }
 
-function drawBigDonutChart(canvasId, labels, dataArr) {
+function drawLineChart(canvasId, labels, dataArr) {
     const ctx = document.getElementById(canvasId).getContext('2d');
-    const colorPalette = ['#e11d48', '#06b6d4', '#2563eb', '#ea580c', '#16a34a', '#9333ea', '#f43f5e', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#d946ef', '#f97316', '#14b8a6', '#6366f1'];
-    
     new Chart(ctx, {
-        type: 'doughnut',
-        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: colorPalette, borderWidth: 1, borderColor: '#ffffff' }] },
-        options: {
-            responsive: true, maintainAspectRatio: false, cutout: '60%',
-            plugins: {
-                legend: { position: 'right', labels: { boxWidth: 10, usePointStyle: true, font: { family: 'Inter', size: 11 } } },
-                datalabels: {
-                    color: '#ffffff', font: { weight: '600', family: 'Inter', size: 10 },
-                    formatter: (value, context) => {
-                        let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                        let percent = ((value * 100) / sum).toFixed(1);
-                        return percent > 4 ? percent + '%' : ''; // Hides tiny text to keep it clean
-                    }
-                }
-            }
-        }
+        type: 'line',
+        data: { labels: labels, datasets: [{ label: 'Received (OFFICE)', data: dataArr, borderColor: '#2563eb', backgroundColor: '#2563eb', borderWidth: 2, pointRadius: 3, tension: 0.1 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { datalabels: { display: false }, legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 10 } } }, y: { grid: { color: '#e2e8f0' }, border: { dash: [4, 4] }, ticks: { font: { family: 'Inter', size: 10 } } } } }
     });
 }
 
@@ -224,19 +268,7 @@ function drawDonutChart(canvasId, labels, dataArr) {
     new Chart(ctx, {
         type: 'doughnut',
         data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: ['#2563eb', '#06b6d4', '#e11d48', '#ea580c', '#16a34a', '#9333ea'], borderWidth: 2, borderColor: '#ffffff' }] },
-        options: {
-            responsive: true, maintainAspectRatio: false, cutout: '65%', layout: { padding: 0 },
-            plugins: {
-                legend: { display: false },
-                datalabels: {
-                    color: '#ffffff', font: { weight: '600', family: 'Inter', size: 9 },
-                    formatter: (value, context) => {
-                        let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                        if (sum === 0) return ''; return ((value * 100) / sum).toFixed(1) + '%';
-                    }
-                }
-            }
-        }
+        options: { responsive: true, maintainAspectRatio: false, cutout: '65%', layout: { padding: 0 }, plugins: { legend: { display: false }, datalabels: { color: '#ffffff', font: { weight: '600', family: 'Inter', size: 9 }, formatter: (value, context) => { let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); if (sum === 0) return ''; return ((value * 100) / sum).toFixed(1) + '%'; } } } }
     });
 }
 
