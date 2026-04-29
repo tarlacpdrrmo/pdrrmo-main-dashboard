@@ -8,6 +8,7 @@ const sheetUrls = {
 };
 
 let docPieChartInstance = null;
+let docLineChartInstance = null;
 let mainPieLabels = [];
 let mainPieData = [];
 let detailedPieData = {};
@@ -36,7 +37,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     panels.forEach(panel => observer.observe(panel));
 
-    // Back Button Logic
+    // Back Button Logic for Pie Chart
     document.getElementById('pieBackButton').addEventListener('click', function() {
         if(docPieChartInstance) {
             docPieChartInstance.data.labels = mainPieLabels;
@@ -69,24 +70,37 @@ function loadAllData() {
     }
 }
 
-// 3. Process DOCUMENTS Data (WITH SMART SCRUBBER DICTIONARY)
+// 3. Process DOCUMENTS Data (Includes Live Date Tracking & Smooth Line Chart)
 function processDocumentsData(data) {
     let totalReq = 0, totalAction = 0, catered = 0, invAttended = 0;
     let notCatered = 0, others = 0, invNotAttended = 0, cancelled = 0, noAction = 0;
 
     let sourceMap = {};
+    let dateMap = new Map(); // Uses a Map to preserve chronological sheet order for the Line Chart
     detailedPieData = {};
     let totalsCaptured = false;
 
     data.forEach(row => {
         let rawOffice = row['Received From Office'] || row['RECEIVED FROM OFFICE'];
-        let reqs = Number(row['Total Requests'] || row['TOTAL REQUESTS']) || 0;
+        let reqs = Number(row['Total Requests'] || row['TOTAL REQUESTS'] || row['Column M']) || 0;
+        let dateVal = row['Date Received'] || row['DATE RECEIVED'] || row['Date'] || ''; // Finds your Date column
 
+        // ACCURATE TOTAL FIX
+        if (reqs > 0) {
+            totalReq += reqs; 
+        }
+
+        // LINE CHART DATA AGGREGATION: Maps Total Requests (Column M) to Date Received
+        if (dateVal && reqs > 0) {
+            dateMap.set(dateVal, (dateMap.get(dateVal) || 0) + reqs);
+        }
+
+        // PIE CHART LOGIC
         if (rawOffice && reqs > 0) {
             let upperOffice = rawOffice.toUpperCase();
-            let parentCategory = rawOffice; // Defaults to the raw name if no keyword matches
+            let parentCategory = rawOffice; 
 
-            // SMART SCRUBBER DICTIONARY: Scans for keywords and groups them automatically
+            // SMART SCRUBBER DICTIONARY
             const scrubRules = [
                 { category: 'PGT & PGO Offices', keywords: ['PGT', 'PROVINCIAL GOV', 'PGO', 'PGSO', 'BAC'] },
                 { category: '3rd Mechanized Infantry', keywords: ['3RD MECH', 'MECHANIZED INFANTRY', '31ST MECH'] },
@@ -101,7 +115,6 @@ function processDocumentsData(data) {
                 { category: 'Private Individuals', keywords: ['N/A', 'PRIVATE', 'GENERAL PUBLIC'] }
             ];
 
-            // Run the scrubber against the raw name
             for (let rule of scrubRules) {
                 if (rule.keywords.some(keyword => upperOffice.includes(keyword))) {
                     parentCategory = rule.category;
@@ -114,8 +127,8 @@ function processDocumentsData(data) {
             detailedPieData[parentCategory][rawOffice] = (detailedPieData[parentCategory][rawOffice] || 0) + reqs;
         }
 
-        if (!totalsCaptured && (row['TOTAL RECEIVED FROM OFFICE'] || row['TOTAL ACTION TAKEN (OVERALL)'] || row['TOTAL REQUEST CATERED'])) {
-            totalReq = Number(row['TOTAL RECEIVED FROM OFFICE'] || row['TOTAL RECEIVED']) || 0;
+        // Capture other KPIs
+        if (!totalsCaptured && (row['TOTAL ACTION TAKEN (OVERALL)'] || row['TOTAL REQUEST CATERED'])) {
             totalAction = Number(row['TOTAL ACTION TAKEN (OVERALL)']) || 0;
             catered = Number(row['TOTAL REQUEST CATERED']) || 0;
             invAttended = Number(row['TOTAL INVITATION ATTENDED']) || 0;
@@ -128,6 +141,7 @@ function processDocumentsData(data) {
         }
     });
 
+    // Push KPIs to dashboard
     document.getElementById('doc-kpi-request').innerText = totalReq; 
     document.getElementById('doc-kpi-action').innerText = totalAction;
     document.getElementById('doc-kpi-catered').innerText = catered;
@@ -138,17 +152,18 @@ function processDocumentsData(data) {
     document.getElementById('doc-kpi-cancelled').innerText = cancelled;
     document.getElementById('doc-kpi-no-action').innerText = noAction;
 
+    // Build Pie Chart
     let sortedSources = Object.keys(sourceMap).map(key => ({ label: key, value: sourceMap[key] }));
     sortedSources.sort((a, b) => b.value - a.value);
 
     mainPieLabels = sortedSources.map(item => item.label);
     mainPieData = sortedSources.map(item => item.value);
-
     drawInteractiveDonutChart('docSourcePieChart', mainPieLabels, mainPieData);
 
-    const dummyDates = ['Jan 12', 'Jan 23', 'Feb 3', 'Feb 14', 'Feb 25', 'Mar 8', 'Mar 19', 'Mar 30', 'Apr 10', 'Apr 21'];
-    const dummyLineData = [2, 5, 1, 9, 3, 12, 2, 6, 1, 5];
-    drawLineChart('docDateLineChart', dummyDates, dummyLineData);
+    // Build Live Line Chart Arrays from the Map
+    const lineLabels = Array.from(dateMap.keys());
+    const lineDataValues = Array.from(dateMap.values());
+    drawLineChart('docDateLineChart', lineLabels, lineDataValues);
 }
 
 function processOperationsData(data) {
@@ -278,10 +293,57 @@ function updateCustomLegend(labels, data) {
 
 function drawLineChart(canvasId, labels, dataArr) {
     const ctx = document.getElementById(canvasId).getContext('2d');
-    new Chart(ctx, {
+    if(docLineChartInstance) docLineChartInstance.destroy();
+
+    // Create a modern gradient fill
+    let gradient = ctx.createLinearGradient(0, 0, 0, 300);
+    gradient.addColorStop(0, 'rgba(37, 99, 235, 0.3)'); // Soft blue fade
+    gradient.addColorStop(1, 'rgba(37, 99, 235, 0.0)'); 
+
+    docLineChartInstance = new Chart(ctx, {
         type: 'line',
-        data: { labels: labels, datasets: [{ label: 'Received (OFFICE)', data: dataArr, borderColor: '#2563eb', backgroundColor: '#2563eb', borderWidth: 2, pointRadius: 3, tension: 0.1 }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { datalabels: { display: false }, legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 10 } } }, y: { grid: { color: '#e2e8f0' }, border: { dash: [4, 4] }, ticks: { font: { family: 'Inter', size: 10 } } } } }
+        data: { 
+            labels: labels, 
+            datasets: [{ 
+                label: 'Requests Received', 
+                data: dataArr, 
+                borderColor: '#2563eb', 
+                backgroundColor: gradient, 
+                borderWidth: 2, 
+                pointRadius: 0, // Hidden until hover for a cleaner look
+                pointHoverRadius: 5,
+                pointBackgroundColor: '#ffffff',
+                pointBorderColor: '#2563eb',
+                pointBorderWidth: 2,
+                tension: 0.4, // Smooths the jagged lines into fluid curves
+                fill: true
+            }] 
+        },
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            animation: {
+                duration: 1500, // Smooth sweep animation on load
+                easing: 'easeInOutQuart'
+            },
+            interaction: { mode: 'index', intersect: false },
+            plugins: { 
+                datalabels: { display: false }, 
+                legend: { display: false },
+                tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.9)', titleFont: { family: 'Inter', size: 12 }, bodyFont: { family: 'Inter', size: 12 }, padding: 10, displayColors: false }
+            }, 
+            scales: { 
+                x: { 
+                    grid: { display: false }, 
+                    ticks: { font: { family: 'Inter', size: 9 }, color: '#64748b', maxTicksLimit: 12 } 
+                }, 
+                y: { 
+                    grid: { color: '#f1f5f9', drawBorder: false }, 
+                    beginAtZero: true,
+                    ticks: { font: { family: 'Inter', size: 10 }, color: '#64748b', stepSize: 2 } 
+                } 
+            } 
+        }
     });
 }
 
@@ -315,7 +377,7 @@ function drawCombinedBarChart(canvasId, labels, others, clearing, firetruck, hau
             datasets: [
                 { label: 'OTHERS', data: others, backgroundColor: '#2563eb', maxBarThickness: 20 },
                 { label: 'CLEARING OPE...', data: clearing, backgroundColor: '#06b6d4', maxBarThickness: 20 },
-                { label: 'FIRETRUCK', data: firetruck, backgroundColor: '#e11d48', maxBarThickness: 20 },
+                { label: 'FIRETRUCK', firetruck, backgroundColor: '#e11d48', maxBarThickness: 20 },
                 { label: 'HAULING', data: hauling, backgroundColor: '#ea580c', maxBarThickness: 20 },
                 { label: 'LEDVAN TRUCK', data: ledvan, backgroundColor: '#eab308', maxBarThickness: 20 }
             ]
