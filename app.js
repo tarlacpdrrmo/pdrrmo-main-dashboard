@@ -49,7 +49,6 @@ document.addEventListener("DOMContentLoaded", function() {
         updateCustomLegend(mainPieLabels, mainPieData);
     });
 
-    // Dropdown Logic for Line Chart Aggregation
     document.getElementById('lineChartFilter').addEventListener('change', function(e) {
         renderLineChartByTimeframe(e.target.value);
     });
@@ -75,7 +74,7 @@ function loadAllData() {
     }
 }
 
-// 3. Process DOCUMENTS Data (FIXED TO EXPLICITLY COUNT COLUMN M)
+// 3. Process DOCUMENTS Data
 function processDocumentsData(data) {
     let totalReq = 0, totalAction = 0, catered = 0, invAttended = 0;
     let notCatered = 0, others = 0, invNotAttended = 0, cancelled = 0, noAction = 0;
@@ -89,34 +88,26 @@ function processDocumentsData(data) {
         let rawOffice = row['Received From Office'] || row['RECEIVED FROM OFFICE'] || '';
         let dateStr = row['Date Received'] || row['DATE RECEIVED'] || row['Date'] || '';
         
-        let keys = Object.keys(row);
-        let reqs = 0;
-
         // 🔴 EXPLICIT COLUMN M OVERRIDE 🔴
-        // First, check the exact 13th column (index 12, which is Column M)
-        if (keys.length > 12 && Number(row[keys[12]]) > 0) {
-            reqs = Number(row[keys[12]]);
-        } else {
-            // Fallback just in case headers were shifted
-            reqs = Number(row['Column M']) || Number(row['COLUMN M']) || Number(row['Total Requests']) || 0;
-        }
+        // Forcing the code to count whatever number is in Column M (or fallback to Total Requests)
+        let reqs = 0;
+        if (row['Column M'] !== undefined) { reqs = Number(row['Column M']); }
+        else if (row['COLUMN M'] !== undefined) { reqs = Number(row['COLUMN M']); }
+        else { reqs = Number(row['Total Requests']) || Number(row['TOTAL REQUESTS']) || 0; }
 
-        // Add valid row count to the master total (Will be exactly 321)
         if (reqs > 0) {
             totalReq += reqs; 
         }
 
-        // Date Aggregation setup
+        // DATE LOGIC (Improved handling for Feb to April data)
         if (dateStr && reqs > 0) {
-            let d = new Date(dateStr);
-            if (!isNaN(d.getTime())) {
-                globalLineData.push({ dateObj: d, count: reqs, timestamp: d.getTime() });
-            } else {
-                globalLineData.push({ rawString: dateStr, count: reqs, timestamp: 0 });
+            let parsedDate = new Date(dateStr);
+            if (!isNaN(parsedDate.getTime())) {
+                globalLineData.push({ dateObj: parsedDate, count: reqs, timestamp: parsedDate.getTime() });
             }
         }
 
-        // Pie Chart setup
+        // PIE CHART LOGIC
         if (rawOffice && reqs > 0) {
             let upperOffice = rawOffice.toUpperCase();
             let parentCategory = rawOffice; 
@@ -147,6 +138,7 @@ function processDocumentsData(data) {
             detailedPieData[parentCategory][rawOffice] = (detailedPieData[parentCategory][rawOffice] || 0) + reqs;
         }
 
+        // OTHER KPIs
         if (!totalsCaptured && (row['TOTAL ACTION TAKEN (OVERALL)'] || row['TOTAL REQUEST CATERED'])) {
             totalAction = Number(row['TOTAL ACTION TAKEN (OVERALL)']) || 0;
             catered = Number(row['TOTAL REQUEST CATERED']) || 0;
@@ -177,33 +169,40 @@ function processDocumentsData(data) {
     mainPieData = sortedSources.map(item => item.value);
 
     drawInteractiveDonutChart('docSourcePieChart', mainPieLabels, mainPieData);
-    renderLineChartByTimeframe('daily');
+
+    // Initial Load defaults to Monthly as requested
+    renderLineChartByTimeframe('monthly');
 }
 
+// 🟢 RESPONSIVE LINE CHART RENDERER 🟢
 function renderLineChartByTimeframe(timeframe) {
     let groupedObj = {};
     
+    // Ensure chronological sorting
     let sortedData = [...globalLineData].sort((a, b) => a.timestamp - b.timestamp);
 
     sortedData.forEach(item => {
         let key = "";
-        if (item.timestamp > 0) {
-            if (timeframe === 'monthly') {
-                key = item.dateObj.toLocaleString('default', { month: 'short', year: 'numeric' });
-            } else if (timeframe === 'yearly') {
-                key = item.dateObj.getFullYear().toString();
-            } else { 
-                key = item.dateObj.toLocaleDateString('default', { month: 'short', day: 'numeric' });
-            }
-        } else {
-            key = item.rawString; 
+        if (timeframe === 'monthly') {
+            key = item.dateObj.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+        } else if (timeframe === 'yearly') {
+            key = item.dateObj.getFullYear().toString();
+        } else { // daily
+            key = item.dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         }
+        
         groupedObj[key] = (groupedObj[key] || 0) + item.count;
     });
 
     const labels = Object.keys(groupedObj);
     const dataValues = Object.values(groupedObj);
-    drawLineChart('docDateLineChart', labels, dataValues);
+    
+    // If no valid dates were found (e.g., if using a summary sheet without dates), push a fallback message
+    if(labels.length === 0) {
+        drawLineChart('docDateLineChart', ['No Date Data Detected in Sheet'], [0]);
+    } else {
+        drawLineChart('docDateLineChart', labels, dataValues);
+    }
 }
 
 
