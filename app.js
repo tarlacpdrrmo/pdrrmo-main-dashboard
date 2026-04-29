@@ -257,7 +257,7 @@ function processDocumentsData(data) {
     mainPieLabels = sortedSources.map(item => item.label);
     mainPieData = sortedSources.map(item => item.value);
 
-    drawInteractiveDonutChart('docSourcePieChart', mainPieLabels, mainPieData); // Keeps Document Tracking Donut untouched
+    drawInteractiveDonutChart('docSourcePieChart', mainPieLabels, mainPieData);
     renderLineChartByTimeframe('daily');
 }
 
@@ -586,7 +586,6 @@ function drawLineChart(canvasId, labels, dataArr) {
     });
 }
 
-// 🟢 UPDATED: Solid Pie Chart with clean animated hover scaling 🟢
 function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     const vibrantColors = ['#2563eb', '#06b6d4', '#e11d48', '#ea580c', '#16a34a', '#9333ea'];
@@ -595,7 +594,7 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
     if(gtEl) gtEl.innerText = grandTotal.toLocaleString();
 
     new Chart(ctx, {
-        type: 'pie', // Changed from doughnut to pie
+        type: 'pie', 
         data: { 
             labels: labels, 
             datasets: [{ 
@@ -603,7 +602,7 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
                 backgroundColor: vibrantColors, 
                 borderWidth: 2, 
                 borderColor: '#ffffff',
-                hoverOffset: 12 // Smooth, clean scale effect on hover 
+                hoverOffset: 12 
             }] 
         },
         options: { 
@@ -618,16 +617,22 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
             },
             plugins: { 
                 legend: { display: false }, 
+                
+                // 🟢 UPDATED: Smaller font and hidden labels for cramped slices 🟢
                 datalabels: { 
                     color: '#ffffff', 
-                    font: { weight: '700', family: 'Inter', size: 12 }, 
+                    font: { weight: '800', family: 'Inter', size: 9 }, 
                     anchor: 'center',
                     align: 'center',
                     formatter: (value, context) => { 
                         let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); 
                         if (sum === 0) return ''; 
-                        let pct = ((value * 100) / sum).toFixed(1);
-                        return pct > 5 ? pct + '%' : ''; 
+                        
+                        let pctStr = ((value * 100) / sum).toFixed(1);
+                        let pctFloat = parseFloat(pctStr);
+                        
+                        // Only show the percentage text if the slice is 8% or larger
+                        return pctFloat >= 8 ? pctStr + '%' : ''; 
                     } 
                 },
                 tooltip: {
