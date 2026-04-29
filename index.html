@@ -110,7 +110,6 @@
                             <p class="kpi-percent" id="pct-3rd">0% of Grand Total</p>
                         </div>
                         
-                        <!-- 🔴 RED TEXT ONLY ON OUTSIDE TARLAC 🔴 -->
                         <div class="card kpi-card outside-card">
                             <h4>Outside Tarlac Province</h4>
                             <p class="big-number red" id="kpi-outside">0</p>
@@ -123,13 +122,32 @@
                         </div>
                     </div>
                     
+                    <!-- 🟢 UPDATED: Layout modified to hold trend headers 🟢 -->
                     <div class="charts-grid">
-                        <div class="card chart-card"><canvas id="vehicularChart"></canvas></div>
-                        <div class="card chart-card"><canvas id="roadsideChart"></canvas></div>
-                        <div class="card chart-card"><canvas id="patientChart"></canvas></div>
-                        <div class="card chart-card"><canvas id="medicalChart"></canvas></div>
-                        <div class="card chart-card"><canvas id="standbyChart"></canvas></div>
-                        <div class="card chart-card"><canvas id="combinedChart"></canvas></div>
+                        <div class="card chart-card flex-col">
+                            <div class="chart-trend-header" id="trend-vehicular"></div>
+                            <div class="chart-render-area"><canvas id="vehicularChart"></canvas></div>
+                        </div>
+                        <div class="card chart-card flex-col">
+                            <div class="chart-trend-header" id="trend-roadside"></div>
+                            <div class="chart-render-area"><canvas id="roadsideChart"></canvas></div>
+                        </div>
+                        <div class="card chart-card flex-col">
+                            <div class="chart-trend-header" id="trend-patient"></div>
+                            <div class="chart-render-area"><canvas id="patientChart"></canvas></div>
+                        </div>
+                        <div class="card chart-card flex-col">
+                            <div class="chart-trend-header" id="trend-medical"></div>
+                            <div class="chart-render-area"><canvas id="medicalChart"></canvas></div>
+                        </div>
+                        <div class="card chart-card flex-col">
+                            <div class="chart-trend-header" id="trend-standby"></div>
+                            <div class="chart-render-area"><canvas id="standbyChart"></canvas></div>
+                        </div>
+                        <div class="card chart-card flex-col">
+                            <div class="chart-trend-header" id="trend-combined"></div>
+                            <div class="chart-render-area"><canvas id="combinedChart"></canvas></div>
+                        </div>
                     </div>
                 </div>
             </section>
