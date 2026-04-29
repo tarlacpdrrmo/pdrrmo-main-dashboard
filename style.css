@@ -264,7 +264,6 @@ body {
     transform: translateY(-4px); 
 }
 
-/* 🟢 NEW: Clean, smooth hover scale on numbers (no bouncing) 🟢 */
 .kpi-card h4 { 
     font-size: 0.55rem; 
     color: rgba(71, 85, 105, 0.7); 
@@ -281,9 +280,7 @@ body {
     display: inline-block; 
     transition: transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
-.kpi-card:hover .big-number {
-    transform: scale(1.08); /* Clean, professional scaling */
-}
+.kpi-card:hover .big-number { transform: scale(1.08); }
 .kpi-percent { font-size: 0.55rem; color: #64748b; margin-top: 4px; font-weight: 600; }
 
 .outside-card h4 { color: rgba(220, 38, 38, 0.7); } 
@@ -291,9 +288,20 @@ body {
 .outside-card .red-pct { color: #dc2626; }
 
 .pie-card { display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.pie-wrapper { position: relative; height: 160px; width: 100%; display: flex; justify-content: center; align-items: center; }
 
-/* 🟢 NEW: Dedicated styling for the Grand Total below the pie chart 🟢 */
+/* 🟢 NEW: Clean styling for pie chart title matching KPI boxes 🟢 */
+.pie-title {
+    font-size: 0.55rem; 
+    color: rgba(71, 85, 105, 0.7); 
+    text-transform: uppercase; 
+    font-weight: 800; 
+    letter-spacing: 0.5px; 
+    text-align: center;
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+.pie-wrapper { position: relative; height: 160px; width: 100%; display: flex; justify-content: center; align-items: center; }
 .pie-grand-total {
     font-size: 1.8rem;
     font-weight: 800;
@@ -304,9 +312,7 @@ body {
     display: inline-block;
     transition: transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
-.pie-card:hover .pie-grand-total {
-    transform: scale(1.08);
-}
+.pie-card:hover .pie-grand-total { transform: scale(1.08); }
 
 
 /* --- DOCUMENT TRACKING LAYOUT --- */
