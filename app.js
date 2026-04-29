@@ -294,9 +294,9 @@ function renderLineChartByTimeframe(timeframe) {
 }
 
 // ----------------------------------------------------
-// TREND HEADER LOGIC 
+// 🟢 NEW: RENDER TREND FULL-WIDTH FOOTER LOGIC 🟢
 // ----------------------------------------------------
-function renderTrendHeader(elementId, title, dataArray, labelsArray, isCombined = false, inverseColors = false) {
+function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = false) {
     const el = document.getElementById(elementId);
     if (!el) return;
 
@@ -317,55 +317,55 @@ function renderTrendHeader(elementId, title, dataArray, labelsArray, isCombined 
 
     const diff = current - previous;
     let trendHtml = '';
+    let bgColor = '#64748b'; // Default Slate Grey
 
     if (dataArray.length < 2) {
-        trendHtml = `<span class="trend-neutral">No prior data</span>`;
-    } else {
-        let trendClass = 'trend-neutral';
-        let symbol = '—';
-        let diffColor = '#94a3b8';
-        let sign = diff > 0 ? '+' : '';
-
-        if (diff > 0) {
-            trendClass = inverseColors ? 'trend-down' : 'trend-up'; 
-            symbol = '▲';
-            diffColor = inverseColors ? '#f87171' : '#4ade80';
-        } else if (diff < 0) {
-            trendClass = inverseColors ? 'trend-up' : 'trend-down'; 
-            symbol = '▼';
-            diffColor = inverseColors ? '#4ade80' : '#f87171';
-            sign = '-'; 
-        }
-
-        let diffStr = diff > 0 ? `+${diff}` : diff;
-        let pct = previous > 0 ? Math.round((Math.abs(diff) / previous) * 100) : (diff > 0 ? 100 : 0);
-
-        let tooltipHtml = `
-            <div class="custom-tooltip">
-                <div style="color:#94a3b8; font-size:0.55rem; text-transform:uppercase; margin-bottom:6px; letter-spacing:0.5px;">Monthly Comparison</div>
-                <div style="display:flex; justify-content:space-between; gap:20px; margin-bottom:2px;"><span>${currentLabel}:</span> <strong>${current}</strong></div>
-                <div style="display:flex; justify-content:space-between; gap:20px; margin-bottom:2px;"><span>${prevLabel}:</span> <strong>${previous}</strong></div>
-                <div style="border-top:1px solid #334155; margin-top:6px; padding-top:6px; display:flex; justify-content:space-between; gap:20px;"><span>Difference:</span> <strong style="color:${diffColor}">${diffStr}</strong></div>
-            </div>
-        `;
-
-        trendHtml = `
-            <span class="${trendClass} has-tooltip">
-                ${symbol} ${Math.abs(diff)} (${sign}${pct}%)
-                ${tooltipHtml}
-            </span>
-        `;
+        trendHtml = `<span>No prior data</span>`;
+        el.style.backgroundColor = bgColor;
+        el.style.padding = '10px 16px';
+        el.innerHTML = `<div style="font-weight:600; font-size:0.75rem; color:#fff;">${trendHtml}</div>`;
+        return;
     }
 
-    let dotHtml = isCombined ? '' : `<span style="display:inline-block; width:10px; height:10px; border-radius:50%; background-color:#2563eb; margin-right:8px;"></span>`;
+    let symbol = '—';
+    let diffColor = '#ffffff';
+    let sign = diff > 0 ? '+' : '';
+
+    // Modern Up/Down SVG Icons
+    const arrowUp = `<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>`;
+    const arrowDown = `<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"></path></svg>`;
+
+    // Determine the footer background color
+    if (diff > 0) {
+        symbol = arrowUp;
+        bgColor = inverseColors ? '#ef4444' : '#10b981'; // Red if bad, Green if good
+    } else if (diff < 0) {
+        symbol = arrowDown;
+        bgColor = inverseColors ? '#10b981' : '#ef4444'; // Green if good, Red if bad
+        sign = '-'; 
+    }
+
+    let diffStr = diff > 0 ? `+${diff}` : diff;
+    let pct = previous > 0 ? Math.round((Math.abs(diff) / previous) * 100) : (diff > 0 ? 100 : 0);
+
+    let tooltipHtml = `
+        <div class="custom-tooltip">
+            <div style="color:#94a3b8; font-size:0.55rem; text-transform:uppercase; margin-bottom:6px; letter-spacing:0.5px;">Monthly Comparison</div>
+            <div style="display:flex; justify-content:space-between; gap:20px; margin-bottom:2px;"><span>${currentLabel}:</span> <strong>${current}</strong></div>
+            <div style="display:flex; justify-content:space-between; gap:20px; margin-bottom:2px;"><span>${prevLabel}:</span> <strong>${previous}</strong></div>
+            <div style="border-top:1px solid #334155; margin-top:6px; padding-top:6px; display:flex; justify-content:space-between; gap:20px;"><span>Difference:</span> <strong>${diffStr}</strong></div>
+        </div>
+    `;
+
+    el.style.backgroundColor = bgColor;
+    el.style.padding = '10px 16px';
+    el.style.color = '#ffffff';
 
     el.innerHTML = `
-        <div style="display:flex; align-items:center;">
-            ${dotHtml}
-            <span style="font-weight:800; color:#1e293b; font-size:0.75rem; text-transform:uppercase;">${title}</span>
-        </div>
-        <div style="font-size:0.7rem; font-weight:600;">
-            ${trendHtml}
+        <div class="has-tooltip" style="display:flex; width:100%; justify-content:space-between; align-items:center; cursor:pointer;">
+            <span style="font-weight:600; font-size:0.75rem;">${Math.abs(diff)} (${sign}${pct}%) vs ${prevLabel}</span>
+            <span style="display:flex; align-items:center;">${symbol}</span>
+            ${tooltipHtml}
         </div>
     `;
 }
@@ -426,17 +426,18 @@ function processOperationsData(data) {
     document.getElementById('kpi-outside').innerText = totalOutside;
     document.getElementById('pct-outside').innerText = referenceTotal > 0 ? ((totalOutside / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
 
-    renderTrendHeader('trend-vehicular', 'Vehicular Accident', vehicular, labels, false, true); 
-    renderTrendHeader('trend-roadside', 'Roadside Assistance', roadside, labels, false, false); 
-    renderTrendHeader('trend-patient', 'Patient Transport', patient, labels, false, true);      
-    renderTrendHeader('trend-medical', 'Medical', medical, labels, false, true);                
-    renderTrendHeader('trend-standby', 'Standby Medic, Marshal & VIP', standby, labels, false, false); 
+    // 🟢 Generate Footers instead of Headers 🟢
+    renderTrendFooter('trend-vehicular', vehicular, labels, true); 
+    renderTrendFooter('trend-roadside', roadside, labels, false); 
+    renderTrendFooter('trend-patient', patient, labels, true);      
+    renderTrendFooter('trend-medical', medical, labels, true);                
+    renderTrendFooter('trend-standby', standby, labels, false); 
     
     const combinedTotal = [];
     for(let i=0; i<labels.length; i++) {
          combinedTotal.push(others[i] + clearing[i] + firetruck[i] + hauling[i] + ledvan[i]);
     }
-    renderTrendHeader('trend-combined', 'Other Services (Combined)', combinedTotal, labels, true, false);
+    renderTrendFooter('trend-combined', combinedTotal, labels, false);
 
     drawDonutChart('monthlyPieChart', labels, monthlyTotalServices, overallGrandTotal);
     
@@ -453,10 +454,8 @@ function processOperationsData(data) {
 // CHART GENERATORS & TOOLTIP CONFIGURATION
 // ----------------------------------------------------
 
-// 🟢 NEW: Unified, smooth, dynamic tooltip configuration applied to all charts 🟢
 const sharedTooltipConfig = {
     backgroundColor: function(context) {
-        // Dynamically detects the color of the bar/slice being hovered
         if (context.tooltip.labelColors && context.tooltip.labelColors.length > 0) {
             const color = context.tooltip.labelColors[0].backgroundColor;
             return color ? color : 'rgba(30, 41, 59, 0.95)';
@@ -469,8 +468,8 @@ const sharedTooltipConfig = {
     bodyFont: { family: 'Inter', size: 11, weight: '600' },
     padding: 10,
     cornerRadius: 6,
-    displayColors: false, // Hides the clunky inner color square
-    borderColor: 'rgba(255, 255, 255, 0.4)', // Subtle white border
+    displayColors: false, 
+    borderColor: 'rgba(255, 255, 255, 0.4)', 
     borderWidth: 1,
     caretSize: 6,
     caretPadding: 6
@@ -517,7 +516,7 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr) {
                     }
                 },
                 tooltip: {
-                    ...sharedTooltipConfig, // Applies the smooth styling
+                    ...sharedTooltipConfig, 
                     callbacks: {
                         label: function(context) {
                             let suffix = '';
@@ -584,7 +583,7 @@ function drawLineChart(canvasId, labels, dataArr) {
             plugins: { 
                 datalabels: { display: false }, 
                 legend: { display: false }, 
-                tooltip: sharedTooltipConfig // Applies the smooth styling
+                tooltip: sharedTooltipConfig 
             }, 
             scales: { 
                 x: { 
@@ -642,7 +641,7 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
                     } 
                 },
                 tooltip: {
-                    ...sharedTooltipConfig, // Applies the dynamic color background
+                    ...sharedTooltipConfig, 
                     callbacks: {
                         label: function(context) {
                             let val = context.raw;
@@ -661,7 +660,7 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
 
 const singleBarOptions = {
     indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-    layout: { padding: { top: 15, right: 25, bottom: 10, left: 10 } }, // Prevents tooltips from getting cut off at the edges
+    layout: { padding: { top: 15, right: 25, bottom: 10, left: 10 } }, 
     plugins: { datalabels: { display: false }, legend: { display: false }, tooltip: sharedTooltipConfig },
     scales: { x: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } }, y: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } } },
     elements: { bar: { borderRadius: 3 } } 
@@ -669,7 +668,7 @@ const singleBarOptions = {
 
 const combinedBarOptions = {
     indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-    layout: { padding: { top: 15, right: 25, bottom: 10, left: 10 } }, // Prevents tooltips from getting cut off at the edges
+    layout: { padding: { top: 15, right: 25, bottom: 10, left: 10 } }, 
     plugins: { datalabels: { display: false }, legend: { position: 'top', labels: { boxWidth: 10, usePointStyle: true, font: { family: 'Inter', size: 10 } } }, tooltip: sharedTooltipConfig },
     scales: { x: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } }, y: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } } },
     elements: { bar: { borderRadius: 3 } } 
