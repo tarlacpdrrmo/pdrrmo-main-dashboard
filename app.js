@@ -294,9 +294,9 @@ function renderLineChartByTimeframe(timeframe) {
 }
 
 // ----------------------------------------------------
-// 🟢 UPDATED: DYNAMIC TOOLTIP LOGIC FOR TREND HEADERS 🟢
+// 🟢 UPDATED: DYNAMIC TREND HEADER LOGIC W/ INVERSE COLORS 🟢
 // ----------------------------------------------------
-function renderTrendHeader(elementId, title, dataArray, labelsArray, isCombined = false) {
+function renderTrendHeader(elementId, title, dataArray, labelsArray, isCombined = false, inverseColors = false) {
     const el = document.getElementById(elementId);
     if (!el) return;
 
@@ -305,7 +305,6 @@ function renderTrendHeader(elementId, title, dataArray, labelsArray, isCombined 
     let currentLabel = 'Current Month';
     let prevLabel = 'Previous Month';
 
-    // Extract exact data and exact month names
     if (dataArray.length >= 2 && labelsArray.length >= 2) {
         current = dataArray[dataArray.length - 1];
         previous = dataArray[dataArray.length - 2];
@@ -322,14 +321,26 @@ function renderTrendHeader(elementId, title, dataArray, labelsArray, isCombined 
     if (dataArray.length < 2) {
         trendHtml = `<span class="trend-neutral">No prior data</span>`;
     } else {
-        let trendClass = diff > 0 ? 'trend-up' : (diff < 0 ? 'trend-down' : 'trend-neutral');
-        let symbol = diff > 0 ? '▲' : (diff < 0 ? '▼' : '—');
+        let trendClass = 'trend-neutral';
+        let symbol = '—';
+        let diffColor = '#94a3b8';
+        let sign = diff > 0 ? '+' : '';
+
+        // 🟢 INVERSE COLOR LOGIC applied here 🟢
+        if (diff > 0) {
+            trendClass = inverseColors ? 'trend-down' : 'trend-up'; // 'trend-down' triggers red styling
+            symbol = '▲';
+            diffColor = inverseColors ? '#f87171' : '#4ade80';
+        } else if (diff < 0) {
+            trendClass = inverseColors ? 'trend-up' : 'trend-down'; // 'trend-up' triggers green styling
+            symbol = '▼';
+            diffColor = inverseColors ? '#4ade80' : '#f87171';
+            sign = '-'; 
+        }
+
         let diffStr = diff > 0 ? `+${diff}` : diff;
         let pct = previous > 0 ? Math.round((Math.abs(diff) / previous) * 100) : (diff > 0 ? 100 : 0);
-        let sign = diff > 0 ? '+' : (diff < 0 ? '-' : '');
-        let diffColor = diff > 0 ? '#4ade80' : (diff < 0 ? '#f87171' : '#94a3b8');
 
-        // Build the dynamic Tooltip HTML
         let tooltipHtml = `
             <div class="custom-tooltip">
                 <div style="color:#94a3b8; font-size:0.55rem; text-transform:uppercase; margin-bottom:6px; letter-spacing:0.5px;">Monthly Comparison</div>
@@ -339,7 +350,6 @@ function renderTrendHeader(elementId, title, dataArray, labelsArray, isCombined 
             </div>
         `;
 
-        // Wrap the arrow inside the hover-able tooltip container
         trendHtml = `
             <span class="${trendClass} has-tooltip">
                 ${symbol} ${Math.abs(diff)} (${sign}${pct}%)
@@ -417,18 +427,18 @@ function processOperationsData(data) {
     document.getElementById('kpi-outside').innerText = totalOutside;
     document.getElementById('pct-outside').innerText = referenceTotal > 0 ? ((totalOutside / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
 
-    // 🟢 UPDATED: Passing the 'labels' array into the trend headers 🟢
-    renderTrendHeader('trend-vehicular', 'Vehicular Accident', vehicular, labels);
-    renderTrendHeader('trend-roadside', 'Roadside Assistance', roadside, labels);
-    renderTrendHeader('trend-patient', 'Patient Transport', patient, labels);
-    renderTrendHeader('trend-medical', 'Medical', medical, labels);
-    renderTrendHeader('trend-standby', 'Standby Medic, Marshal & VIP', standby, labels);
+    // 🟢 UPDATED: Sent the 'inverseColors' flag (true/false) to the relevant categories 🟢
+    renderTrendHeader('trend-vehicular', 'Vehicular Accident', vehicular, labels, false, true); // Inverse = True
+    renderTrendHeader('trend-roadside', 'Roadside Assistance', roadside, labels, false, false); // Inverse = False
+    renderTrendHeader('trend-patient', 'Patient Transport', patient, labels, false, true);      // Inverse = True
+    renderTrendHeader('trend-medical', 'Medical', medical, labels, false, true);                // Inverse = True
+    renderTrendHeader('trend-standby', 'Standby Medic, Marshal & VIP', standby, labels, false, false); // Inverse = False
     
     const combinedTotal = [];
     for(let i=0; i<labels.length; i++) {
          combinedTotal.push(others[i] + clearing[i] + firetruck[i] + hauling[i] + ledvan[i]);
     }
-    renderTrendHeader('trend-combined', 'Other Services (Combined)', combinedTotal, labels, true);
+    renderTrendHeader('trend-combined', 'Other Services (Combined)', combinedTotal, labels, true, false);
 
     drawDonutChart('monthlyPieChart', labels, monthlyTotalServices, overallGrandTotal);
     
