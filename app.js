@@ -4,7 +4,7 @@ Chart.register(ChartDataLabels);
 const sheetUrls = {
     operations: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEOujzNEOrDEv0W2CMKNDjXKW8WUusQkXmrNFuaR_Vh171r7rDsKpcCdwxwhWPqpjTr0iYICMVK5lv/pub?output=csv", // <-- MUST BE FILLED
     documents: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS4FYdO-pxACzJxrw7vEMLJKsxgEBQm_8Afh_hsKFxhxA3eiJz5kNZLkr3ArNmoEIVo5BtPBbNIz-oz/pub?gid=433918484&single=true&output=csv",   // <-- MUST BE FILLED
-    volunteers: ""
+    volunteers: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQu11mhIuAL2jr_ZrMze5ZhXRk6puER_QUBVLlm6gfRq88sa1FrfFlRRjL3pvlyYfO4Mb3GwF_nZpA7/pub?gid=0&single=true&output=csv"
 };
 
 let docPieChartInstance = null;
@@ -49,25 +49,29 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
-// 2. Data Fetch with Cache Buster
+// 2. Data Fetch with BULLETPROOF Cache Buster
 function loadAllData() {
     const cacheBuster = new Date().getTime(); 
 
+    // FIX: Safely appends the cache buster without breaking Google's URL parameters
     if(sheetUrls.operations.includes("http")) {
-        Papa.parse(sheetUrls.operations + "?t=" + cacheBuster, { 
+        const opSeparator = sheetUrls.operations.includes("?") ? "&" : "?";
+        Papa.parse(sheetUrls.operations + opSeparator + "t=" + cacheBuster, { 
             download: true, header: true, skipEmptyLines: true, 
             complete: function(results) { processOperationsData(results.data); } 
         });
     }
+    
     if(sheetUrls.documents.includes("http")) {
-        Papa.parse(sheetUrls.documents + "?t=" + cacheBuster, { 
+        const docSeparator = sheetUrls.documents.includes("?") ? "&" : "?";
+        Papa.parse(sheetUrls.documents + docSeparator + "t=" + cacheBuster, { 
             download: true, header: true, skipEmptyLines: true, 
             complete: function(results) { processDocumentsData(results.data); } 
         });
     }
 }
 
-// 3. Process DOCUMENTS (Smart Consolidation + Reads 314 from summary)
+// 3. Process DOCUMENTS Data
 function processDocumentsData(data) {
     let totalReq = 0, totalAction = 0, catered = 0, invAttended = 0;
     let notCatered = 0, others = 0, invNotAttended = 0, cancelled = 0, noAction = 0;
@@ -138,7 +142,7 @@ function processDocumentsData(data) {
     drawLineChart('docDateLineChart', dummyDates, dummyLineData);
 }
 
-// 4. Process OPERATIONS Data (Restored fully)
+// 4. Process OPERATIONS Data
 function processOperationsData(data) {
     const labels = [];
     const vehicular = [], roadside = [], patient = [], medical = [], standby = [];
