@@ -214,10 +214,24 @@ body {
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12), 0 4px 6px rgba(0, 0, 0, 0.04);
 }
 
-/* --- ASSETS LAYOUT --- */
+/* --- ASSETS LAYOUT & TREND HEADERS --- */
 .assets-layout { display: flex; gap: 16px; } 
 .kpi-column { display: flex; flex-direction: column; gap: 12px; width: 180px; flex-shrink: 0; }
 .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; flex: 1; }
+
+/* 🟢 NEW: Trend Header Layouts 🟢 */
+.flex-col { display: flex; flex-direction: column; align-items: stretch; }
+.chart-trend-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #f1f5f9;
+}
+.trend-up { background: #dcfce7; color: #16a34a; padding: 2px 6px; border-radius: 4px; font-weight: 700; }
+.trend-down { background: #fee2e2; color: #dc2626; padding: 2px 6px; border-radius: 4px; font-weight: 700; }
+.trend-neutral { background: #f1f5f9; color: #64748b; padding: 2px 6px; border-radius: 4px; font-weight: 700; }
 
 .kpi-card h4 { 
     font-size: 0.55rem; 
@@ -228,12 +242,7 @@ body {
     letter-spacing: 0.5px; 
 }
 .kpi-card .big-number { font-size: 1.5rem; font-weight: 800; color: #0f172a; line-height: 1; }
-.kpi-percent {
-    font-size: 0.55rem;
-    color: #64748b;
-    margin-top: 4px;
-    font-weight: 600;
-}
+.kpi-percent { font-size: 0.55rem; color: #64748b; margin-top: 4px; font-weight: 600; }
 
 .outside-card h4 { color: rgba(220, 38, 38, 0.7); } 
 .outside-card .red { color: #dc2626; }
@@ -241,11 +250,11 @@ body {
 
 .pie-card { display: flex; flex-direction: column; }
 .pie-card h4 { font-size: 0.55rem; color: rgba(71, 85, 105, 0.7); margin-bottom: 12px; text-transform: uppercase; font-weight: 800; text-align: center; letter-spacing: 0.5px; }
-
-/* 🟢 UPDATED: Increased height to 170px to prevent the tooltip from clipping off the top/bottom 🟢 */
 .pie-wrapper { position: relative; height: 170px; width: 100%; display: flex; justify-content: center; align-items: center; }
 
-.chart-card { min-height: 160px; position: relative; display: flex; align-items: center; justify-content: center; }
+/* 🟢 UPDATED: Canvas area flex rules 🟢 */
+.chart-render-area { flex: 1; position: relative; min-height: 140px; }
+
 
 /* --- DOCUMENT TRACKING LAYOUT --- */
 .tracking-layout { display: flex; gap: 16px; align-items: stretch; }
