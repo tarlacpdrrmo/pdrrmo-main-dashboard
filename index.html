@@ -74,7 +74,14 @@
                             </div>
                         </div>
                         <div class="card doc-chart-card">
-                            <h4 class="chart-title">Received per Date:</h4>
+                            <div class="chart-header-actions">
+                                <h4 class="chart-title">Received per Date:</h4>
+                                <select id="lineChartFilter" class="chart-filter">
+                                    <option value="daily">Daily</option>
+                                    <option value="monthly">Monthly</option>
+                                    <option value="yearly">Yearly</option>
+                                </select>
+                            </div>
                             <div class="line-wrapper"><canvas id="docDateLineChart"></canvas></div>
                         </div>
                     </div>
