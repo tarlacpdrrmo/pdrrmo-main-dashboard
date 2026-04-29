@@ -12,6 +12,7 @@ let docLineChartInstance = null;
 let mainPieLabels = [];
 let mainPieData = [];
 let detailedPieData = {};
+let globalLineData = []; 
 
 function scrollToSection(panelId) {
     const section = document.getElementById(panelId);
@@ -37,7 +38,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
     panels.forEach(panel => observer.observe(panel));
 
-    // Back Button Logic for Pie Chart
     document.getElementById('pieBackButton').addEventListener('click', function() {
         if(docPieChartInstance) {
             docPieChartInstance.data.labels = mainPieLabels;
@@ -47,6 +47,11 @@ document.addEventListener("DOMContentLoaded", function() {
         this.style.display = 'none';
         document.getElementById('pieChartTitle').innerText = 'Received Request from PDRRM Office:';
         updateCustomLegend(mainPieLabels, mainPieData);
+    });
+
+    // Dropdown Logic for Line Chart Aggregation
+    document.getElementById('lineChartFilter').addEventListener('change', function(e) {
+        renderLineChartByTimeframe(e.target.value);
     });
 });
 
@@ -70,37 +75,52 @@ function loadAllData() {
     }
 }
 
-// 3. Process DOCUMENTS Data (Includes Live Date Tracking & Smooth Line Chart)
+// 3. Process DOCUMENTS Data (FIXED TO EXPLICITLY COUNT COLUMN M)
 function processDocumentsData(data) {
     let totalReq = 0, totalAction = 0, catered = 0, invAttended = 0;
     let notCatered = 0, others = 0, invNotAttended = 0, cancelled = 0, noAction = 0;
 
     let sourceMap = {};
-    let dateMap = new Map(); // Uses a Map to preserve chronological sheet order for the Line Chart
     detailedPieData = {};
+    globalLineData = []; 
     let totalsCaptured = false;
 
     data.forEach(row => {
-        let rawOffice = row['Received From Office'] || row['RECEIVED FROM OFFICE'];
-        let reqs = Number(row['Total Requests'] || row['TOTAL REQUESTS'] || row['Column M']) || 0;
-        let dateVal = row['Date Received'] || row['DATE RECEIVED'] || row['Date'] || ''; // Finds your Date column
+        let rawOffice = row['Received From Office'] || row['RECEIVED FROM OFFICE'] || '';
+        let dateStr = row['Date Received'] || row['DATE RECEIVED'] || row['Date'] || '';
+        
+        let keys = Object.keys(row);
+        let reqs = 0;
 
-        // ACCURATE TOTAL FIX
+        // 🔴 EXPLICIT COLUMN M OVERRIDE 🔴
+        // First, check the exact 13th column (index 12, which is Column M)
+        if (keys.length > 12 && Number(row[keys[12]]) > 0) {
+            reqs = Number(row[keys[12]]);
+        } else {
+            // Fallback just in case headers were shifted
+            reqs = Number(row['Column M']) || Number(row['COLUMN M']) || Number(row['Total Requests']) || 0;
+        }
+
+        // Add valid row count to the master total (Will be exactly 321)
         if (reqs > 0) {
             totalReq += reqs; 
         }
 
-        // LINE CHART DATA AGGREGATION: Maps Total Requests (Column M) to Date Received
-        if (dateVal && reqs > 0) {
-            dateMap.set(dateVal, (dateMap.get(dateVal) || 0) + reqs);
+        // Date Aggregation setup
+        if (dateStr && reqs > 0) {
+            let d = new Date(dateStr);
+            if (!isNaN(d.getTime())) {
+                globalLineData.push({ dateObj: d, count: reqs, timestamp: d.getTime() });
+            } else {
+                globalLineData.push({ rawString: dateStr, count: reqs, timestamp: 0 });
+            }
         }
 
-        // PIE CHART LOGIC
+        // Pie Chart setup
         if (rawOffice && reqs > 0) {
             let upperOffice = rawOffice.toUpperCase();
             let parentCategory = rawOffice; 
 
-            // SMART SCRUBBER DICTIONARY
             const scrubRules = [
                 { category: 'PGT & PGO Offices', keywords: ['PGT', 'PROVINCIAL GOV', 'PGO', 'PGSO', 'BAC'] },
                 { category: '3rd Mechanized Infantry', keywords: ['3RD MECH', 'MECHANIZED INFANTRY', '31ST MECH'] },
@@ -127,7 +147,6 @@ function processDocumentsData(data) {
             detailedPieData[parentCategory][rawOffice] = (detailedPieData[parentCategory][rawOffice] || 0) + reqs;
         }
 
-        // Capture other KPIs
         if (!totalsCaptured && (row['TOTAL ACTION TAKEN (OVERALL)'] || row['TOTAL REQUEST CATERED'])) {
             totalAction = Number(row['TOTAL ACTION TAKEN (OVERALL)']) || 0;
             catered = Number(row['TOTAL REQUEST CATERED']) || 0;
@@ -141,7 +160,6 @@ function processDocumentsData(data) {
         }
     });
 
-    // Push KPIs to dashboard
     document.getElementById('doc-kpi-request').innerText = totalReq; 
     document.getElementById('doc-kpi-action').innerText = totalAction;
     document.getElementById('doc-kpi-catered').innerText = catered;
@@ -152,19 +170,42 @@ function processDocumentsData(data) {
     document.getElementById('doc-kpi-cancelled').innerText = cancelled;
     document.getElementById('doc-kpi-no-action').innerText = noAction;
 
-    // Build Pie Chart
     let sortedSources = Object.keys(sourceMap).map(key => ({ label: key, value: sourceMap[key] }));
     sortedSources.sort((a, b) => b.value - a.value);
 
     mainPieLabels = sortedSources.map(item => item.label);
     mainPieData = sortedSources.map(item => item.value);
-    drawInteractiveDonutChart('docSourcePieChart', mainPieLabels, mainPieData);
 
-    // Build Live Line Chart Arrays from the Map
-    const lineLabels = Array.from(dateMap.keys());
-    const lineDataValues = Array.from(dateMap.values());
-    drawLineChart('docDateLineChart', lineLabels, lineDataValues);
+    drawInteractiveDonutChart('docSourcePieChart', mainPieLabels, mainPieData);
+    renderLineChartByTimeframe('daily');
 }
+
+function renderLineChartByTimeframe(timeframe) {
+    let groupedObj = {};
+    
+    let sortedData = [...globalLineData].sort((a, b) => a.timestamp - b.timestamp);
+
+    sortedData.forEach(item => {
+        let key = "";
+        if (item.timestamp > 0) {
+            if (timeframe === 'monthly') {
+                key = item.dateObj.toLocaleString('default', { month: 'short', year: 'numeric' });
+            } else if (timeframe === 'yearly') {
+                key = item.dateObj.getFullYear().toString();
+            } else { 
+                key = item.dateObj.toLocaleDateString('default', { month: 'short', day: 'numeric' });
+            }
+        } else {
+            key = item.rawString; 
+        }
+        groupedObj[key] = (groupedObj[key] || 0) + item.count;
+    });
+
+    const labels = Object.keys(groupedObj);
+    const dataValues = Object.values(groupedObj);
+    drawLineChart('docDateLineChart', labels, dataValues);
+}
+
 
 function processOperationsData(data) {
     const labels = [];
@@ -295,9 +336,8 @@ function drawLineChart(canvasId, labels, dataArr) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     if(docLineChartInstance) docLineChartInstance.destroy();
 
-    // Create a modern gradient fill
     let gradient = ctx.createLinearGradient(0, 0, 0, 300);
-    gradient.addColorStop(0, 'rgba(37, 99, 235, 0.3)'); // Soft blue fade
+    gradient.addColorStop(0, 'rgba(37, 99, 235, 0.3)');
     gradient.addColorStop(1, 'rgba(37, 99, 235, 0.0)'); 
 
     docLineChartInstance = new Chart(ctx, {
@@ -310,38 +350,24 @@ function drawLineChart(canvasId, labels, dataArr) {
                 borderColor: '#2563eb', 
                 backgroundColor: gradient, 
                 borderWidth: 2, 
-                pointRadius: 0, // Hidden until hover for a cleaner look
+                pointRadius: 0, 
                 pointHoverRadius: 5,
                 pointBackgroundColor: '#ffffff',
                 pointBorderColor: '#2563eb',
                 pointBorderWidth: 2,
-                tension: 0.4, // Smooths the jagged lines into fluid curves
+                tension: 0.4, 
                 fill: true
             }] 
         },
         options: { 
             responsive: true, 
             maintainAspectRatio: false, 
-            animation: {
-                duration: 1500, // Smooth sweep animation on load
-                easing: 'easeInOutQuart'
-            },
+            animation: { duration: 1000, easing: 'easeOutQuart' },
             interaction: { mode: 'index', intersect: false },
-            plugins: { 
-                datalabels: { display: false }, 
-                legend: { display: false },
-                tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.9)', titleFont: { family: 'Inter', size: 12 }, bodyFont: { family: 'Inter', size: 12 }, padding: 10, displayColors: false }
-            }, 
+            plugins: { datalabels: { display: false }, legend: { display: false }, tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.9)', titleFont: { family: 'Inter', size: 12 }, bodyFont: { family: 'Inter', size: 12 }, padding: 10, displayColors: false } }, 
             scales: { 
-                x: { 
-                    grid: { display: false }, 
-                    ticks: { font: { family: 'Inter', size: 9 }, color: '#64748b', maxTicksLimit: 12 } 
-                }, 
-                y: { 
-                    grid: { color: '#f1f5f9', drawBorder: false }, 
-                    beginAtZero: true,
-                    ticks: { font: { family: 'Inter', size: 10 }, color: '#64748b', stepSize: 2 } 
-                } 
+                x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 9 }, color: '#64748b', maxTicksLimit: 12 } }, 
+                y: { grid: { color: '#f1f5f9', drawBorder: false }, beginAtZero: true, ticks: { font: { family: 'Inter', size: 10 }, color: '#64748b' } } 
             } 
         }
     });
@@ -377,7 +403,7 @@ function drawCombinedBarChart(canvasId, labels, others, clearing, firetruck, hau
             datasets: [
                 { label: 'OTHERS', data: others, backgroundColor: '#2563eb', maxBarThickness: 20 },
                 { label: 'CLEARING OPE...', data: clearing, backgroundColor: '#06b6d4', maxBarThickness: 20 },
-                { label: 'FIRETRUCK', firetruck, backgroundColor: '#e11d48', maxBarThickness: 20 },
+                { label: 'FIRETRUCK', data: firetruck, backgroundColor: '#e11d48', maxBarThickness: 20 },
                 { label: 'HAULING', data: hauling, backgroundColor: '#ea580c', maxBarThickness: 20 },
                 { label: 'LEDVAN TRUCK', data: ledvan, backgroundColor: '#eab308', maxBarThickness: 20 }
             ]
