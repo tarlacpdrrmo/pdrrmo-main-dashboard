@@ -4,7 +4,7 @@ Chart.register(ChartDataLabels);
 const sheetUrls = {
     operations: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEOujzNEOrDEv0W2CMKNDjXKW8WUusQkXmrNFuaR_Vh171r7rDsKpcCdwxwhWPqpjTr0iYICMVK5lv/pub?output=csv", // <-- MUST BE FILLED
     documents: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS4FYdO-pxACzJxrw7vEMLJKsxgEBQm_8Afh_hsKFxhxA3eiJz5kNZLkr3ArNmoEIVo5BtPBbNIz-oz/pub?gid=433918484&single=true&output=csv",   // <-- MUST BE FILLED
-    volunteers: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQu11mhIuAL2jr_ZrMze5ZhXRk6puER_QUBVLlm6gfRq88sa1FrfFlRRjL3pvlyYfO4Mb3GwF_nZpA7/pub?gid=0&single=true&output=csv"
+    volunteers: ""
 };
 
 let docPieChartInstance = null;
@@ -49,11 +49,9 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
-// 2. Data Fetch with BULLETPROOF Cache Buster
 function loadAllData() {
     const cacheBuster = new Date().getTime(); 
 
-    // FIX: Safely appends the cache buster without breaking Google's URL parameters
     if(sheetUrls.operations.includes("http")) {
         const opSeparator = sheetUrls.operations.includes("?") ? "&" : "?";
         Papa.parse(sheetUrls.operations + opSeparator + "t=" + cacheBuster, { 
@@ -71,7 +69,7 @@ function loadAllData() {
     }
 }
 
-// 3. Process DOCUMENTS Data
+// 3. Process DOCUMENTS Data (WITH SMART SCRUBBER DICTIONARY)
 function processDocumentsData(data) {
     let totalReq = 0, totalAction = 0, catered = 0, invAttended = 0;
     let notCatered = 0, others = 0, invNotAttended = 0, cancelled = 0, noAction = 0;
@@ -86,18 +84,29 @@ function processDocumentsData(data) {
 
         if (rawOffice && reqs > 0) {
             let upperOffice = rawOffice.toUpperCase();
-            let parentCategory = rawOffice;
+            let parentCategory = rawOffice; // Defaults to the raw name if no keyword matches
 
-            if (upperOffice.includes('PGT') || upperOffice.includes('PROVINCIAL GOV')) {
-                parentCategory = 'PGT Offices (Consolidated)';
-            } else if (upperOffice.includes('3RD MECH') || upperOffice.includes('MECHANIZED INFANTRY')) {
-                parentCategory = '3rd Mechanized Infantry (Consolidated)';
-            } else if (upperOffice.includes('522ND')) {
-                parentCategory = '522nd Engineer Battalion (Consolidated)';
-            } else if (upperOffice.includes('BFP')) {
-                parentCategory = 'BFP Tarlac (Consolidated)';
-            } else if (upperOffice === 'N/A' || upperOffice.includes('PRIVATE')) {
-                parentCategory = 'N/A (Private Individuals)';
+            // SMART SCRUBBER DICTIONARY: Scans for keywords and groups them automatically
+            const scrubRules = [
+                { category: 'PGT & PGO Offices', keywords: ['PGT', 'PROVINCIAL GOV', 'PGO', 'PGSO', 'BAC'] },
+                { category: '3rd Mechanized Infantry', keywords: ['3RD MECH', 'MECHANIZED INFANTRY', '31ST MECH'] },
+                { category: '522nd Engineer Battalion', keywords: ['522ND', 'ENGINEER'] },
+                { category: 'BFP Tarlac', keywords: ['BFP', 'FIRE'] },
+                { category: 'DSWD Facilities', keywords: ['DSWD', 'LINGAP'] },
+                { category: 'DepEd / Schools', keywords: ['DEPED', 'SCHOOL', 'ACADEMIA'] },
+                { category: 'Hospitals & Health', keywords: ['DOH', 'CLDH', 'HOSPITAL', 'HEALTH', 'TPH', 'CLCHD'] },
+                { category: 'Local Government (LGUs/Brgys)', keywords: ['BRGY', 'BARANGAY', 'CITY GOV', 'MUNICIPAL'] },
+                { category: 'National Gov Agencies', keywords: ['DOST', 'DICT', 'DILG', 'COA', 'OCD', 'RDRRMC', 'CDRRMO'] },
+                { category: 'NGOs & Private Orgs', keywords: ['FOUNDATION', 'INC.', 'CHURCH', 'CLUB', 'SCOUT', 'COMPANY'] },
+                { category: 'Private Individuals', keywords: ['N/A', 'PRIVATE', 'GENERAL PUBLIC'] }
+            ];
+
+            // Run the scrubber against the raw name
+            for (let rule of scrubRules) {
+                if (rule.keywords.some(keyword => upperOffice.includes(keyword))) {
+                    parentCategory = rule.category;
+                    break; 
+                }
             }
 
             sourceMap[parentCategory] = (sourceMap[parentCategory] || 0) + reqs;
@@ -142,7 +151,6 @@ function processDocumentsData(data) {
     drawLineChart('docDateLineChart', dummyDates, dummyLineData);
 }
 
-// 4. Process OPERATIONS Data
 function processOperationsData(data) {
     const labels = [];
     const vehicular = [], roadside = [], patient = [], medical = [], standby = [];
@@ -234,6 +242,17 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr) {
                         let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
                         let percent = ((value * 100) / sum).toFixed(1);
                         return percent > 4 ? percent + '%' : ''; 
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let suffix = '';
+                            if (document.getElementById('pieBackButton').style.display !== 'block' && detailedPieData[context.label] && Object.keys(detailedPieData[context.label]).length > 1) {
+                                suffix = ' (Click to zoom into breakdown)';
+                            }
+                            return ' ' + context.label + ': ' + context.raw + ' requests' + suffix;
+                        }
                     }
                 }
             }
