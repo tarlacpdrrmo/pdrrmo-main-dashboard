@@ -283,6 +283,7 @@ body {
 .flex-col { display: flex; flex-direction: column; align-items: stretch; }
 .p-0 { padding: 0 !important; overflow: hidden; }
 
+/* HARD LOCKED BOX SIZE FOR STANDARD CHARTS */
 .card-header-flex {
     display: flex;
     justify-content: space-between;
@@ -404,7 +405,7 @@ body {
 .interactive-pie-container { display: flex; gap: 16px; height: 260px; align-items: stretch; margin-top: 8px; }
 .doc-pie-wrapper { flex: 1; height: 100%; position: relative; cursor: pointer; }
 
-/* 🟢 NEW: Legend Cascade Animation 🟢 */
+/* Legend Cascade Animation */
 @keyframes legendFadeIn {
     from { opacity: 0; transform: translateX(10px); }
     to { opacity: 1; transform: translateX(0); }
@@ -416,14 +417,32 @@ body {
 
 .legend-item { 
     display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f8fafc; transition: 0.3s; 
-    opacity: 0; /* Starts hidden to allow animation to trigger */
+    opacity: 0; 
     animation: legendFadeIn 0.4s ease forwards;
 }
-
 .legend-item:hover { transform: translateX(4px); background-color: #f8fafc; border-radius: 4px; }
-.legend-color { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.legend-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #334155; font-weight: 600; }
-.legend-val { font-weight: 800; margin-left: auto; color: #0f172a; background: #f1f5f9; padding: 2px 4px; border-radius: 4px; }
+.legend-color { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; transition: 0.3s ease; }
+.legend-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #334155; font-weight: 600; transition: 0.3s ease; }
+.legend-val { font-weight: 800; margin-left: auto; color: #0f172a; background: #f1f5f9; padding: 2px 4px; border-radius: 4px; transition: 0.3s ease; }
+
+/* 🟢 NEW: INTERACTIVE LEGEND STYLES (Click to hide slice) 🟢 */
+.interactive-legend-item {
+    cursor: pointer;
+    user-select: none;
+}
+.interactive-legend-item:active {
+    transform: scale(0.98);
+}
+.hidden-slice .legend-text {
+    text-decoration: line-through;
+    color: #94a3b8;
+}
+.hidden-slice .legend-color {
+    background-color: #cbd5e1 !important;
+}
+.hidden-slice .legend-val {
+    opacity: 0.4;
+}
 
 .line-wrapper { height: 180px; position: relative; margin-top: 8px; }
 
