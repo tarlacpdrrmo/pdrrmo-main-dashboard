@@ -158,12 +158,20 @@ body {
     text-transform: uppercase;
 }
 
+/* 🟢 NEW: Container to group the clock and print button 🟢 */
+.header-right-actions {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
 .header-clock {
     text-align: right;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding-right: 12px;
+    border-right: 2px solid #e2e8f0;
+    padding-right: 24px;
 }
 #live-time {
     font-size: 1.3rem;
@@ -180,6 +188,35 @@ body {
     letter-spacing: 1.5px;
     margin-top: 4px;
 }
+
+/* 🟢 NEW: Print Button Styles 🟢 */
+.btn-print {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #2563eb;
+    color: #ffffff;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
+    transition: all 0.2s ease;
+}
+.btn-print:hover {
+    background-color: #1d4ed8;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(37, 99, 235, 0.3);
+}
+.btn-print:active {
+    transform: translateY(0);
+}
+
 
 /* --- PANELS & CARDS --- */
 .panel { 
@@ -283,7 +320,6 @@ body {
 .flex-col { display: flex; flex-direction: column; align-items: stretch; }
 .p-0 { padding: 0 !important; overflow: hidden; }
 
-/* HARD LOCKED BOX SIZE FOR STANDARD CHARTS */
 .card-header-flex {
     display: flex;
     justify-content: space-between;
@@ -425,7 +461,6 @@ body {
 .legend-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #334155; font-weight: 600; transition: 0.3s ease; }
 .legend-val { font-weight: 800; margin-left: auto; color: #0f172a; background: #f1f5f9; padding: 2px 4px; border-radius: 4px; transition: 0.3s ease; }
 
-/* 🟢 NEW: INTERACTIVE LEGEND STYLES (Click to hide slice) 🟢 */
 .interactive-legend-item {
     cursor: pointer;
     user-select: none;
@@ -604,11 +639,93 @@ td {
     transform: translateX(14px); 
 }
 
-/* CROSSFADE ANIMATION FOR CHART TOGGLING */
 .chart-render-area canvas {
     transition: opacity 0.3s cubic-bezier(0.165, 0.84, 0.44, 1), transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
 }
 .chart-fade-out canvas {
     opacity: 0 !important;
     transform: scale(0.95) !important; 
+}
+
+/* 🟢 NEW: PROFESSIONAL PRINT ENGINE 🟢 */
+@media print {
+    /* Set landscape page and clean margins */
+    @page { 
+        size: landscape; 
+        margin: 10mm; 
+    }
+    
+    /* Strip away dark backgrounds */
+    body { 
+        background-color: #ffffff !important; 
+        color: #000000 !important; 
+    }
+
+    /* Force the browser to print your beautiful pie chart colors */
+    * { 
+        -webkit-print-color-adjust: exact !important; 
+        print-color-adjust: exact !important; 
+    }
+
+    /* Hide UI elements that shouldn't be printed */
+    .sidebar, 
+    .btn-print, 
+    .master-toggle-wrapper, 
+    .chart-toggle, 
+    .iframe-panel, 
+    .chart-filter,
+    .btn-back { 
+        display: none !important; 
+    }
+
+    /* Expand the main content to take up the full paper */
+    .dashboard-container { 
+        display: block !important; 
+        height: auto !important; 
+        width: 100% !important; 
+    }
+    .main-content { 
+        padding: 0 !important; 
+        overflow: visible !important; 
+        margin: 0 !important; 
+        width: 100% !important; 
+    }
+
+    /* Clean up headers for paper */
+    .page-header { 
+        margin: 0 0 20px 0 !important; 
+        padding: 0 !important; 
+        border: none !important; 
+        box-shadow: none !important; 
+    }
+    
+    /* Remove shadow effects and prevent elements from breaking across pages */
+    .card { 
+        box-shadow: none !important; 
+        border: 1px solid #cbd5e1 !important; 
+        page-break-inside: avoid !important; 
+    }
+    .panel { 
+        page-break-inside: auto !important; 
+        border: none !important; 
+        margin-bottom: 20px !important; 
+        padding-bottom: 0 !important; 
+    }
+
+    /* Ensure grids render cleanly on paper */
+    .charts-grid { 
+        display: grid !important; 
+        grid-template-columns: repeat(3, 1fr) !important; 
+        gap: 10px !important; 
+    }
+    .tracking-layout { 
+        display: flex !important; 
+        flex-direction: column !important; 
+    }
+    
+    /* Lock chart areas to prevent resizing bugs during print */
+    .pie-wrapper, 
+    .chart-render-area { 
+        page-break-inside: avoid !important; 
+    }
 }
