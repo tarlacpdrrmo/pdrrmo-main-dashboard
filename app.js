@@ -21,6 +21,46 @@ let toggleChartData = {};
 
 const pieColorPalette = ['#e11d48', '#06b6d4', '#2563eb', '#ea580c', '#16a34a', '#9333ea', '#f43f5e', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#d946ef', '#f97316', '#14b8a6', '#6366f1'];
 
+// 🟢 MOVED TO TOP: Safely defined before any charts try to use them 🟢
+const sharedTooltipConfig = {
+    backgroundColor: function(context) {
+        try {
+            if (context.tooltip && context.tooltip.dataPoints && context.tooltip.dataPoints.length > 0) {
+                const dp = context.tooltip.dataPoints[0];
+                let bg = dp.dataset.backgroundColor;
+                if (Array.isArray(bg)) bg = bg[dp.dataIndex]; 
+                if (typeof bg === 'string') return bg;
+                let bc = dp.dataset.borderColor;
+                if (Array.isArray(bc)) bc = bc[dp.dataIndex];
+                if (typeof bc === 'string') return bc;
+            }
+        } catch (e) {
+            console.warn("Tooltip color fallback triggered.");
+        }
+        return 'rgba(30, 41, 59, 0.95)';
+    },
+    titleColor: '#ffffff',
+    bodyColor: '#ffffff',
+    titleFont: { family: 'Inter', size: 11, weight: '800' },
+    bodyFont: { family: 'Inter', size: 11, weight: '600' },
+    padding: 10,
+    cornerRadius: 6,
+    displayColors: false, 
+    borderColor: 'rgba(255, 255, 255, 0.4)', 
+    borderWidth: 1,
+    caretSize: 6,
+    caretPadding: 6
+};
+
+const singleBarOptions = {
+    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+    layout: { padding: { top: 15, right: 25, bottom: 10, left: 10 } }, 
+    plugins: { datalabels: { display: false }, legend: { display: false }, tooltip: sharedTooltipConfig },
+    scales: { x: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } }, y: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } } },
+    elements: { bar: { borderRadius: 3 } } 
+};
+// 🟢 END MOVED SECTION 🟢
+
 function scrollToSection(panelId) {
     const section = document.getElementById(panelId);
     if(section) {
@@ -479,18 +519,9 @@ function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = fa
 // ----------------------------------------------------
 // MASTER RENDERER FOR TOGGLED CHARTS
 // ----------------------------------------------------
-const singleBarOptions = {
-    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-    layout: { padding: { top: 15, right: 25, bottom: 10, left: 10 } }, 
-    plugins: { datalabels: { display: false }, legend: { display: false }, tooltip: sharedTooltipConfig },
-    scales: { x: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } }, y: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } } },
-    elements: { bar: { borderRadius: 3 } } 
-};
-
 function renderToggleableChart(canvasId, type) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     
-    // Destroy existing chart instance to allow smooth re-animation
     if (toggleChartInstances[canvasId]) {
         toggleChartInstances[canvasId].destroy();
     }
@@ -512,7 +543,6 @@ function renderToggleableChart(canvasId, type) {
             options: singleBarOptions
         });
     } else {
-        // Pie Chart rendering with vibrant auto-looping colors
         const mappedColors = dataObj.data.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
         toggleChartInstances[canvasId] = new Chart(ctx, {
             type: 'pie',
@@ -541,7 +571,6 @@ function renderToggleableChart(canvasId, type) {
                             let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
                             if (sum === 0) return '';
                             let pctFloat = (value * 100) / sum;
-                            // Only show text if slice is big enough
                             return pctFloat >= 6 ? pctFloat.toFixed(0) + '%' : '';
                         }
                     }
@@ -621,7 +650,6 @@ function processOperationsData(data) {
 
     drawDonutChart('monthlyPieChart', labels, monthlyTotalServices, overallGrandTotal);
     
-    // Instead of hard-drawing bars, save data and let the toggle engine render them
     toggleChartData['vehicularChart'] = { labels, labelText: 'TRAUMA (ROADCRASH INCIDENT)', data: vehicular, color: '#2563eb' };
     toggleChartData['roadsideChart'] = { labels, labelText: 'Roadside Assistance', data: roadside, color: '#2563eb' };
     toggleChartData['patientChart'] = { labels, labelText: 'Patient Transport', data: patient, color: '#2563eb' };
@@ -634,7 +662,6 @@ function processOperationsData(data) {
     toggleChartData['haulingChart'] = { labels, labelText: 'Hauling', data: hauling, color: '#ea580c' };
     toggleChartData['ledvanChart'] = { labels, labelText: 'Ledvan Truck', data: ledvan, color: '#eab308' };
 
-    // Initial render. Automatically checks if you left the switch on "Pie" or "Bar"
     ['vehicularChart', 'roadsideChart', 'patientChart', 'medicalChart', 'standbyChart', 'othersChart', 'clearingChart', 'firetruckChart', 'haulingChart', 'ledvanChart'].forEach(id => {
         const toggleEl = document.querySelector(`.type-toggle[data-target="${id}"]`);
         const isPie = toggleEl ? toggleEl.checked : false;
