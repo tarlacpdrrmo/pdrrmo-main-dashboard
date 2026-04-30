@@ -126,64 +126,134 @@
                     <div class="charts-wrapper">
                         <!-- TOP 5 MAIN CHARTS -->
                         <div class="charts-grid">
+                            
+                            <!-- 🟢 UPDATED: Headers now contain the interactive toggle switch 🟢 -->
                             <div class="card chart-card flex-col p-0">
-                                <h4 class="card-inner-title">TRAUMA (ROADCRASH INCIDENT)</h4>
+                                <div class="card-header-flex">
+                                    <h4 class="card-inner-title">TRAUMA (ROADCRASH INCIDENT)</h4>
+                                    <label class="chart-toggle" title="Toggle Pie Chart">
+                                        <input type="checkbox" class="type-toggle" data-target="vehicularChart">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
                                 <div class="chart-render-area"><canvas id="vehicularChart"></canvas></div>
                                 <div class="chart-trend-footer" id="trend-vehicular"></div>
                             </div>
+                            
                             <div class="card chart-card flex-col p-0">
-                                <h4 class="card-inner-title">Roadside Assistance</h4>
+                                <div class="card-header-flex">
+                                    <h4 class="card-inner-title">Roadside Assistance</h4>
+                                    <label class="chart-toggle" title="Toggle Pie Chart">
+                                        <input type="checkbox" class="type-toggle" data-target="roadsideChart">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
                                 <div class="chart-render-area"><canvas id="roadsideChart"></canvas></div>
                                 <div class="chart-trend-footer" id="trend-roadside"></div>
                             </div>
+                            
                             <div class="card chart-card flex-col p-0">
-                                <h4 class="card-inner-title">Patient Transport</h4>
+                                <div class="card-header-flex">
+                                    <h4 class="card-inner-title">Patient Transport</h4>
+                                    <label class="chart-toggle" title="Toggle Pie Chart">
+                                        <input type="checkbox" class="type-toggle" data-target="patientChart">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
                                 <div class="chart-render-area"><canvas id="patientChart"></canvas></div>
                                 <div class="chart-trend-footer" id="trend-patient"></div>
                             </div>
+                            
                             <div class="card chart-card flex-col p-0">
-                                <h4 class="card-inner-title">Medical</h4>
+                                <div class="card-header-flex">
+                                    <h4 class="card-inner-title">Medical</h4>
+                                    <label class="chart-toggle" title="Toggle Pie Chart">
+                                        <input type="checkbox" class="type-toggle" data-target="medicalChart">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
                                 <div class="chart-render-area"><canvas id="medicalChart"></canvas></div>
                                 <div class="chart-trend-footer" id="trend-medical"></div>
                             </div>
+                            
                             <div class="card chart-card flex-col p-0">
-                                <h4 class="card-inner-title">Standby Medic, Marshal & VIP</h4>
+                                <div class="card-header-flex">
+                                    <h4 class="card-inner-title">Standby Medic & VIP</h4>
+                                    <label class="chart-toggle" title="Toggle Pie Chart">
+                                        <input type="checkbox" class="type-toggle" data-target="standbyChart">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
                                 <div class="chart-render-area"><canvas id="standbyChart"></canvas></div>
                                 <div class="chart-trend-footer" id="trend-standby"></div>
                             </div>
                         </div>
 
-                        <!-- 🟢 UPDATED: Section Title 🟢 -->
                         <h4 class="section-divider-title">ANCILLARY SERVICE</h4>
 
                         <!-- BOTTOM 5 COMPACT CHARTS -->
                         <div class="charts-grid">
-                            <!-- 🟢 UPDATED: Inner Chart Title 🟢 -->
+                            
                             <div class="card chart-card flex-col p-0">
-                                <h4 class="card-inner-title">SUPPORT SERVICES</h4>
+                                <div class="card-header-flex">
+                                    <h4 class="card-inner-title">SUPPORT SERVICES</h4>
+                                    <label class="chart-toggle" title="Toggle Pie Chart">
+                                        <input type="checkbox" class="type-toggle" data-target="othersChart">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
                                 <div class="chart-render-area"><canvas id="othersChart"></canvas></div>
                                 <div class="chart-trend-footer" id="trend-others"></div>
                             </div>
+                            
                             <div class="card chart-card flex-col p-0">
-                                <h4 class="card-inner-title">Clearing Operations</h4>
+                                <div class="card-header-flex">
+                                    <h4 class="card-inner-title">Clearing Operations</h4>
+                                    <label class="chart-toggle" title="Toggle Pie Chart">
+                                        <input type="checkbox" class="type-toggle" data-target="clearingChart">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
                                 <div class="chart-render-area"><canvas id="clearingChart"></canvas></div>
                                 <div class="chart-trend-footer" id="trend-clearing"></div>
                             </div>
+                            
                             <div class="card chart-card flex-col p-0">
-                                <h4 class="card-inner-title">Firetruck</h4>
+                                <div class="card-header-flex">
+                                    <h4 class="card-inner-title">Firetruck</h4>
+                                    <label class="chart-toggle" title="Toggle Pie Chart">
+                                        <input type="checkbox" class="type-toggle" data-target="firetruckChart">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
                                 <div class="chart-render-area"><canvas id="firetruckChart"></canvas></div>
                                 <div class="chart-trend-footer" id="trend-firetruck"></div>
                             </div>
+                            
                             <div class="card chart-card flex-col p-0">
-                                <h4 class="card-inner-title">Hauling</h4>
+                                <div class="card-header-flex">
+                                    <h4 class="card-inner-title">Hauling</h4>
+                                    <label class="chart-toggle" title="Toggle Pie Chart">
+                                        <input type="checkbox" class="type-toggle" data-target="haulingChart">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
                                 <div class="chart-render-area"><canvas id="haulingChart"></canvas></div>
                                 <div class="chart-trend-footer" id="trend-hauling"></div>
                             </div>
+                            
                             <div class="card chart-card flex-col p-0">
-                                <h4 class="card-inner-title">Ledvan Truck</h4>
+                                <div class="card-header-flex">
+                                    <h4 class="card-inner-title">Ledvan Truck</h4>
+                                    <label class="chart-toggle" title="Toggle Pie Chart">
+                                        <input type="checkbox" class="type-toggle" data-target="ledvanChart">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
                                 <div class="chart-render-area"><canvas id="ledvanChart"></canvas></div>
                                 <div class="chart-trend-footer" id="trend-ledvan"></div>
                             </div>
+                            
                         </div>
                     </div>
                     
