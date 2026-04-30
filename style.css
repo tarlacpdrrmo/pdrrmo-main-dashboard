@@ -6,7 +6,6 @@
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; 
 }
 
-/* ZOOMED OUT: Smaller base font to scale down the whole UI */
 body { 
     background-color: #e2e8f0; 
     color: #1e293b; 
@@ -36,7 +35,6 @@ body {
     overflow: hidden; 
 }
 
-/* FIXED LOGO: Side-by-side Dual Logos */
 .sidebar-logo-container {
     display: flex;
     flex-direction: row; 
@@ -61,7 +59,6 @@ body {
     display: block;
 }
 
-/* FIXED SIDEBAR ICONS */
 .sidebar ul { list-style: none; padding: 0; margin: 0; }
 .sidebar li { 
     display: flex !important;
@@ -214,13 +211,22 @@ body {
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12), 0 4px 6px rgba(0, 0, 0, 0.04);
 }
 
-/* --- 🟢 UPDATED: ASSETS LAYOUT & NEW TIGHTER GRIDS 🟢 --- */
+/* --- 🟢 UPDATED: UNIFORM RESPONSIVE GRIDS 🟢 --- */
 .assets-layout { display: flex; gap: 16px; } 
 .kpi-column { display: flex; flex-direction: column; gap: 12px; width: 180px; flex-shrink: 0; }
 
 .charts-wrapper { flex: 1; display: flex; flex-direction: column; gap: 12px; }
-.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.small-grid { grid-template-columns: repeat(3, 1fr); }
+
+/* 
+   This is the magic line. It forces every chart box to be identical.
+   If your screen is wide, it puts 4 or 5 next to each other. 
+   If it's small, it gracefully wraps them. Perfect symmetry.
+*/
+.charts-grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); 
+    gap: 12px; 
+}
 
 .section-divider-title {
     font-size: 0.75rem; 
@@ -236,7 +242,6 @@ body {
 .flex-col { display: flex; flex-direction: column; align-items: stretch; }
 .p-0 { padding: 0 !important; overflow: hidden; }
 
-/* 🟢 FIX: Making the charts smaller so they all fit perfectly 🟢 */
 .card-inner-title {
     font-size: 0.7rem; 
     color: #1e293b; 
@@ -249,7 +254,7 @@ body {
 .chart-render-area { 
     flex: 1; 
     position: relative; 
-    min-height: 100px; /* Reduced from 140px */
+    min-height: 100px; 
     padding: 0 12px 6px 12px; 
 }
 .chart-trend-footer {
@@ -350,7 +355,6 @@ body {
 .interactive-pie-container { display: flex; gap: 16px; height: 260px; align-items: stretch; margin-top: 8px; }
 .doc-pie-wrapper { flex: 1; height: 100%; position: relative; cursor: pointer; }
 
-/* Scrollable Legend */
 .scrollable-legend { width: 200px; overflow-y: auto; padding-right: 10px; font-size: 0.7rem; border-left: 2px solid #f1f5f9; padding-left: 12px; }
 .scrollable-legend::-webkit-scrollbar { width: 4px; }
 .scrollable-legend::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
@@ -362,7 +366,6 @@ body {
 
 .line-wrapper { height: 180px; position: relative; margin-top: 8px; }
 
-/* KPI Boxes */
 .kpi-card-small { padding: 14px; display: flex; flex-direction: column; justify-content: center; min-height: 80px; }
 .kpi-card-small p { font-size: 0.6rem; color: #64748b; font-weight: 800; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; }
 .kpi-card-small h3 { font-size: 1.6rem; font-weight: 800; color: #0f172a; line-height: 1; text-shadow: 0 1px 2px rgba(0,0,0,0.05); } 
