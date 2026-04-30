@@ -14,6 +14,9 @@ let mainPieData = [];
 let detailedPieData = {};
 let globalLineData = []; 
 
+// The base 15-color palette
+const pieColorPalette = ['#e11d48', '#06b6d4', '#2563eb', '#ea580c', '#16a34a', '#9333ea', '#f43f5e', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#d946ef', '#f97316', '#14b8a6', '#6366f1'];
+
 function scrollToSection(panelId) {
     const section = document.getElementById(panelId);
     if(section) {
@@ -25,28 +28,24 @@ document.addEventListener("DOMContentLoaded", function() {
     const panels = document.querySelectorAll('.panel');
     const navLinks = document.querySelectorAll('.sidebar li:not(.section-title)');
     
-    // 🟢 UPDATED: Intersection Observer handles map pop-up animations 🟢
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                // Handle Sidebar Active States
                 navLinks.forEach(link => link.classList.remove('active'));
                 const id = entry.target.getAttribute('id');
                 const activeLink = document.querySelector(`.sidebar li[onclick="scrollToSection('${id}')"]`);
                 if(activeLink) activeLink.classList.add('active');
                 
-                // Trigger smooth pop-up for maps
                 if (entry.target.classList.contains('iframe-panel')) {
                     entry.target.classList.add('map-in-view');
                 }
             } else {
-                // Reset map animation when scrolling away so it pops up again next time
                 if (entry.target.classList.contains('iframe-panel')) {
                     entry.target.classList.remove('map-in-view');
                 }
             }
         });
-    }, { threshold: 0.2 }); // Triggers when 20% of the map is visible
+    }, { threshold: 0.2 }); 
 
     panels.forEach(panel => observer.observe(panel));
 
@@ -74,10 +73,12 @@ document.addEventListener("DOMContentLoaded", function() {
     setInterval(updateClock, 1000);
     updateClock(); 
 
+    // 🟢 UPDATED: Back button must also restore the looping colors 🟢
     document.getElementById('pieBackButton').addEventListener('click', function() {
         if(docPieChartInstance) {
             docPieChartInstance.data.labels = mainPieLabels;
             docPieChartInstance.data.datasets[0].data = mainPieData;
+            docPieChartInstance.data.datasets[0].backgroundColor = mainPieData.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
             docPieChartInstance.update();
         }
         this.style.display = 'none';
@@ -470,11 +471,15 @@ function processOperationsData(data) {
     drawCombinedBarChart('combinedChart', labels, others, clearing, firetruck, hauling, ledvan);
 }
 
+// ----------------------------------------------------
+// 🟢 FIXED: Safe Color Extractor for Infinite Arrays 🟢
+// ----------------------------------------------------
 const sharedTooltipConfig = {
     backgroundColor: function(context) {
         try {
             if (context.tooltip && context.tooltip.dataPoints && context.tooltip.dataPoints.length > 0) {
                 const dp = context.tooltip.dataPoints[0];
+                
                 let bg = dp.dataset.backgroundColor;
                 if (Array.isArray(bg)) bg = bg[dp.dataIndex]; 
                 if (typeof bg === 'string') return bg;
@@ -501,15 +506,17 @@ const sharedTooltipConfig = {
     caretPadding: 6
 };
 
-const pieColorPalette = ['#e11d48', '#06b6d4', '#2563eb', '#ea580c', '#16a34a', '#9333ea', '#f43f5e', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#d946ef', '#f97316', '#14b8a6', '#6366f1'];
 
 function drawInteractiveDonutChart(canvasId, labels, dataArr) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     if(docPieChartInstance) docPieChartInstance.destroy();
     
+    // 🟢 FIX: Map colors to loop infinitely so we never run out of colors for tooltips 🟢
+    const mappedColors = dataArr.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
+    
     docPieChartInstance = new Chart(ctx, {
         type: 'doughnut',
-        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: pieColorPalette, borderWidth: 1, borderColor: '#ffffff', hoverOffset: 8 }] },
+        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: mappedColors, borderWidth: 1, borderColor: '#ffffff', hoverOffset: 8 }] },
         options: {
             responsive: true, maintainAspectRatio: false, cutout: '55%',
             onClick: (event, elements, chart) => {
@@ -523,6 +530,10 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr) {
                         
                         chart.data.labels = sortedSub.map(i => i.l);
                         chart.data.datasets[0].data = sortedSub.map(i => i.v);
+                        
+                        // Ensure zoomed view colors map perfectly too
+                        chart.data.datasets[0].backgroundColor = sortedSub.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
+                        
                         chart.update(); 
 
                         document.getElementById('pieChartTitle').innerText = 'Breakdown: ' + label;
@@ -636,6 +647,9 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     const vibrantColors = ['#2563eb', '#06b6d4', '#e11d48', '#ea580c', '#16a34a', '#9333ea'];
     
+    // Ensure colors loop infinitely
+    const mappedVibrant = dataArr.map((_, i) => vibrantColors[i % vibrantColors.length]);
+    
     const gtEl = document.getElementById('pie-grand-total');
     if(gtEl) gtEl.innerText = grandTotal.toLocaleString();
 
@@ -645,7 +659,7 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
             labels: labels, 
             datasets: [{ 
                 data: dataArr, 
-                backgroundColor: vibrantColors, 
+                backgroundColor: mappedVibrant, 
                 borderWidth: 2, 
                 borderColor: '#ffffff',
                 hoverOffset: 12 
