@@ -15,6 +15,10 @@ let detailedPieData = {};
 let globalLineData = []; 
 let globalDocRecords = []; 
 
+// 🟢 NEW: Storage objects to remember data and track active instances for toggling 🟢
+let toggleChartInstances = {};
+let toggleChartData = {};
+
 const pieColorPalette = ['#e11d48', '#06b6d4', '#2563eb', '#ea580c', '#16a34a', '#9333ea', '#f43f5e', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#d946ef', '#f97316', '#14b8a6', '#6366f1'];
 
 function scrollToSection(panelId) {
@@ -91,6 +95,15 @@ document.addEventListener("DOMContentLoaded", function() {
 
     document.getElementById('lineChartFilter').addEventListener('change', function(e) {
         renderLineChartByTimeframe(e.target.value);
+    });
+    
+    // 🟢 NEW: Global event listener catches toggles and instantly animates the swap 🟢
+    document.addEventListener('change', function(e) {
+        if(e.target.classList.contains('type-toggle')) {
+            const targetCanvas = e.target.getAttribute('data-target');
+            const isPie = e.target.checked;
+            renderToggleableChart(targetCanvas, isPie ? 'pie' : 'bar');
+        }
     });
 });
 
@@ -392,7 +405,6 @@ function renderLineChartByTimeframe(timeframe) {
     }
 }
 
-// 🟢 FIX: Slimmed down padding so smaller charts fit nicely 🟢
 function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = false) {
     const el = document.getElementById(elementId);
     if (!el) return;
@@ -419,7 +431,7 @@ function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = fa
     if (dataArray.length < 2) {
         trendHtml = `<span>No prior data</span>`;
         el.style.backgroundColor = bgColor;
-        el.style.padding = '8px 12px'; /* Tighter padding */
+        el.style.padding = '10px 16px'; 
         el.innerHTML = `<div style="font-weight:600; font-size:0.75rem; color:#fff;">${trendHtml}</div>`;
         return;
     }
@@ -430,7 +442,6 @@ function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = fa
     const arrowUp = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>`;
     const arrowDown = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"></path></svg>`;
 
-    // Uses the custom logic you established earlier for your primary services
     if (diff > 0) {
         symbol = arrowUp;
         bgColor = inverseColors ? '#ef4444' : '#10b981'; 
@@ -453,7 +464,7 @@ function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = fa
     `;
 
     el.style.backgroundColor = bgColor;
-    el.style.padding = '8px 12px'; /* Tighter padding */
+    el.style.padding = '10px 16px'; 
     el.style.color = '#ffffff';
 
     el.innerHTML = `
@@ -464,6 +475,82 @@ function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = fa
         </div>
     `;
 }
+
+// ----------------------------------------------------
+// 🟢 NEW: MASTER RENDERER FOR TOGGLED CHARTS 🟢
+// ----------------------------------------------------
+const singleBarOptions = {
+    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+    layout: { padding: { top: 15, right: 25, bottom: 10, left: 10 } }, 
+    plugins: { datalabels: { display: false }, legend: { display: false }, tooltip: sharedTooltipConfig },
+    scales: { x: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } }, y: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } } },
+    elements: { bar: { borderRadius: 3 } } 
+};
+
+function renderToggleableChart(canvasId, type) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    
+    // Destroy existing chart instance to allow smooth re-animation
+    if (toggleChartInstances[canvasId]) {
+        toggleChartInstances[canvasId].destroy();
+    }
+
+    const dataObj = toggleChartData[canvasId];
+
+    if (type === 'bar') {
+        toggleChartInstances[canvasId] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: dataObj.labels,
+                datasets: [{
+                    label: dataObj.labelText,
+                    data: dataObj.data,
+                    backgroundColor: dataObj.color,
+                    maxBarThickness: 15
+                }]
+            },
+            options: singleBarOptions
+        });
+    } else {
+        // Pie Chart rendering with vibrant auto-looping colors
+        const mappedColors = dataObj.data.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
+        toggleChartInstances[canvasId] = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: dataObj.labels,
+                datasets: [{
+                    data: dataObj.data,
+                    backgroundColor: mappedColors,
+                    borderWidth: 1,
+                    borderColor: '#ffffff',
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: { padding: 10 },
+                animation: { animateScale: true, animateRotate: true, duration: 600, easing: 'easeOutQuart' },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: sharedTooltipConfig,
+                    datalabels: {
+                        color: '#ffffff',
+                        font: { weight: '800', family: 'Inter', size: 9 },
+                        formatter: (value, context) => {
+                            let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                            if (sum === 0) return '';
+                            let pctFloat = (value * 100) / sum;
+                            // Only show text if slice is big enough
+                            return pctFloat >= 6 ? pctFloat.toFixed(0) + '%' : '';
+                        }
+                    }
+                }
+            }
+        });
+    }
+}
+
 
 function processOperationsData(data) {
     const labels = [];
@@ -520,14 +607,12 @@ function processOperationsData(data) {
     document.getElementById('kpi-outside').innerText = totalOutside;
     document.getElementById('pct-outside').innerText = referenceTotal > 0 ? ((totalOutside / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
 
-    // Primary charts (uses user's custom inverse red/green logic where requested)
     renderTrendFooter('trend-vehicular', vehicular, labels, true); 
     renderTrendFooter('trend-roadside', roadside, labels, false); 
     renderTrendFooter('trend-patient', patient, labels, true);      
     renderTrendFooter('trend-medical', medical, labels, true);                
     renderTrendFooter('trend-standby', standby, labels, false); 
     
-    // 🟢 NEW: Renders standard trend footers for the newly split individual boxes
     renderTrendFooter('trend-others', others, labels, false);
     renderTrendFooter('trend-clearing', clearing, labels, false);
     renderTrendFooter('trend-firetruck', firetruck, labels, false);
@@ -536,139 +621,24 @@ function processOperationsData(data) {
 
     drawDonutChart('monthlyPieChart', labels, monthlyTotalServices, overallGrandTotal);
     
-    drawHorizontalBar('vehicularChart', labels, 'TRAUMA (ROADCRASH INCIDENT)', vehicular, '#2563eb', singleBarOptions);
-    drawHorizontalBar('roadsideChart', labels, 'Roadside Assistance', roadside, '#2563eb', singleBarOptions);
-    drawHorizontalBar('patientChart', labels, 'Patient Transport', patient, '#2563eb', singleBarOptions);
-    drawHorizontalBar('medicalChart', labels, 'Medical', medical, '#2563eb', singleBarOptions);
-    drawHorizontalBar('standbyChart', labels, 'Standby Medic, Marshal & VIP', standby, '#2563eb', singleBarOptions);
+    // 🟢 UPDATED: Instead of hard-drawing bars, save data and let the toggle engine render them 🟢
+    toggleChartData['vehicularChart'] = { labels, labelText: 'TRAUMA (ROADCRASH INCIDENT)', data: vehicular, color: '#2563eb' };
+    toggleChartData['roadsideChart'] = { labels, labelText: 'Roadside Assistance', data: roadside, color: '#2563eb' };
+    toggleChartData['patientChart'] = { labels, labelText: 'Patient Transport', data: patient, color: '#2563eb' };
+    toggleChartData['medicalChart'] = { labels, labelText: 'Medical', data: medical, color: '#2563eb' };
+    toggleChartData['standbyChart'] = { labels, labelText: 'Standby Medic, Marshal & VIP', data: standby, color: '#2563eb' };
     
-    // 🟢 NEW: Renders the individual separated chart boxes instead of the massive combined one
-    drawHorizontalBar('othersChart', labels, 'Others', others, '#6366f1', singleBarOptions);
-    drawHorizontalBar('clearingChart', labels, 'Clearing Operations', clearing, '#06b6d4', singleBarOptions);
-    drawHorizontalBar('firetruckChart', labels, 'Firetruck', firetruck, '#e11d48', singleBarOptions);
-    drawHorizontalBar('haulingChart', labels, 'Hauling', hauling, '#ea580c', singleBarOptions);
-    drawHorizontalBar('ledvanChart', labels, 'Ledvan Truck', ledvan, '#eab308', singleBarOptions);
-}
+    toggleChartData['othersChart'] = { labels, labelText: 'SUPPORT SERVICES', data: others, color: '#6366f1' };
+    toggleChartData['clearingChart'] = { labels, labelText: 'Clearing Operations', data: clearing, color: '#06b6d4' };
+    toggleChartData['firetruckChart'] = { labels, labelText: 'Firetruck', data: firetruck, color: '#e11d48' };
+    toggleChartData['haulingChart'] = { labels, labelText: 'Hauling', data: hauling, color: '#ea580c' };
+    toggleChartData['ledvanChart'] = { labels, labelText: 'Ledvan Truck', data: ledvan, color: '#eab308' };
 
-const sharedTooltipConfig = {
-    backgroundColor: function(context) {
-        try {
-            if (context.tooltip && context.tooltip.dataPoints && context.tooltip.dataPoints.length > 0) {
-                const dp = context.tooltip.dataPoints[0];
-                
-                let bg = dp.dataset.backgroundColor;
-                if (Array.isArray(bg)) bg = bg[dp.dataIndex]; 
-                if (typeof bg === 'string') return bg;
-                
-                let bc = dp.dataset.borderColor;
-                if (Array.isArray(bc)) bc = bc[dp.dataIndex];
-                if (typeof bc === 'string') return bc;
-            }
-        } catch (e) {
-            console.warn("Tooltip color fallback triggered.");
-        }
-        return 'rgba(30, 41, 59, 0.95)';
-    },
-    titleColor: '#ffffff',
-    bodyColor: '#ffffff',
-    titleFont: { family: 'Inter', size: 11, weight: '800' },
-    bodyFont: { family: 'Inter', size: 11, weight: '600' },
-    padding: 10,
-    cornerRadius: 6,
-    displayColors: false, 
-    borderColor: 'rgba(255, 255, 255, 0.4)', 
-    borderWidth: 1,
-    caretSize: 6,
-    caretPadding: 6
-};
-
-function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = false) {
-    const ctx = document.getElementById(canvasId).getContext('2d');
-    if(docPieChartInstance) docPieChartInstance.destroy();
-    
-    let mappedColors = dataArr.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
-    if (isEmptyState) mappedColors = ['#e2e8f0']; 
-    
-    docPieChartInstance = new Chart(ctx, {
-        type: 'doughnut',
-        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: mappedColors, borderWidth: 1, borderColor: '#ffffff', hoverOffset: isEmptyState ? 0 : 8 }] },
-        options: {
-            responsive: true, maintainAspectRatio: false, cutout: '55%',
-            onClick: (event, elements, chart) => {
-                if (isEmptyState) return; 
-                
-                if (elements[0]) {
-                    const index = elements[0].index;
-                    const label = chart.data.labels[index];
-                    
-                    if (detailedPieData[label] && Object.keys(detailedPieData[label]).length > 1 && document.getElementById('pieBackButton').style.display !== 'block') {
-                        let subData = detailedPieData[label];
-                        let sortedSub = Object.keys(subData).map(key => ({ l: key, v: subData[key] })).sort((a, b) => b.v - a.v);
-                        
-                        chart.data.labels = sortedSub.map(i => i.l);
-                        chart.data.datasets[0].data = sortedSub.map(i => i.v);
-                        
-                        chart.data.datasets[0].backgroundColor = sortedSub.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
-                        
-                        chart.update(); 
-
-                        document.getElementById('pieChartTitle').innerText = 'Breakdown: ' + label;
-                        document.getElementById('pieBackButton').style.display = 'block';
-                        updateCustomLegend(chart.data.labels, chart.data.datasets[0].data);
-                    }
-                }
-            },
-            plugins: {
-                legend: { display: false },
-                datalabels: {
-                    color: isEmptyState ? '#94a3b8' : '#ffffff', 
-                    font: { weight: '800', family: 'Inter', size: isEmptyState ? 12 : 9 }, 
-                    anchor: 'center',
-                    align: 'center',
-                    formatter: (value, context) => { 
-                        if (isEmptyState) return 'No Data';
-                        
-                        let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); 
-                        if (sum === 0) return ''; 
-                        
-                        let pctStr = ((value * 100) / sum).toFixed(1);
-                        let pctFloat = parseFloat(pctStr);
-                        
-                        return pctFloat >= 8 ? pctStr + '%' : ''; 
-                    } 
-                },
-                tooltip: {
-                    enabled: !isEmptyState, 
-                    ...sharedTooltipConfig, 
-                    callbacks: {
-                        label: function(context) {
-                            let suffix = '';
-                            if (document.getElementById('pieBackButton').style.display !== 'block' && detailedPieData[context.label] && Object.keys(detailedPieData[context.label]).length > 1) {
-                                suffix = ' (Click to zoom)';
-                            }
-                            return `${context.raw} requests ${suffix}`;
-                        }
-                    }
-                }
-            }
-        }
-    });
-    updateCustomLegend(labels, dataArr, isEmptyState);
-}
-
-function updateCustomLegend(labels, data, isEmptyState = false) {
-    const legendContainer = document.getElementById('customLegend');
-    legendContainer.innerHTML = '';
-    labels.forEach((label, index) => {
-        let color = isEmptyState ? '#e2e8f0' : pieColorPalette[index % pieColorPalette.length];
-        let val = isEmptyState ? '-' : data[index];
-        legendContainer.innerHTML += `
-            <div class="legend-item">
-                <div class="legend-color" style="background-color: ${color}"></div>
-                <div class="legend-text" title="${label}">${label}</div>
-                <div class="legend-val">${val}</div>
-            </div>
-        `;
+    // Initial render. Automatically checks if you left the switch on "Pie" or "Bar"
+    ['vehicularChart', 'roadsideChart', 'patientChart', 'medicalChart', 'standbyChart', 'othersChart', 'clearingChart', 'firetruckChart', 'haulingChart', 'ledvanChart'].forEach(id => {
+        const toggleEl = document.querySelector(`.type-toggle[data-target="${id}"]`);
+        const isPie = toggleEl ? toggleEl.checked : false;
+        renderToggleableChart(id, isPie ? 'pie' : 'bar');
     });
 }
 
@@ -796,17 +766,94 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
     });
 }
 
-const singleBarOptions = {
-    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-    layout: { padding: { top: 15, right: 25, bottom: 10, left: 10 } }, 
-    plugins: { datalabels: { display: false }, legend: { display: false }, tooltip: sharedTooltipConfig },
-    scales: { x: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } }, y: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } } },
-    elements: { bar: { borderRadius: 3 } } 
-};
-
-function drawHorizontalBar(canvasId, labels, labelText, dataArr, color, optionsObj) {
+function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = false) {
     const ctx = document.getElementById(canvasId).getContext('2d');
-    new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [{ label: labelText, data: dataArr, backgroundColor: color, maxBarThickness: 15 }] }, options: optionsObj });
+    if(docPieChartInstance) docPieChartInstance.destroy();
+    
+    let mappedColors = dataArr.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
+    if (isEmptyState) mappedColors = ['#e2e8f0']; 
+    
+    docPieChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: mappedColors, borderWidth: 1, borderColor: '#ffffff', hoverOffset: isEmptyState ? 0 : 8 }] },
+        options: {
+            responsive: true, maintainAspectRatio: false, cutout: '55%',
+            onClick: (event, elements, chart) => {
+                if (isEmptyState) return; 
+                
+                if (elements[0]) {
+                    const index = elements[0].index;
+                    const label = chart.data.labels[index];
+                    
+                    if (detailedPieData[label] && Object.keys(detailedPieData[label]).length > 1 && document.getElementById('pieBackButton').style.display !== 'block') {
+                        let subData = detailedPieData[label];
+                        let sortedSub = Object.keys(subData).map(key => ({ l: key, v: subData[key] })).sort((a, b) => b.v - a.v);
+                        
+                        chart.data.labels = sortedSub.map(i => i.l);
+                        chart.data.datasets[0].data = sortedSub.map(i => i.v);
+                        
+                        chart.data.datasets[0].backgroundColor = sortedSub.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
+                        
+                        chart.update(); 
+
+                        document.getElementById('pieChartTitle').innerText = 'Breakdown: ' + label;
+                        document.getElementById('pieBackButton').style.display = 'block';
+                        updateCustomLegend(chart.data.labels, chart.data.datasets[0].data);
+                    }
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                datalabels: {
+                    color: isEmptyState ? '#94a3b8' : '#ffffff', 
+                    font: { weight: '800', family: 'Inter', size: isEmptyState ? 12 : 9 }, 
+                    anchor: 'center',
+                    align: 'center',
+                    formatter: (value, context) => { 
+                        if (isEmptyState) return 'No Data';
+                        
+                        let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); 
+                        if (sum === 0) return ''; 
+                        
+                        let pctStr = ((value * 100) / sum).toFixed(1);
+                        let pctFloat = parseFloat(pctStr);
+                        
+                        return pctFloat >= 8 ? pctStr + '%' : ''; 
+                    } 
+                },
+                tooltip: {
+                    enabled: !isEmptyState, 
+                    ...sharedTooltipConfig, 
+                    callbacks: {
+                        label: function(context) {
+                            let suffix = '';
+                            if (document.getElementById('pieBackButton').style.display !== 'block' && detailedPieData[context.label] && Object.keys(detailedPieData[context.label]).length > 1) {
+                                suffix = ' (Click to zoom)';
+                            }
+                            return `${context.raw} requests ${suffix}`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    updateCustomLegend(labels, dataArr, isEmptyState);
+}
+
+function updateCustomLegend(labels, data, isEmptyState = false) {
+    const legendContainer = document.getElementById('customLegend');
+    legendContainer.innerHTML = '';
+    labels.forEach((label, index) => {
+        let color = isEmptyState ? '#e2e8f0' : pieColorPalette[index % pieColorPalette.length];
+        let val = isEmptyState ? '-' : data[index];
+        legendContainer.innerHTML += `
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: ${color}"></div>
+                <div class="legend-text" title="${label}">${label}</div>
+                <div class="legend-val">${val}</div>
+            </div>
+        `;
+    });
 }
 
 window.onload = loadAllData;
