@@ -254,7 +254,6 @@ body {
     gap: 16px; 
 }
 
-/* 🟢 NEW: 2x2 GRID SPANNER FOR THE MASTER CHART 🟢 */
 .span-2x2 {
     grid-column: span 2;
     grid-row: span 2;
@@ -264,7 +263,7 @@ body {
 .large-pie-container {
     display: flex;
     gap: 16px;
-    flex: 1; /* stretches to fill the 2x2 block */
+    flex: 1; 
     align-items: stretch;
     margin-top: 8px;
     min-height: 350px;
@@ -284,7 +283,6 @@ body {
 .flex-col { display: flex; flex-direction: column; align-items: stretch; }
 .p-0 { padding: 0 !important; overflow: hidden; }
 
-/* HARD LOCKED BOX SIZE FOR STANDARD CHARTS */
 .card-header-flex {
     display: flex;
     justify-content: space-between;
@@ -406,10 +404,22 @@ body {
 .interactive-pie-container { display: flex; gap: 16px; height: 260px; align-items: stretch; margin-top: 8px; }
 .doc-pie-wrapper { flex: 1; height: 100%; position: relative; cursor: pointer; }
 
+/* 🟢 NEW: Legend Cascade Animation 🟢 */
+@keyframes legendFadeIn {
+    from { opacity: 0; transform: translateX(10px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
 .scrollable-legend { width: 200px; overflow-y: auto; padding-right: 10px; font-size: 0.7rem; border-left: 2px solid #f1f5f9; padding-left: 12px; }
 .scrollable-legend::-webkit-scrollbar { width: 4px; }
 .scrollable-legend::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
-.legend-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f8fafc; transition: 0.3s; }
+
+.legend-item { 
+    display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f8fafc; transition: 0.3s; 
+    opacity: 0; /* Starts hidden to allow animation to trigger */
+    animation: legendFadeIn 0.4s ease forwards;
+}
+
 .legend-item:hover { transform: translateX(4px); background-color: #f8fafc; border-radius: 4px; }
 .legend-color { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .legend-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #334155; font-weight: 600; }
