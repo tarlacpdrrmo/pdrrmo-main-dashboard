@@ -51,7 +51,6 @@ const sharedTooltipConfig = {
     caretPadding: 6
 };
 
-// Added smooth animations to the Bar Charts as well
 const singleBarOptions = {
     indexAxis: 'y', 
     responsive: true, 
@@ -329,33 +328,17 @@ function processDocumentsData(data) {
             rawOffice = 'Unspecified Office';
         }
 
+        // 🟢 NEW: Read Category directly from Column O 🟢
+        let rawCategory = row['Category of Writing Party'] || 
+                          row['CATEGORY OF WRITING PARTY'] || 
+                          row['Column O'] || 
+                          row['COLUMN O'] || '';
+                          
+        let parentCategory = rawCategory.trim() !== '' ? rawCategory.trim() : 'Uncategorized';
+
         let officeReqs = rowCount; 
         
         if (officeReqs > 0) {
-            let upperOffice = String(rawOffice).toUpperCase();
-            let parentCategory = rawOffice; 
-
-            const scrubRules = [
-                { category: 'PGT & PGO Offices', keywords: ['PGT', 'PROVINCIAL GOV', 'PGO', 'PGSO', 'BAC'] },
-                { category: '3rd Mechanized Infantry', keywords: ['3RD MECH', 'MECHANIZED INFANTRY', '31ST MECH'] },
-                { category: '522nd Engineer Battalion', keywords: ['522ND', 'ENGINEER'] },
-                { category: 'BFP Tarlac', keywords: ['BFP', 'FIRE'] },
-                { category: 'DSWD Facilities', keywords: ['DSWD', 'LINGAP'] },
-                { category: 'DepEd / Schools', keywords: ['DEPED', 'SCHOOL', 'ACADEMIA'] },
-                { category: 'Hospitals & Health', keywords: ['DOH', 'CLDH', 'HOSPITAL', 'HEALTH', 'TPH', 'CLCHD'] },
-                { category: 'Local Government (LGUs/Brgys)', keywords: ['BRGY', 'BARANGAY', 'CITY GOV', 'MUNICIPAL'] },
-                { category: 'National Gov Agencies', keywords: ['DOST', 'DICT', 'DILG', 'COA', 'OCD', 'RDRRMC', 'CDRRMO'] },
-                { category: 'NGOs & Private Orgs', keywords: ['FOUNDATION', 'INC.', 'CHURCH', 'CLUB', 'SCOUT', 'COMPANY'] },
-                { category: 'Private Individuals', keywords: ['N/A', 'PRIVATE', 'GENERAL PUBLIC'] }
-            ];
-
-            for (let rule of scrubRules) {
-                if (rule.keywords.some(keyword => upperOffice.includes(keyword))) {
-                    parentCategory = rule.category;
-                    break; 
-                }
-            }
-
             globalDocRecords.push({
                 dateKey: monthYearKey,
                 parent: parentCategory,
@@ -527,18 +510,16 @@ function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = fa
 }
 
 // ----------------------------------------------------
-// 🟢 UPDATED: MASTER RENDERER WITH CSS CROSSFADE ENGINE 🟢
+// MASTER RENDERER WITH CSS CROSSFADE ENGINE
 // ----------------------------------------------------
 function renderToggleableChart(canvasId, type, isInitialLoad = false) {
     const canvas = document.getElementById(canvasId);
     const container = canvas.parentElement;
 
-    // If it's not the first time loading, trigger the CSS fade-out animation first
     if (!isInitialLoad) {
         container.classList.add('chart-fade-out');
     }
 
-    // Wait exactly 300ms for the CSS fade-out to finish, then swap the charts while invisible
     setTimeout(() => {
         const ctx = canvas.getContext('2d');
         
@@ -599,14 +580,13 @@ function renderToggleableChart(canvasId, type, isInitialLoad = false) {
             });
         }
 
-        // Once the new chart is built, remove the fade class so it animates back into view
         if (!isInitialLoad) {
             setTimeout(() => {
                 container.classList.remove('chart-fade-out');
-            }, 50); // Tiny 50ms buffer ensures the browser has rendered the new chart frame first
+            }, 50); 
         }
 
-    }, isInitialLoad ? 0 : 300); // 300ms matches the CSS animation time
+    }, isInitialLoad ? 0 : 300); 
 }
 
 function processOperationsData(data) {
@@ -693,7 +673,7 @@ function processOperationsData(data) {
     const masterToggle = document.getElementById('masterChartToggle');
     const isPie = masterToggle ? masterToggle.checked : false;
     ['vehicularChart', 'roadsideChart', 'patientChart', 'medicalChart', 'standbyChart', 'othersChart', 'clearingChart', 'firetruckChart', 'haulingChart', 'ledvanChart'].forEach(id => {
-        renderToggleableChart(id, isPie ? 'pie' : 'bar', true); // TRUE passes the "initialLoad" flag to bypass fading on boot
+        renderToggleableChart(id, isPie ? 'pie' : 'bar', true); 
     });
 }
 
