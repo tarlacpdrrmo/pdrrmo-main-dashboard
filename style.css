@@ -158,7 +158,6 @@ body {
     text-transform: uppercase;
 }
 
-/* 🟢 NEW: Container to group the clock and print button 🟢 */
 .header-right-actions {
     display: flex;
     align-items: center;
@@ -189,7 +188,6 @@ body {
     margin-top: 4px;
 }
 
-/* 🟢 NEW: Print Button Styles 🟢 */
 .btn-print {
     display: flex;
     align-items: center;
@@ -647,27 +645,24 @@ td {
     transform: scale(0.95) !important; 
 }
 
-/* 🟢 NEW: PROFESSIONAL PRINT ENGINE 🟢 */
+/* 🟢 UPDATED: PROFESSIONAL PRINT ENGINE (LEGAL SIZE) 🟢 */
 @media print {
-    /* Set landscape page and clean margins */
+    /* Forces Legal Size (8.5 x 14 inches) in Landscape */
     @page { 
-        size: landscape; 
+        size: legal landscape; 
         margin: 10mm; 
     }
     
-    /* Strip away dark backgrounds */
     body { 
         background-color: #ffffff !important; 
         color: #000000 !important; 
     }
 
-    /* Force the browser to print your beautiful pie chart colors */
     * { 
         -webkit-print-color-adjust: exact !important; 
         print-color-adjust: exact !important; 
     }
 
-    /* Hide UI elements that shouldn't be printed */
     .sidebar, 
     .btn-print, 
     .master-toggle-wrapper, 
@@ -678,7 +673,6 @@ td {
         display: none !important; 
     }
 
-    /* Expand the main content to take up the full paper */
     .dashboard-container { 
         display: block !important; 
         height: auto !important; 
@@ -691,7 +685,6 @@ td {
         width: 100% !important; 
     }
 
-    /* Clean up headers for paper */
     .page-header { 
         margin: 0 0 20px 0 !important; 
         padding: 0 !important; 
@@ -699,7 +692,6 @@ td {
         box-shadow: none !important; 
     }
     
-    /* Remove shadow effects and prevent elements from breaking across pages */
     .card { 
         box-shadow: none !important; 
         border: 1px solid #cbd5e1 !important; 
@@ -712,7 +704,6 @@ td {
         padding-bottom: 0 !important; 
     }
 
-    /* Ensure grids render cleanly on paper */
     .charts-grid { 
         display: grid !important; 
         grid-template-columns: repeat(3, 1fr) !important; 
@@ -723,7 +714,6 @@ td {
         flex-direction: column !important; 
     }
     
-    /* Lock chart areas to prevent resizing bugs during print */
     .pie-wrapper, 
     .chart-render-area { 
         page-break-inside: avoid !important; 
