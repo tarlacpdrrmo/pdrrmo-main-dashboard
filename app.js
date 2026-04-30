@@ -25,16 +25,28 @@ document.addEventListener("DOMContentLoaded", function() {
     const panels = document.querySelectorAll('.panel');
     const navLinks = document.querySelectorAll('.sidebar li:not(.section-title)');
     
+    // 🟢 UPDATED: Intersection Observer handles map pop-up animations 🟢
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
+                // Handle Sidebar Active States
                 navLinks.forEach(link => link.classList.remove('active'));
                 const id = entry.target.getAttribute('id');
                 const activeLink = document.querySelector(`.sidebar li[onclick="scrollToSection('${id}')"]`);
                 if(activeLink) activeLink.classList.add('active');
+                
+                // Trigger smooth pop-up for maps
+                if (entry.target.classList.contains('iframe-panel')) {
+                    entry.target.classList.add('map-in-view');
+                }
+            } else {
+                // Reset map animation when scrolling away so it pops up again next time
+                if (entry.target.classList.contains('iframe-panel')) {
+                    entry.target.classList.remove('map-in-view');
+                }
             }
         });
-    }, { threshold: 0.3 }); 
+    }, { threshold: 0.2 }); // Triggers when 20% of the map is visible
 
     panels.forEach(panel => observer.observe(panel));
 
@@ -110,6 +122,7 @@ function processVolunteersData(data) {
     let totalOrgs = 0;
     let totalIndividualsInOrgs = 0;
     let standaloneIndividuals = 0;
+    let orgList = []; 
 
     const tbody = document.querySelector('#volunteerTable tbody');
     tbody.innerHTML = ''; 
@@ -133,19 +146,42 @@ function processVolunteersData(data) {
         if (orgName && orgCount > 0 && !orgName.toUpperCase().includes('TOTAL')) {
             totalOrgs++; 
             totalIndividualsInOrgs += orgCount; 
-
-            let tr = document.createElement('tr');
-            
-            let tdName = document.createElement('td');
-            tdName.innerText = orgName;
-            
-            let tdCount = document.createElement('td');
-            tdCount.innerText = orgCount.toLocaleString(); 
-            
-            tr.appendChild(tdName);
-            tr.appendChild(tdCount);
-            tbody.appendChild(tr);
+            orgList.push({ name: orgName, count: orgCount });
         }
+    });
+
+    orgList.sort((a, b) => b.count - a.count);
+
+    const maxCount = orgList.length > 0 ? orgList[0].count : 1;
+
+    orgList.forEach((org, index) => {
+        let tr = document.createElement('tr');
+        
+        tr.style.animationDelay = `${index * 0.03}s`;
+        
+        let tdName = document.createElement('td');
+        tdName.innerHTML = `
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span style="color:#94a3b8; font-weight:800; font-size:0.6rem;">${index + 1}</span>
+                <span>${org.name}</span>
+            </div>
+        `;
+        
+        let tdCount = document.createElement('td');
+        let percentage = (org.count / maxCount) * 100;
+        
+        tdCount.innerHTML = `
+            <div style="display:flex; align-items:center; gap:12px; width:100%;">
+                <span style="width: 30px; font-weight:800;">${org.count.toLocaleString()}</span>
+                <div style="flex:1; height:6px; background:#f1f5f9; border-radius:3px; overflow:hidden;">
+                    <div style="height:100%; width:${percentage}%; background:linear-gradient(90deg, #06b6d4, #2563eb); border-radius:3px; transition: width 1s ease-in-out;"></div>
+                </div>
+            </div>
+        `;
+        
+        tr.appendChild(tdName);
+        tr.appendChild(tdCount);
+        tbody.appendChild(tr);
     });
 
     let grandTotalHumans = totalIndividualsInOrgs + standaloneIndividuals;
@@ -434,22 +470,15 @@ function processOperationsData(data) {
     drawCombinedBarChart('combinedChart', labels, others, clearing, firetruck, hauling, ledvan);
 }
 
-// ----------------------------------------------------
-// 🟢 FIX: Safe Background Color Extractor 🟢
-// ----------------------------------------------------
 const sharedTooltipConfig = {
     backgroundColor: function(context) {
         try {
-            // Safely dig into the exact dataPoint being hovered
             if (context.tooltip && context.tooltip.dataPoints && context.tooltip.dataPoints.length > 0) {
                 const dp = context.tooltip.dataPoints[0];
-                
-                // Grab background color array/string from the dataset
                 let bg = dp.dataset.backgroundColor;
-                if (Array.isArray(bg)) bg = bg[dp.dataIndex]; // Pies and Bars
+                if (Array.isArray(bg)) bg = bg[dp.dataIndex]; 
                 if (typeof bg === 'string') return bg;
                 
-                // Fallback to border color (for Line charts with clear backgrounds)
                 let bc = dp.dataset.borderColor;
                 if (Array.isArray(bc)) bc = bc[dp.dataIndex];
                 if (typeof bc === 'string') return bc;
@@ -457,7 +486,7 @@ const sharedTooltipConfig = {
         } catch (e) {
             console.warn("Tooltip color fallback triggered.");
         }
-        return 'rgba(30, 41, 59, 0.95)'; // Safe dark slate fallback
+        return 'rgba(30, 41, 59, 0.95)';
     },
     titleColor: '#ffffff',
     bodyColor: '#ffffff',
@@ -465,7 +494,7 @@ const sharedTooltipConfig = {
     bodyFont: { family: 'Inter', size: 11, weight: '600' },
     padding: 10,
     cornerRadius: 6,
-    displayColors: false, // Hidden ugly square causes no crashes now!
+    displayColors: false, 
     borderColor: 'rgba(255, 255, 255, 0.4)', 
     borderWidth: 1,
     caretSize: 6,
