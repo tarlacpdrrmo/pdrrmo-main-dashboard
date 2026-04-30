@@ -240,8 +240,6 @@ function processDocumentsData(data) {
         }
 
         let dateStr = row['Column M'] || row['COLUMN M'] || row['Date Received'] || row['DATE RECEIVED'] || row[keys[12]] || '';
-        
-        // 🟢 FIX: Defaults to 1 if blank, ensuring it always shows up in the charts
         let rowCount = Number(row['Total Requests']) || Number(row['TOTAL REQUESTS']) || 1; 
         
         let monthYearKey = 'all';
@@ -258,11 +256,15 @@ function processDocumentsData(data) {
             }
         }
 
-        // 🟢 FIX: Maps officeReqs directly to rowCount so it is never 0 unless explicitly typed as 0
+        // 🟢 FIX: If the spreadsheet left the office blank, assign it a default category instead of skipping it entirely
+        if (!rawOffice || String(rawOffice).trim() === '') {
+            rawOffice = 'Unspecified Office';
+        }
+
         let officeReqs = rowCount; 
         
-        if (rawOffice && officeReqs > 0) {
-            let upperOffice = rawOffice.toUpperCase();
+        if (officeReqs > 0) {
+            let upperOffice = String(rawOffice).toUpperCase();
             let parentCategory = rawOffice; 
 
             const scrubRules = [
@@ -325,20 +327,30 @@ function processDocumentsData(data) {
     renderLineChartByTimeframe('daily');
 }
 
+// 🟢 FIX: Handle rendering completely empty dates safely
 function renderDocPieChart(filterKey) {
     let sourceMap = {};
     detailedPieData = {}; 
+    let hasData = false;
 
     globalDocRecords.forEach(record => {
         if (filterKey === 'all' || record.dateKey === filterKey) {
             sourceMap[record.parent] = (sourceMap[record.parent] || 0) + record.count;
             if (!detailedPieData[record.parent]) detailedPieData[record.parent] = {};
             detailedPieData[record.parent][record.raw] = (detailedPieData[record.parent][record.raw] || 0) + record.count;
+            hasData = true;
         }
     });
 
-    let sortedSources = Object.keys(sourceMap).map(key => ({ label: key, value: sourceMap[key] }));
-    sortedSources.sort((a, b) => b.value - a.value);
+    let sortedSources = [];
+    
+    // Safely draw a placeholder if there really is 0 data
+    if (!hasData) {
+        sortedSources = [{ label: 'No Data / Blank Entry', value: 1 }];
+    } else {
+        sortedSources = Object.keys(sourceMap).map(key => ({ label: key, value: sourceMap[key] }));
+        sortedSources.sort((a, b) => b.value - a.value);
+    }
 
     mainPieLabels = sortedSources.map(item => item.label);
     mainPieData = sortedSources.map(item => item.value);
@@ -348,7 +360,7 @@ function renderDocPieChart(filterKey) {
     if (titleEl) titleEl.innerText = 'Received Request from PDRRM Office:';
     if (backBtn) backBtn.style.display = 'none';
 
-    drawInteractiveDonutChart('docSourcePieChart', mainPieLabels, mainPieData);
+    drawInteractiveDonutChart('docSourcePieChart', mainPieLabels, mainPieData, !hasData);
 }
 
 function renderLineChartByTimeframe(timeframe) {
@@ -556,19 +568,23 @@ const sharedTooltipConfig = {
     caretPadding: 6
 };
 
-
-function drawInteractiveDonutChart(canvasId, labels, dataArr) {
+// 🟢 FIX: Handle the empty state drawing and interaction logic safely
+function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = false) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     if(docPieChartInstance) docPieChartInstance.destroy();
     
-    const mappedColors = dataArr.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
+    // Assign a clean grey ring if empty, otherwise map colors normally
+    let mappedColors = dataArr.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
+    if (isEmptyState) mappedColors = ['#e2e8f0']; 
     
     docPieChartInstance = new Chart(ctx, {
         type: 'doughnut',
-        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: mappedColors, borderWidth: 1, borderColor: '#ffffff', hoverOffset: 8 }] },
+        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: mappedColors, borderWidth: 1, borderColor: '#ffffff', hoverOffset: isEmptyState ? 0 : 8 }] },
         options: {
             responsive: true, maintainAspectRatio: false, cutout: '55%',
             onClick: (event, elements, chart) => {
+                if (isEmptyState) return; // Prevent zooming if no data
+                
                 if (elements[0]) {
                     const index = elements[0].index;
                     const label = chart.data.labels[index];
@@ -593,14 +609,24 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr) {
             plugins: {
                 legend: { display: false },
                 datalabels: {
-                    color: '#ffffff', font: { weight: '700', family: 'Inter', size: 10 },
-                    formatter: (value, context) => {
-                        let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                        let percent = ((value * 100) / sum).toFixed(1);
-                        return percent > 4 ? percent + '%' : ''; 
-                    }
+                    color: isEmptyState ? '#94a3b8' : '#ffffff', 
+                    font: { weight: '800', family: 'Inter', size: isEmptyState ? 12 : 9 }, 
+                    anchor: 'center',
+                    align: 'center',
+                    formatter: (value, context) => { 
+                        if (isEmptyState) return 'No Data';
+                        
+                        let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); 
+                        if (sum === 0) return ''; 
+                        
+                        let pctStr = ((value * 100) / sum).toFixed(1);
+                        let pctFloat = parseFloat(pctStr);
+                        
+                        return pctFloat >= 8 ? pctStr + '%' : ''; 
+                    } 
                 },
                 tooltip: {
+                    enabled: !isEmptyState, // Turn off tooltips for empty states
                     ...sharedTooltipConfig, 
                     callbacks: {
                         label: function(context) {
@@ -615,19 +641,20 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr) {
             }
         }
     });
-    updateCustomLegend(labels, dataArr);
+    updateCustomLegend(labels, dataArr, isEmptyState);
 }
 
-function updateCustomLegend(labels, data) {
+function updateCustomLegend(labels, data, isEmptyState = false) {
     const legendContainer = document.getElementById('customLegend');
     legendContainer.innerHTML = '';
     labels.forEach((label, index) => {
-        let color = pieColorPalette[index % pieColorPalette.length];
+        let color = isEmptyState ? '#e2e8f0' : pieColorPalette[index % pieColorPalette.length];
+        let val = isEmptyState ? '-' : data[index];
         legendContainer.innerHTML += `
             <div class="legend-item">
                 <div class="legend-color" style="background-color: ${color}"></div>
                 <div class="legend-text" title="${label}">${label}</div>
-                <div class="legend-val">${data[index]}</div>
+                <div class="legend-val">${val}</div>
             </div>
         `;
     });
