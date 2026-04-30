@@ -211,21 +211,17 @@ body {
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12), 0 4px 6px rgba(0, 0, 0, 0.04);
 }
 
-/* --- 🟢 UPDATED: UNIFORM RESPONSIVE GRIDS 🟢 --- */
+/* --- 🟢 UPDATED: 3-COLUMN GRID 🟢 --- */
 .assets-layout { display: flex; gap: 16px; } 
 .kpi-column { display: flex; flex-direction: column; gap: 12px; width: 180px; flex-shrink: 0; }
 
-.charts-wrapper { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+.charts-wrapper { flex: 1; display: flex; flex-direction: column; gap: 16px; }
 
-/* 
-   This is the magic line. It forces every chart box to be identical.
-   If your screen is wide, it puts 4 or 5 next to each other. 
-   If it's small, it gracefully wraps them. Perfect symmetry.
-*/
+/* Strictly enforces a 3-column grid */
 .charts-grid { 
     display: grid; 
-    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); 
-    gap: 12px; 
+    grid-template-columns: repeat(3, 1fr); 
+    gap: 16px; 
 }
 
 .section-divider-title {
@@ -236,7 +232,7 @@ body {
     letter-spacing: 1.5px; 
     border-bottom: 2px solid #cbd5e1; 
     padding-bottom: 6px; 
-    margin: 4px 0 0 0;
+    margin: 8px 0 0 0;
 }
 
 .flex-col { display: flex; flex-direction: column; align-items: stretch; }
@@ -249,13 +245,13 @@ body {
     margin: 0; 
     text-transform: uppercase; 
     letter-spacing: 0.5px;
-    padding: 12px 12px 0 12px;
+    padding: 16px 16px 0 16px;
 }
 .chart-render-area { 
     flex: 1; 
     position: relative; 
-    min-height: 100px; 
-    padding: 0 12px 6px 12px; 
+    min-height: 140px; /* Restored height so charts aren't squished */
+    padding: 0 16px 10px 16px; 
 }
 .chart-trend-footer {
     width: 100%;
