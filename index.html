@@ -69,7 +69,8 @@
                     <svg class="menu-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                     </svg>
-                    <span>Evacuation Centers</span>
+                    <!-- 🟢 UPDATED: Sidebar Title 🟢 -->
+                    <span>Critical Facilities</span>
                 </li>
             </ul>
         </nav>
@@ -117,7 +118,6 @@
                         </div>
                         
                         <div class="card pie-card">
-                            <!-- 🟢 UPDATED: Clean title matching the KPI boxes 🟢 -->
                             <h4 class="pie-title">Total Services Catered</h4>
                             <div class="pie-wrapper"><canvas id="monthlyPieChart"></canvas></div>
                             <div id="pie-grand-total" class="pie-grand-total">0</div>
@@ -218,9 +218,21 @@
             </section>
 
             <!-- Map Panels -->
-            <section id="ews-map" class="panel iframe-panel"><h3 class="panel-heading">Early Warning System Map</h3><iframe src="https://tarlacpdrrmo.github.io/tarlac-ews-map/" title="EWS Map"></iframe></section>
-            <section id="incident-map" class="panel iframe-panel"><h3 class="panel-heading">Incident Heatmap</h3><iframe src="https://tarlacpdrrmo.github.io/tarlac-incidents/" title="Incident Heatmap"></iframe></section>
-            <section id="evac-map" class="panel iframe-panel"><h3 class="panel-heading">Evacuation Centers</h3><iframe src="https://tarlacpdrrmo.github.io/tarlac-evacuation-centers/" title="Evacuation Centers Map"></iframe></section>
+            <section id="ews-map" class="panel iframe-panel">
+                <h3 class="panel-heading">Early Warning System Map</h3>
+                <iframe src="https://tarlacpdrrmo.github.io/tarlac-ews-map/" title="EWS Map"></iframe>
+            </section>
+            
+            <section id="incident-map" class="panel iframe-panel">
+                <h3 class="panel-heading">Incident Heatmap</h3>
+                <iframe src="https://tarlacpdrrmo.github.io/tarlac-incidents/" title="Incident Heatmap"></iframe>
+            </section>
+            
+            <!-- 🟢 UPDATED: Map Panel Title 🟢 -->
+            <section id="evac-map" class="panel iframe-panel">
+                <h3 class="panel-heading">Critical Facilities</h3>
+                <iframe src="https://tarlacpdrrmo.github.io/tarlac-evacuation-centers/" title="Critical Facilities Map"></iframe>
+            </section>
             
         </main>
     </div>
