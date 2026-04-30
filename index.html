@@ -67,7 +67,7 @@
                 
                 <li onclick="scrollToSection('evac-map')">
                     <svg class="menu-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 001 1m-6 0h6" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                     </svg>
                     <span>Critical Facilities</span>
                 </li>
@@ -91,11 +91,11 @@
             <!-- Panel 1: Assets & Personnel -->
             <section id="assets" class="panel">
                 
-                <!-- 🟢 UPDATED: MASTER TOGGLE IN PANEL HEADER 🟢 -->
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div class="panel-header-wrapper">
                     <h3 class="panel-heading">Assets and Personnel Dispatched</h3>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="font-size: 0.7rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">View all as Pie Charts</span>
+                    
+                    <div class="master-toggle-wrapper">
+                        <span style="font-size: 0.65rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">View as Pie Charts</span>
                         <label class="chart-toggle" title="Toggle All Pie Charts">
                             <input type="checkbox" id="masterChartToggle">
                             <span class="toggle-slider"></span>
@@ -136,10 +136,26 @@
                     </div>
                     
                     <div class="charts-wrapper">
-                        <!-- TOP 5 MAIN CHARTS -->
+                        <!-- TOP MAIN CHARTS -->
                         <div class="charts-grid">
                             
-                            <!-- 🟢 REMOVED INDIVIDUAL TOGGLES 🟢 -->
+                            <!-- 🟢 NEW: MASTER 2x2 GRID SPANNER PIE CHART 🟢 -->
+                            <div class="card span-2x2">
+                                <div class="chart-header-actions" style="border-bottom: none; margin-bottom: 0;">
+                                    <h4 class="chart-title" style="font-size: 0.85rem;">Overall Services Breakdown</h4>
+                                    <select id="masterServiceMonthFilter" class="chart-filter">
+                                        <option value="all">All Time</option>
+                                    </select>
+                                </div>
+                                <div class="large-pie-container">
+                                    <div class="doc-pie-wrapper" style="flex: 1.5;">
+                                        <canvas id="masterServicePieChart"></canvas>
+                                    </div>
+                                    <div class="scrollable-legend" id="masterServiceLegend" style="flex: 1; border-left: 2px solid #f1f5f9;"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- REGULAR CHARTS (Will flow around the 2x2 box) -->
                             <div class="card chart-card flex-col p-0">
                                 <h4 class="card-inner-title">TRAUMA (ROADCRASH INCIDENT)</h4>
                                 <div class="chart-render-area"><canvas id="vehicularChart"></canvas></div>
@@ -214,7 +230,9 @@
 
             <!-- Panel 2: Document Tracking -->
             <section id="tracking" class="panel">
+                
                 <h3 class="panel-heading">Incoming Document Tracking</h3>
+                
                 <div class="tracking-layout">
                     
                     <div class="tracking-charts">
@@ -262,7 +280,9 @@
 
             <!-- Panel 3: Volunteer's Section -->
             <section id="volunteers" class="panel">
+                
                 <h3 class="panel-heading">Volunteer's Section</h3>
+                
                 <div class="assets-layout top-summary">
                     <div class="card summary-card"><p>Total Volunteer Organizations</p><h3 id="vol-orgs">0</h3></div>
                     <div class="card summary-card"><p>Individual Volunteers</p><h3 class="orange" id="vol-ind">0</h3></div>
