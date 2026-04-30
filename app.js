@@ -217,7 +217,6 @@ function processDocumentsData(data) {
     let totalsCaptured = false;
 
     data.forEach(row => {
-        // 🟢 FIX: Look for exact header with parentheses, or variations to be safe 🟢
         let rawOffice = row['Received From (OFFICE)'] || 
                         row['RECEIVED FROM (OFFICE)'] || 
                         row['Received From Office'] || 
@@ -477,7 +476,10 @@ function processOperationsData(data) {
         if(row['MONTH']) { 
             labels.push(row['MONTH']);
             
-            vehicular.push(Number(row['VEHICULAR ACCIDENT']) || 0);
+            // 🟢 UPDATED: Reads from either column name safely 🟢
+            let vehData = Number(row['VEHICULAR ACCIDENT']) || Number(row['TRAUMA (ROADCRASH INCIDENT)']) || 0;
+            vehicular.push(vehData);
+            
             roadside.push(Number(row['ROADSIDE ASSISTANCE']) || 0);
             patient.push(Number(row['PATIENT TRANSPORT']) || 0);
             medical.push(Number(row['MEDICAL']) || 0);
@@ -531,7 +533,8 @@ function processOperationsData(data) {
 
     drawDonutChart('monthlyPieChart', labels, monthlyTotalServices, overallGrandTotal);
     
-    drawHorizontalBar('vehicularChart', labels, 'Vehicular Accident', vehicular, '#2563eb', singleBarOptions);
+    // 🟢 UPDATED: Injects new display label to the chart generator 🟢
+    drawHorizontalBar('vehicularChart', labels, 'TRAUMA (ROADCRASH INCIDENT)', vehicular, '#2563eb', singleBarOptions);
     drawHorizontalBar('roadsideChart', labels, 'Roadside Assistance', roadside, '#2563eb', singleBarOptions);
     drawHorizontalBar('patientChart', labels, 'Patient Transport', patient, '#2563eb', singleBarOptions);
     drawHorizontalBar('medicalChart', labels, 'Medical', medical, '#2563eb', singleBarOptions);
