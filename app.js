@@ -435,25 +435,29 @@ function processOperationsData(data) {
 }
 
 // ----------------------------------------------------
-// CHART GENERATORS & TOOLTIP CONFIGURATION
+// 🟢 FIX: Safe Background Color Extractor 🟢
 // ----------------------------------------------------
-
-// 🟢 FIX: Handle CanvasGradients cleanly so tooltips are never blank/white 🟢
 const sharedTooltipConfig = {
     backgroundColor: function(context) {
-        if (context.tooltip.labelColors && context.tooltip.labelColors.length > 0) {
-            const bgColor = context.tooltip.labelColors[0].backgroundColor;
-            
-            // If it is a solid color string, use it.
-            if (typeof bgColor === 'string') {
-                return bgColor;
-            } 
-            // If it is a CanvasGradient (like on the line chart), fallback to the solid border color.
-            else if (context.tooltip.labelColors[0].borderColor) {
-                return context.tooltip.labelColors[0].borderColor;
+        try {
+            // Safely dig into the exact dataPoint being hovered
+            if (context.tooltip && context.tooltip.dataPoints && context.tooltip.dataPoints.length > 0) {
+                const dp = context.tooltip.dataPoints[0];
+                
+                // Grab background color array/string from the dataset
+                let bg = dp.dataset.backgroundColor;
+                if (Array.isArray(bg)) bg = bg[dp.dataIndex]; // Pies and Bars
+                if (typeof bg === 'string') return bg;
+                
+                // Fallback to border color (for Line charts with clear backgrounds)
+                let bc = dp.dataset.borderColor;
+                if (Array.isArray(bc)) bc = bc[dp.dataIndex];
+                if (typeof bc === 'string') return bc;
             }
+        } catch (e) {
+            console.warn("Tooltip color fallback triggered.");
         }
-        return 'rgba(30, 41, 59, 0.95)';
+        return 'rgba(30, 41, 59, 0.95)'; // Safe dark slate fallback
     },
     titleColor: '#ffffff',
     bodyColor: '#ffffff',
@@ -461,7 +465,7 @@ const sharedTooltipConfig = {
     bodyFont: { family: 'Inter', size: 11, weight: '600' },
     padding: 10,
     cornerRadius: 6,
-    displayColors: false, 
+    displayColors: false, // Hidden ugly square causes no crashes now!
     borderColor: 'rgba(255, 255, 255, 0.4)', 
     borderWidth: 1,
     caretSize: 6,
