@@ -18,7 +18,6 @@ let globalDocRecords = [];
 let toggleChartInstances = {};
 let toggleChartData = {};
 
-// 🟢 NEW: Cache for the 2x2 Master Chart filtering 🟢
 let masterServicePieInstance = null;
 let operationsMonthlyCache = {}; 
 const serviceCategoryLabels = [
@@ -149,7 +148,6 @@ document.addEventListener("DOMContentLoaded", function() {
         renderLineChartByTimeframe(e.target.value);
     });
     
-    // Toggle Event for the 10 small charts
     const masterToggle = document.getElementById('masterChartToggle');
     if (masterToggle) {
         masterToggle.addEventListener('change', function(e) {
@@ -163,7 +161,6 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    // 🟢 NEW: Month listener for the Master 2x2 Chart 🟢
     document.getElementById('masterServiceMonthFilter').addEventListener('change', function(e) {
         renderMasterServicePie(e.target.value);
     });
@@ -390,6 +387,7 @@ function processDocumentsData(data) {
     renderLineChartByTimeframe('daily');
 }
 
+// 🟢 UPDATED: Document Pie Chart now uses .update() for silky smooth data transitions 🟢
 function renderDocPieChart(filterKey) {
     let sourceMap = {};
     detailedPieData = {}; 
@@ -405,7 +403,6 @@ function renderDocPieChart(filterKey) {
     });
 
     let sortedSources = [];
-    
     if (!hasData) {
         sortedSources = [{ label: 'No Data Found', value: 1 }];
     } else {
@@ -421,7 +418,20 @@ function renderDocPieChart(filterKey) {
     if (titleEl) titleEl.innerText = 'Received Request from PDRRM Office:';
     if (backBtn) backBtn.style.display = 'none';
 
-    drawInteractiveDonutChart('docSourcePieChart', mainPieLabels, mainPieData, !hasData);
+    if (docPieChartInstance) {
+        let mappedColors = mainPieData.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
+        if (!hasData) mappedColors = ['#e2e8f0'];
+
+        docPieChartInstance.data.labels = mainPieLabels;
+        docPieChartInstance.data.datasets[0].data = mainPieData;
+        docPieChartInstance.data.datasets[0].backgroundColor = mappedColors;
+        docPieChartInstance.data.datasets[0].hoverOffset = !hasData ? 0 : 8;
+        
+        docPieChartInstance.update();
+        updateCustomLegend(mainPieLabels, mainPieData, !hasData);
+    } else {
+        drawInteractiveDonutChart('docSourcePieChart', mainPieLabels, mainPieData, !hasData);
+    }
 }
 
 function renderLineChartByTimeframe(timeframe) {
@@ -521,9 +531,7 @@ function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = fa
     `;
 }
 
-// ----------------------------------------------------
-// 🟢 NEW: MASTER 2x2 PIE CHART GENERATOR 🟢
-// ----------------------------------------------------
+// 🟢 UPDATED: Master Service Pie Chart now uses .update() for silky smooth data transitions 🟢
 function renderMasterServicePie(monthFilter) {
     const dataArr = operationsMonthlyCache[monthFilter] || new Array(10).fill(0);
 
@@ -531,7 +539,6 @@ function renderMasterServicePie(monthFilter) {
     let filteredData = [];
     let mappedColors = [];
 
-    // Filter out services with 0 requests for a clean pie
     for(let i=0; i<10; i++) {
         if(dataArr[i] > 0) {
             filteredLabels.push(serviceCategoryLabels[i]);
@@ -540,7 +547,6 @@ function renderMasterServicePie(monthFilter) {
         }
     }
 
-    // Sort by largest slice first
     let combined = filteredLabels.map((l, i) => ({l, d: filteredData[i], c: mappedColors[i]}));
     combined.sort((a,b) => b.d - a.d);
 
@@ -549,45 +555,51 @@ function renderMasterServicePie(monthFilter) {
     mappedColors = combined.map(x => x.c);
 
     const ctx = document.getElementById('masterServicePieChart').getContext('2d');
-    if(masterServicePieInstance) masterServicePieInstance.destroy();
-
-    masterServicePieInstance = new Chart(ctx, {
-        type: 'pie', 
-        data: {
-            labels: filteredLabels,
-            datasets: [{
-                data: filteredData,
-                backgroundColor: mappedColors,
-                borderWidth: 1,
-                borderColor: '#ffffff',
-                hoverOffset: 8
-            }]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            layout: { padding: 10 },
-            animation: { animateScale: true, animateRotate: true, duration: 600, easing: 'easeOutQuart' },
-            plugins: {
-                legend: { display: false },
-                tooltip: sharedTooltipConfig,
-                datalabels: {
-                    color: '#ffffff', font: { weight: '800', family: 'Inter', size: 10 },
-                    formatter: (value, context) => {
-                        let sum = context.chart.data.datasets[0].data.reduce((a,b)=>a+b,0);
-                        let p = (value/sum*100);
-                        return p >= 5 ? p.toFixed(1)+'%' : '';
+    
+    if(masterServicePieInstance) {
+        masterServicePieInstance.data.labels = filteredLabels;
+        masterServicePieInstance.data.datasets[0].data = filteredData;
+        masterServicePieInstance.data.datasets[0].backgroundColor = mappedColors;
+        masterServicePieInstance.update();
+    } else {
+        masterServicePieInstance = new Chart(ctx, {
+            type: 'pie', 
+            data: {
+                labels: filteredLabels,
+                datasets: [{
+                    data: filteredData,
+                    backgroundColor: mappedColors,
+                    borderWidth: 1,
+                    borderColor: '#ffffff',
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                layout: { padding: 10 },
+                animation: { animateScale: true, animateRotate: true, duration: 600, easing: 'easeOutQuart' },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: sharedTooltipConfig,
+                    datalabels: {
+                        color: '#ffffff', font: { weight: '800', family: 'Inter', size: 10 },
+                        formatter: (value, context) => {
+                            let sum = context.chart.data.datasets[0].data.reduce((a,b)=>a+b,0);
+                            let p = (value/sum*100);
+                            return p >= 5 ? p.toFixed(1)+'%' : '';
+                        }
                     }
                 }
             }
-        }
-    });
+        });
+    }
 
-    // Populate custom scrollable side legend
     const leg = document.getElementById('masterServiceLegend');
     leg.innerHTML = '';
     filteredLabels.forEach((lbl, i) => {
+        // Injects a staggered animation delay to make the legend cascade in
         leg.innerHTML += `
-            <div class="legend-item" style="padding: 8px 0;">
+            <div class="legend-item" style="padding: 8px 0; animation-delay: ${i * 0.04}s;">
                 <div class="legend-color" style="background-color: ${mappedColors[i]}; width: 10px; height: 10px;"></div>
                 <div class="legend-text" title="${lbl}">${lbl}</div>
                 <div class="legend-val">${filteredData[i]}</div>
@@ -596,7 +608,6 @@ function renderMasterServicePie(monthFilter) {
     });
 }
 
-// ----------------------------------------------------
 function renderToggleableChart(canvasId, type, isInitialLoad = false) {
     const canvas = document.getElementById(canvasId);
     const container = canvas.parentElement;
@@ -683,7 +694,6 @@ function processOperationsData(data) {
     let total1st = 0, total2nd = 0, total3rd = 0, totalOutside = 0;
     let overallGrandTotal = 0;
     
-    // 🟢 Initialize data arrays for the 2x2 pie chart 🟢
     operationsMonthlyCache['all'] = new Array(10).fill(0);
     let monthSet = new Set();
 
@@ -782,7 +792,6 @@ function processOperationsData(data) {
         renderToggleableChart(id, isPie ? 'pie' : 'bar', true); 
     });
 
-    // 🟢 Load dropdown and initial Master Pie data 🟢
     const drop = document.getElementById('masterServiceMonthFilter');
     if(drop) {
         drop.innerHTML = '<option value="all">All Time</option>';
@@ -921,7 +930,6 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
 
 function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = false) {
     const ctx = document.getElementById(canvasId).getContext('2d');
-    if(docPieChartInstance) docPieChartInstance.destroy();
     
     let mappedColors = dataArr.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
     if (isEmptyState) mappedColors = ['#e2e8f0']; 
@@ -932,7 +940,8 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
         options: {
             responsive: true, maintainAspectRatio: false, cutout: '55%',
             onClick: (event, elements, chart) => {
-                if (isEmptyState) return; 
+                // Determine emptiness dynamically
+                if (chart.data.labels.length === 1 && chart.data.labels[0] === 'No Data Found') return;
                 
                 if (elements[0]) {
                     const index = elements[0].index;
@@ -958,12 +967,12 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
             plugins: {
                 legend: { display: false },
                 datalabels: {
-                    color: isEmptyState ? '#94a3b8' : '#ffffff', 
-                    font: { weight: '800', family: 'Inter', size: isEmptyState ? 12 : 9 }, 
+                    color: (context) => (context.chart.data.labels.length === 1 && context.chart.data.labels[0] === 'No Data Found') ? '#94a3b8' : '#ffffff', 
+                    font: (context) => ({ weight: '800', family: 'Inter', size: (context.chart.data.labels.length === 1 && context.chart.data.labels[0] === 'No Data Found') ? 12 : 9 }), 
                     anchor: 'center',
                     align: 'center',
                     formatter: (value, context) => { 
-                        if (isEmptyState) return 'No Data';
+                        if (context.chart.data.labels.length === 1 && context.chart.data.labels[0] === 'No Data Found') return 'No Data';
                         
                         let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); 
                         if (sum === 0) return ''; 
@@ -975,7 +984,7 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
                     } 
                 },
                 tooltip: {
-                    enabled: !isEmptyState, 
+                    filter: function(tooltipItem) { return tooltipItem.label !== 'No Data Found'; },
                     ...sharedTooltipConfig, 
                     callbacks: {
                         label: function(context) {
@@ -1000,7 +1009,7 @@ function updateCustomLegend(labels, data, isEmptyState = false) {
         let color = isEmptyState ? '#e2e8f0' : pieColorPalette[index % pieColorPalette.length];
         let val = isEmptyState ? '-' : data[index];
         legendContainer.innerHTML += `
-            <div class="legend-item">
+            <div class="legend-item" style="animation-delay: ${index * 0.04}s;">
                 <div class="legend-color" style="background-color: ${color}"></div>
                 <div class="legend-text" title="${label}">${label}</div>
                 <div class="legend-val">${val}</div>
