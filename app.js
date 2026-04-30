@@ -15,9 +15,17 @@ let detailedPieData = {};
 let globalLineData = []; 
 let globalDocRecords = []; 
 
-// Storage objects to remember data and track active instances for toggling
 let toggleChartInstances = {};
 let toggleChartData = {};
+
+// 🟢 NEW: Cache for the 2x2 Master Chart filtering 🟢
+let masterServicePieInstance = null;
+let operationsMonthlyCache = {}; 
+const serviceCategoryLabels = [
+    'TRAUMA (ROADCRASH)', 'Roadside Assistance', 'Patient Transport',
+    'Medical', 'Standby Medic & VIP', 'SUPPORT SERVICES',
+    'Clearing Operations', 'Firetruck', 'Hauling', 'Ledvan Truck'
+];
 
 const pieColorPalette = ['#e11d48', '#06b6d4', '#2563eb', '#ea580c', '#16a34a', '#9333ea', '#f43f5e', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#d946ef', '#f97316', '#14b8a6', '#6366f1'];
 
@@ -141,7 +149,7 @@ document.addEventListener("DOMContentLoaded", function() {
         renderLineChartByTimeframe(e.target.value);
     });
     
-    // Master Toggle Handler (Passes `false` for initialLoad to trigger animations)
+    // Toggle Event for the 10 small charts
     const masterToggle = document.getElementById('masterChartToggle');
     if (masterToggle) {
         masterToggle.addEventListener('change', function(e) {
@@ -154,6 +162,11 @@ document.addEventListener("DOMContentLoaded", function() {
             chartIds.forEach(id => renderToggleableChart(id, type, false));
         });
     }
+
+    // 🟢 NEW: Month listener for the Master 2x2 Chart 🟢
+    document.getElementById('masterServiceMonthFilter').addEventListener('change', function(e) {
+        renderMasterServicePie(e.target.value);
+    });
 });
 
 function loadAllData() {
@@ -328,7 +341,6 @@ function processDocumentsData(data) {
             rawOffice = 'Unspecified Office';
         }
 
-        // 🟢 NEW: Read Category directly from Column O 🟢
         let rawCategory = row['Category of Writing Party'] || 
                           row['CATEGORY OF WRITING PARTY'] || 
                           row['Column O'] || 
@@ -510,7 +522,80 @@ function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = fa
 }
 
 // ----------------------------------------------------
-// MASTER RENDERER WITH CSS CROSSFADE ENGINE
+// 🟢 NEW: MASTER 2x2 PIE CHART GENERATOR 🟢
+// ----------------------------------------------------
+function renderMasterServicePie(monthFilter) {
+    const dataArr = operationsMonthlyCache[monthFilter] || new Array(10).fill(0);
+
+    let filteredLabels = [];
+    let filteredData = [];
+    let mappedColors = [];
+
+    // Filter out services with 0 requests for a clean pie
+    for(let i=0; i<10; i++) {
+        if(dataArr[i] > 0) {
+            filteredLabels.push(serviceCategoryLabels[i]);
+            filteredData.push(dataArr[i]);
+            mappedColors.push(pieColorPalette[i % pieColorPalette.length]);
+        }
+    }
+
+    // Sort by largest slice first
+    let combined = filteredLabels.map((l, i) => ({l, d: filteredData[i], c: mappedColors[i]}));
+    combined.sort((a,b) => b.d - a.d);
+
+    filteredLabels = combined.map(x => x.l);
+    filteredData = combined.map(x => x.d);
+    mappedColors = combined.map(x => x.c);
+
+    const ctx = document.getElementById('masterServicePieChart').getContext('2d');
+    if(masterServicePieInstance) masterServicePieInstance.destroy();
+
+    masterServicePieInstance = new Chart(ctx, {
+        type: 'pie', 
+        data: {
+            labels: filteredLabels,
+            datasets: [{
+                data: filteredData,
+                backgroundColor: mappedColors,
+                borderWidth: 1,
+                borderColor: '#ffffff',
+                hoverOffset: 8
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            layout: { padding: 10 },
+            animation: { animateScale: true, animateRotate: true, duration: 600, easing: 'easeOutQuart' },
+            plugins: {
+                legend: { display: false },
+                tooltip: sharedTooltipConfig,
+                datalabels: {
+                    color: '#ffffff', font: { weight: '800', family: 'Inter', size: 10 },
+                    formatter: (value, context) => {
+                        let sum = context.chart.data.datasets[0].data.reduce((a,b)=>a+b,0);
+                        let p = (value/sum*100);
+                        return p >= 5 ? p.toFixed(1)+'%' : '';
+                    }
+                }
+            }
+        }
+    });
+
+    // Populate custom scrollable side legend
+    const leg = document.getElementById('masterServiceLegend');
+    leg.innerHTML = '';
+    filteredLabels.forEach((lbl, i) => {
+        leg.innerHTML += `
+            <div class="legend-item" style="padding: 8px 0;">
+                <div class="legend-color" style="background-color: ${mappedColors[i]}; width: 10px; height: 10px;"></div>
+                <div class="legend-text" title="${lbl}">${lbl}</div>
+                <div class="legend-val">${filteredData[i]}</div>
+            </div>
+        `;
+    });
+}
+
 // ----------------------------------------------------
 function renderToggleableChart(canvasId, type, isInitialLoad = false) {
     const canvas = document.getElementById(canvasId);
@@ -597,24 +682,45 @@ function processOperationsData(data) {
 
     let total1st = 0, total2nd = 0, total3rd = 0, totalOutside = 0;
     let overallGrandTotal = 0;
+    
+    // 🟢 Initialize data arrays for the 2x2 pie chart 🟢
+    operationsMonthlyCache['all'] = new Array(10).fill(0);
+    let monthSet = new Set();
 
     data.forEach(row => {
         if(row['MONTH']) { 
+            let m = row['MONTH'].trim().toUpperCase();
             labels.push(row['MONTH']);
+            monthSet.add(m);
             
-            let vehData = Number(row['VEHICULAR ACCIDENT']) || Number(row['TRAUMA (ROADCRASH INCIDENT)']) || 0;
-            vehicular.push(vehData);
+            if(!operationsMonthlyCache[m]) operationsMonthlyCache[m] = new Array(10).fill(0);
             
-            roadside.push(Number(row['ROADSIDE ASSISTANCE']) || 0);
-            patient.push(Number(row['PATIENT TRANSPORT']) || 0);
-            medical.push(Number(row['MEDICAL']) || 0);
-            standby.push(Number(row['STANDBY MEDIC, MARSHAL & VIP']) || 0);
-            
-            others.push(Number(row['OTHERS']) || 0);
-            clearing.push(Number(row['CLEARING OPERATIONS']) || 0);
-            firetruck.push(Number(row['FIRETRUCK']) || 0);
-            hauling.push(Number(row['HAULING']) || 0);
-            ledvan.push(Number(row['LEDVAN TRUCK']) || 0);
+            let v1 = Number(row['VEHICULAR ACCIDENT']) || Number(row['TRAUMA (ROADCRASH INCIDENT)']) || 0;
+            vehicular.push(v1);
+            let v2 = Number(row['ROADSIDE ASSISTANCE']) || 0;
+            roadside.push(v2);
+            let v3 = Number(row['PATIENT TRANSPORT']) || 0;
+            patient.push(v3);
+            let v4 = Number(row['MEDICAL']) || 0;
+            medical.push(v4);
+            let v5 = Number(row['STANDBY MEDIC, MARSHAL & VIP']) || 0;
+            standby.push(v5);
+            let v6 = Number(row['OTHERS']) || 0;
+            others.push(v6);
+            let v7 = Number(row['CLEARING OPERATIONS']) || 0;
+            clearing.push(v7);
+            let v8 = Number(row['FIRETRUCK']) || 0;
+            firetruck.push(v8);
+            let v9 = Number(row['HAULING']) || 0;
+            hauling.push(v9);
+            let v10 = Number(row['LEDVAN TRUCK']) || 0;
+            ledvan.push(v10);
+
+            let rowVals = [v1, v2, v3, v4, v5, v6, v7, v8, v9, v10];
+            for(let i=0; i<10; i++) {
+                operationsMonthlyCache[m][i] += rowVals[i];
+                operationsMonthlyCache['all'][i] += rowVals[i];
+            }
 
             let rowGrandTotal = Number(row['GRAND TOTAL']) || 0;
             monthlyTotalServices.push(rowGrandTotal);
@@ -675,6 +781,18 @@ function processOperationsData(data) {
     ['vehicularChart', 'roadsideChart', 'patientChart', 'medicalChart', 'standbyChart', 'othersChart', 'clearingChart', 'firetruckChart', 'haulingChart', 'ledvanChart'].forEach(id => {
         renderToggleableChart(id, isPie ? 'pie' : 'bar', true); 
     });
+
+    // 🟢 Load dropdown and initial Master Pie data 🟢
+    const drop = document.getElementById('masterServiceMonthFilter');
+    if(drop) {
+        drop.innerHTML = '<option value="all">All Time</option>';
+        Array.from(monthSet).forEach(m => {
+            let opt = document.createElement('option');
+            opt.value = m; opt.innerText = m;
+            drop.appendChild(opt);
+        });
+    }
+    renderMasterServicePie('all');
 }
 
 function drawLineChart(canvasId, labels, dataArr) {
