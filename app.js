@@ -434,11 +434,24 @@ function processOperationsData(data) {
     drawCombinedBarChart('combinedChart', labels, others, clearing, firetruck, hauling, ledvan);
 }
 
+// ----------------------------------------------------
+// CHART GENERATORS & TOOLTIP CONFIGURATION
+// ----------------------------------------------------
+
+// 🟢 FIX: Handle CanvasGradients cleanly so tooltips are never blank/white 🟢
 const sharedTooltipConfig = {
     backgroundColor: function(context) {
         if (context.tooltip.labelColors && context.tooltip.labelColors.length > 0) {
-            const color = context.tooltip.labelColors[0].backgroundColor;
-            return color ? color : 'rgba(30, 41, 59, 0.95)';
+            const bgColor = context.tooltip.labelColors[0].backgroundColor;
+            
+            // If it is a solid color string, use it.
+            if (typeof bgColor === 'string') {
+                return bgColor;
+            } 
+            // If it is a CanvasGradient (like on the line chart), fallback to the solid border color.
+            else if (context.tooltip.labelColors[0].borderColor) {
+                return context.tooltip.labelColors[0].borderColor;
+            }
         }
         return 'rgba(30, 41, 59, 0.95)';
     },
@@ -617,8 +630,6 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
             },
             plugins: { 
                 legend: { display: false }, 
-                
-                // 🟢 UPDATED: Smaller font and hidden labels for cramped slices 🟢
                 datalabels: { 
                     color: '#ffffff', 
                     font: { weight: '800', family: 'Inter', size: 9 }, 
@@ -631,7 +642,6 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
                         let pctStr = ((value * 100) / sum).toFixed(1);
                         let pctFloat = parseFloat(pctStr);
                         
-                        // Only show the percentage text if the slice is 8% or larger
                         return pctFloat >= 8 ? pctStr + '%' : ''; 
                     } 
                 },
