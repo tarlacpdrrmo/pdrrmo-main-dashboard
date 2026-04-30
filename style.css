@@ -236,7 +236,7 @@ body {
 .flex-col { display: flex; flex-direction: column; align-items: stretch; }
 .p-0 { padding: 0 !important; overflow: hidden; }
 
-/* 🟢 FIX: Hard-locking the height so boxes never resize 🟢 */
+/* HARD LOCKED BOX SIZE */
 .card-inner-title {
     font-size: 0.7rem; 
     color: #1e293b; 
@@ -249,9 +249,9 @@ body {
 .chart-render-area { 
     position: relative; 
     width: 100%;
-    height: 140px; /* Locked height */
-    min-height: 140px; /* Force minimum */
-    max-height: 140px; /* Force maximum */
+    height: 140px; 
+    min-height: 140px; 
+    max-height: 140px; 
     padding: 0 16px 10px 16px; 
     display: block;
 }
@@ -528,4 +528,13 @@ td {
 }
 .chart-toggle input:checked + .toggle-slider:before {
     transform: translateX(14px); 
+}
+
+/* 🟢 NEW: CROSSFADE ANIMATION FOR CHART TOGGLING 🟢 */
+.chart-render-area canvas {
+    transition: opacity 0.3s cubic-bezier(0.165, 0.84, 0.44, 1), transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+}
+.chart-fade-out canvas {
+    opacity: 0 !important;
+    transform: scale(0.95) !important; /* Creates a subtle "pop" out effect */
 }
