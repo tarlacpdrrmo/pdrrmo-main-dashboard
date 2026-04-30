@@ -13,8 +13,8 @@ let mainPieLabels = [];
 let mainPieData = [];
 let detailedPieData = {};
 let globalLineData = []; 
+let globalDocRecords = []; // 🟢 NEW: Stores raw data for filtering
 
-// The base 15-color palette
 const pieColorPalette = ['#e11d48', '#06b6d4', '#2563eb', '#ea580c', '#16a34a', '#9333ea', '#f43f5e', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#d946ef', '#f97316', '#14b8a6', '#6366f1'];
 
 function scrollToSection(panelId) {
@@ -73,7 +73,11 @@ document.addEventListener("DOMContentLoaded", function() {
     setInterval(updateClock, 1000);
     updateClock(); 
 
-    // 🟢 UPDATED: Back button must also restore the looping colors 🟢
+    // Filter Logic for the Dynamic Donut Chart
+    document.getElementById('docPieMonthFilter').addEventListener('change', function(e) {
+        renderDocPieChart(e.target.value);
+    });
+
     document.getElementById('pieBackButton').addEventListener('click', function() {
         if(docPieChartInstance) {
             docPieChartInstance.data.labels = mainPieLabels;
@@ -204,19 +208,23 @@ function parseCustomDate(dateStr) {
     return null;
 }
 
+// ----------------------------------------------------
+// 🟢 UPDATED: PROCESS DOCUMENTS DATA (WITH FILTERING) 🟢
+// ----------------------------------------------------
 function processDocumentsData(data) {
     let totalReq = 0, totalAction = 0, catered = 0, invAttended = 0;
     let notCatered = 0, others = 0, invNotAttended = 0, cancelled = 0, noAction = 0;
 
-    let sourceMap = {};
-    detailedPieData = {};
     globalLineData = []; 
+    globalDocRecords = []; // Clears the record list
+    let uniqueMonths = new Set();
     let totalsCaptured = false;
 
     data.forEach(row => {
         let rawOffice = row['Received From Office'] || row['RECEIVED FROM OFFICE'] || '';
         let keys = Object.keys(row);
         
+        // Grab the grand totals for the KPI boxes
         if (!totalsCaptured) {
             let colCValue = Number(row['TOTAL RECEIVED FROM OFFICE']) || Number(row['Column C']) || Number(row['COLUMN C']) || Number(row[keys[2]]) || 0;
             if (colCValue > totalReq) {
@@ -238,11 +246,19 @@ function processDocumentsData(data) {
 
         let dateStr = row['Column M'] || row['COLUMN M'] || row['Date Received'] || row['DATE RECEIVED'] || row[keys[12]] || '';
         let rowCount = Number(row['Total Requests']) || Number(row['TOTAL REQUESTS']) || 1; 
+        
+        let monthYearKey = 'all';
 
         if (dateStr) {
             let parsedDate = parseCustomDate(dateStr);
             if (parsedDate) {
                 globalLineData.push({ dateObj: parsedDate, count: rowCount, timestamp: parsedDate.getTime() });
+                
+                // Extracts "YYYY-MM" to use as a filter key
+                let m = parsedDate.getMonth() + 1;
+                let y = parsedDate.getFullYear();
+                monthYearKey = `${y}-${m.toString().padStart(2, '0')}`;
+                uniqueMonths.add(monthYearKey);
             }
         }
 
@@ -272,9 +288,13 @@ function processDocumentsData(data) {
                 }
             }
 
-            sourceMap[parentCategory] = (sourceMap[parentCategory] || 0) + officeReqs;
-            if (!detailedPieData[parentCategory]) detailedPieData[parentCategory] = {};
-            detailedPieData[parentCategory][rawOffice] = (detailedPieData[parentCategory][rawOffice] || 0) + officeReqs;
+            // Pushes raw data into the array for dynamic filtering later
+            globalDocRecords.push({
+                dateKey: monthYearKey,
+                parent: parentCategory,
+                raw: rawOffice,
+                count: officeReqs
+            });
         }
     });
 
@@ -288,14 +308,54 @@ function processDocumentsData(data) {
     document.getElementById('doc-kpi-cancelled').innerText = cancelled;
     document.getElementById('doc-kpi-no-action').innerText = noAction;
 
+    // Build the Dropdown UI options based on the discovered dates
+    let monthSelect = document.getElementById('docPieMonthFilter');
+    if (monthSelect) {
+        monthSelect.innerHTML = '<option value="all">All Time</option>';
+        let sortedMonths = Array.from(uniqueMonths).sort().reverse(); // Newest months first
+        sortedMonths.forEach(my => {
+            if(my === 'all') return;
+            let [y, m] = my.split('-');
+            let dateObj = new Date(y, m - 1);
+            let label = dateObj.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+            let opt = document.createElement('option');
+            opt.value = my;
+            opt.innerText = label;
+            monthSelect.appendChild(opt);
+        });
+    }
+
+    renderDocPieChart('all');
+    renderLineChartByTimeframe('daily');
+}
+
+// 🟢 NEW: Renders the Pie Chart based on the selected Date Filter 🟢
+function renderDocPieChart(filterKey) {
+    let sourceMap = {};
+    detailedPieData = {}; 
+
+    globalDocRecords.forEach(record => {
+        // If 'all' is selected OR the record's date matches the dropdown, add it to the chart
+        if (filterKey === 'all' || record.dateKey === filterKey) {
+            sourceMap[record.parent] = (sourceMap[record.parent] || 0) + record.count;
+            if (!detailedPieData[record.parent]) detailedPieData[record.parent] = {};
+            detailedPieData[record.parent][record.raw] = (detailedPieData[record.parent][record.raw] || 0) + record.count;
+        }
+    });
+
     let sortedSources = Object.keys(sourceMap).map(key => ({ label: key, value: sourceMap[key] }));
     sortedSources.sort((a, b) => b.value - a.value);
 
     mainPieLabels = sortedSources.map(item => item.label);
     mainPieData = sortedSources.map(item => item.value);
 
+    // Reset title and button state on filter change
+    const titleEl = document.getElementById('pieChartTitle');
+    const backBtn = document.getElementById('pieBackButton');
+    if (titleEl) titleEl.innerText = 'Received Request from PDRRM Office:';
+    if (backBtn) backBtn.style.display = 'none';
+
     drawInteractiveDonutChart('docSourcePieChart', mainPieLabels, mainPieData);
-    renderLineChartByTimeframe('daily');
 }
 
 function renderLineChartByTimeframe(timeframe) {
@@ -471,9 +531,6 @@ function processOperationsData(data) {
     drawCombinedBarChart('combinedChart', labels, others, clearing, firetruck, hauling, ledvan);
 }
 
-// ----------------------------------------------------
-// 🟢 FIXED: Safe Color Extractor for Infinite Arrays 🟢
-// ----------------------------------------------------
 const sharedTooltipConfig = {
     backgroundColor: function(context) {
         try {
@@ -511,7 +568,6 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     if(docPieChartInstance) docPieChartInstance.destroy();
     
-    // 🟢 FIX: Map colors to loop infinitely so we never run out of colors for tooltips 🟢
     const mappedColors = dataArr.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
     
     docPieChartInstance = new Chart(ctx, {
@@ -531,7 +587,6 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr) {
                         chart.data.labels = sortedSub.map(i => i.l);
                         chart.data.datasets[0].data = sortedSub.map(i => i.v);
                         
-                        // Ensure zoomed view colors map perfectly too
                         chart.data.datasets[0].backgroundColor = sortedSub.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
                         
                         chart.update(); 
@@ -647,7 +702,6 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     const vibrantColors = ['#2563eb', '#06b6d4', '#e11d48', '#ea580c', '#16a34a', '#9333ea'];
     
-    // Ensure colors loop infinitely
     const mappedVibrant = dataArr.map((_, i) => vibrantColors[i % vibrantColors.length]);
     
     const gtEl = document.getElementById('pie-grand-total');
