@@ -181,21 +181,56 @@ body {
     margin-top: 4px;
 }
 
-/* --- PANELS & CARDS --- */
+/* --- 🟢 UPDATED: PANELS & SECTION HEADINGS 🟢 --- */
 .panel { 
     padding-bottom: 30px; 
-    margin-bottom: 24px; 
+    margin-bottom: 30px; 
     border-bottom: 2px solid #cbd5e1; 
     scroll-margin-top: 30px; 
 }
 .panel:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 20px; }
+
+/* The new, perfectly aligned section titles */
 .panel-heading { 
-    color: #334155; 
+    color: #0f172a; 
     text-transform: uppercase; 
-    font-size: 0.8rem; 
-    letter-spacing: 1px; 
+    font-size: 0.9rem; 
+    letter-spacing: 1.2px; 
     font-weight: 800; 
-    margin: 0;
+    margin: 0 0 24px 0; /* Gives proper 24px breathing room above the boxes */
+    display: flex;
+    align-items: center;
+}
+
+/* Sleek gradient accent line next to the titles */
+.panel-heading::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 18px;
+    background: linear-gradient(180deg, #2563eb, #06b6d4);
+    margin-right: 12px;
+    border-radius: 4px;
+}
+
+/* Container for the Master Toggle */
+.panel-header-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+.panel-header-wrapper .panel-heading {
+    margin-bottom: 0; /* Prevent double-margin when flexed */
+}
+.master-toggle-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #ffffff;
+    padding: 8px 16px;
+    border-radius: 30px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .card { 
@@ -222,6 +257,7 @@ body {
     gap: 16px; 
 }
 
+/* 🟢 UPDATED: Section Divider Margin 🟢 */
 .section-divider-title {
     font-size: 0.75rem; 
     color: #475569; 
@@ -230,7 +266,7 @@ body {
     letter-spacing: 1.5px; 
     border-bottom: 2px solid #cbd5e1; 
     padding-bottom: 6px; 
-    margin: 8px 0 0 0;
+    margin: 16px 0; /* Ensures proper spacing above and below */
 }
 
 .flex-col { display: flex; flex-direction: column; align-items: stretch; }
@@ -334,7 +370,6 @@ body {
     transition: transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 .pie-card:hover .pie-grand-total { transform: scale(1.08); }
-
 
 /* --- DOCUMENT TRACKING LAYOUT --- */
 .tracking-layout { display: flex; gap: 16px; align-items: stretch; }
@@ -470,15 +505,8 @@ td {
 
 .iframe-panel .panel-heading {
     font-size: 0.85rem; 
-    color: #334155; 
-    font-weight: 800; 
-    text-transform: uppercase; 
-    letter-spacing: 1.5px; 
-    margin-bottom: 16px; 
-    padding-left: 12px; 
-    border-left: 4px solid #2563eb; 
     opacity: 0.9; 
-    line-height: 1;
+    /* Removed individual border logic because all panel-headings now share the sleek ::before indicator */
 }
 
 .iframe-panel iframe { 
@@ -530,11 +558,11 @@ td {
     transform: translateX(14px); 
 }
 
-/* 🟢 NEW: CROSSFADE ANIMATION FOR CHART TOGGLING 🟢 */
+/* CROSSFADE ANIMATION FOR CHART TOGGLING */
 .chart-render-area canvas {
     transition: opacity 0.3s cubic-bezier(0.165, 0.84, 0.44, 1), transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
 }
 .chart-fade-out canvas {
     opacity: 0 !important;
-    transform: scale(0.95) !important; /* Creates a subtle "pop" out effect */
+    transform: scale(0.95) !important; 
 }
