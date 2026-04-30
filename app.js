@@ -387,7 +387,6 @@ function processDocumentsData(data) {
     renderLineChartByTimeframe('daily');
 }
 
-// 🟢 UPDATED: Document Pie Chart now uses .update() for silky smooth data transitions 🟢
 function renderDocPieChart(filterKey) {
     let sourceMap = {};
     detailedPieData = {}; 
@@ -531,7 +530,9 @@ function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = fa
     `;
 }
 
-// 🟢 UPDATED: Master Service Pie Chart now uses .update() for silky smooth data transitions 🟢
+// ----------------------------------------------------
+// 🟢 UPDATED: INTERACTIVE MASTER PIE CHART LEGEND 🟢
+// ----------------------------------------------------
 function renderMasterServicePie(monthFilter) {
     const dataArr = operationsMonthlyCache[monthFilter] || new Array(10).fill(0);
 
@@ -596,15 +597,36 @@ function renderMasterServicePie(monthFilter) {
 
     const leg = document.getElementById('masterServiceLegend');
     leg.innerHTML = '';
+    
+    // 🟢 NEW: Generates interactive DOM elements instead of raw HTML strings 🟢
     filteredLabels.forEach((lbl, i) => {
-        // Injects a staggered animation delay to make the legend cascade in
-        leg.innerHTML += `
-            <div class="legend-item" style="padding: 8px 0; animation-delay: ${i * 0.04}s;">
-                <div class="legend-color" style="background-color: ${mappedColors[i]}; width: 10px; height: 10px;"></div>
-                <div class="legend-text" title="${lbl}">${lbl}</div>
-                <div class="legend-val">${filteredData[i]}</div>
-            </div>
+        let item = document.createElement('div');
+        item.className = 'legend-item interactive-legend-item';
+        item.style.padding = '8px 0';
+        item.style.animationDelay = `${i * 0.04}s`;
+        
+        item.innerHTML = `
+            <div class="legend-color" style="background-color: ${mappedColors[i]}; width: 10px; height: 10px;"></div>
+            <div class="legend-text" title="${lbl}">${lbl}</div>
+            <div class="legend-val">${filteredData[i]}</div>
         `;
+        
+        // Tells Chart.js to visually hide/show the slice without actually deleting the data
+        item.onclick = function() {
+            if (masterServicePieInstance) {
+                masterServicePieInstance.toggleDataVisibility(i);
+                masterServicePieInstance.update();
+                
+                // Toggle the CSS strikethrough class on click
+                if (masterServicePieInstance.getDataVisibility(i)) {
+                    item.classList.remove('hidden-slice');
+                } else {
+                    item.classList.add('hidden-slice');
+                }
+            }
+        };
+        
+        leg.appendChild(item);
     });
 }
 
@@ -940,7 +962,6 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
         options: {
             responsive: true, maintainAspectRatio: false, cutout: '55%',
             onClick: (event, elements, chart) => {
-                // Determine emptiness dynamically
                 if (chart.data.labels.length === 1 && chart.data.labels[0] === 'No Data Found') return;
                 
                 if (elements[0]) {
