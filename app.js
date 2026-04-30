@@ -2,9 +2,9 @@ Chart.register(ChartDataLabels);
 
 // 1. YOUR PUBLISHED GOOGLE SHEET CSV LINKS
 const sheetUrls = {
-    operations: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEOujzNEOrDEv0W2CMKNDjXKW8WUusQkXmrNFuaR_Vh171r7rDsKpcCdwxwhWPqpjTr0iYICMVK5lv/pub?output=csv", // <-- MUST BE FILLED
-    documents: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS4FYdO-pxACzJxrw7vEMLJKsxgEBQm_8Afh_hsKFxhxA3eiJz5kNZLkr3ArNmoEIVo5BtPBbNIz-oz/pub?gid=433918484&single=true&output=csv",   // <-- MUST BE FILLED
-    volunteers: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQu11mhIuAL2jr_ZrMze5ZhXRk6puER_QUBVLlm6gfRq88sa1FrfFlRRjL3pvlyYfO4Mb3GwF_nZpA7/pub?gid=0&single=true&output=csv"  // <-- MUST BE FILLED 
+    operations: "PASTE_OPERATIONS_CSV_LINK_HERE", // <-- MUST BE FILLED
+    documents: "PASTE_DOCUMENTS_CSV_LINK_HERE",   // <-- MUST BE FILLED
+    volunteers: "PASTE_VOLUNTEERS_CSV_LINK_HERE"  // <-- MUST BE FILLED 
 };
 
 let docPieChartInstance = null;
@@ -217,7 +217,14 @@ function processDocumentsData(data) {
     let totalsCaptured = false;
 
     data.forEach(row => {
-        let rawOffice = row['Received From Office'] || row['RECEIVED FROM OFFICE'] || '';
+        // 🟢 FIX: Look for exact header with parentheses, or variations to be safe 🟢
+        let rawOffice = row['Received From (OFFICE)'] || 
+                        row['RECEIVED FROM (OFFICE)'] || 
+                        row['Received From Office'] || 
+                        row['RECEIVED FROM OFFICE'] || 
+                        row['Column N'] || 
+                        row['COLUMN N'] || '';
+                        
         let keys = Object.keys(row);
         
         if (!totalsCaptured) {
@@ -256,7 +263,6 @@ function processDocumentsData(data) {
             }
         }
 
-        // 🟢 FIX: If the spreadsheet left the office blank, assign it a default category instead of skipping it entirely
         if (!rawOffice || String(rawOffice).trim() === '') {
             rawOffice = 'Unspecified Office';
         }
@@ -327,7 +333,6 @@ function processDocumentsData(data) {
     renderLineChartByTimeframe('daily');
 }
 
-// 🟢 FIX: Handle rendering completely empty dates safely
 function renderDocPieChart(filterKey) {
     let sourceMap = {};
     detailedPieData = {}; 
@@ -344,9 +349,8 @@ function renderDocPieChart(filterKey) {
 
     let sortedSources = [];
     
-    // Safely draw a placeholder if there really is 0 data
     if (!hasData) {
-        sortedSources = [{ label: 'No Data / Blank Entry', value: 1 }];
+        sortedSources = [{ label: 'No Data Found', value: 1 }];
     } else {
         sortedSources = Object.keys(sourceMap).map(key => ({ label: key, value: sourceMap[key] }));
         sortedSources.sort((a, b) => b.value - a.value);
@@ -568,12 +572,10 @@ const sharedTooltipConfig = {
     caretPadding: 6
 };
 
-// 🟢 FIX: Handle the empty state drawing and interaction logic safely
 function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = false) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     if(docPieChartInstance) docPieChartInstance.destroy();
     
-    // Assign a clean grey ring if empty, otherwise map colors normally
     let mappedColors = dataArr.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
     if (isEmptyState) mappedColors = ['#e2e8f0']; 
     
@@ -583,7 +585,7 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
         options: {
             responsive: true, maintainAspectRatio: false, cutout: '55%',
             onClick: (event, elements, chart) => {
-                if (isEmptyState) return; // Prevent zooming if no data
+                if (isEmptyState) return; 
                 
                 if (elements[0]) {
                     const index = elements[0].index;
@@ -626,7 +628,7 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
                     } 
                 },
                 tooltip: {
-                    enabled: !isEmptyState, // Turn off tooltips for empty states
+                    enabled: !isEmptyState, 
                     ...sharedTooltipConfig, 
                     callbacks: {
                         label: function(context) {
