@@ -12,6 +12,7 @@
 </head>
 <body>
     <div class="dashboard-container">
+        <!-- Sidebar Navigation -->
         <nav class="sidebar">
             
             <div class="sidebar-logo-container">
@@ -73,6 +74,7 @@
             </ul>
         </nav>
 
+        <!-- Main Content Area -->
         <main class="main-content" id="scroll-area">
             
             <header class="page-header">
@@ -92,6 +94,7 @@
                 </div>
             </header>
             
+            <!-- Panel 1: Assets & Personnel -->
             <section id="assets" class="panel">
                 
                 <div class="panel-header-wrapper">
@@ -139,6 +142,7 @@
                     </div>
                     
                     <div class="charts-wrapper">
+                        <!-- TOP MAIN CHARTS -->
                         <div class="charts-grid">
                             
                             <div class="card span-2x2">
@@ -189,10 +193,11 @@
 
                         <h4 class="section-divider-title">ANCILLARY SERVICE</h4>
 
+                        <!-- BOTTOM 5 COMPACT CHARTS -->
                         <div class="charts-grid">
                             
                             <div class="card chart-card flex-col p-0">
-                                <h4 class="card-inner-title">SUPPORT SERVICES</h4>
+                                <h4 class="card-inner-title">SUPPORT SERVICES (manpower and service resources transportation Assistance)</h4>
                                 <div class="chart-render-area"><canvas id="othersChart"></canvas></div>
                                 <div class="chart-trend-footer" id="trend-others"></div>
                             </div>
@@ -227,6 +232,7 @@
                 </div>
             </section>
 
+            <!-- Panel 2: Document Tracking -->
             <section id="tracking" class="panel">
                 
                 <h3 class="panel-heading">Incoming Document Tracking</h3>
@@ -276,6 +282,7 @@
                 </div>
             </section>
 
+            <!-- Panel 3: Volunteer's Section -->
             <section id="volunteers" class="panel">
                 
                 <h3 class="panel-heading">Volunteer's Section</h3>
@@ -292,6 +299,7 @@
                 </div>
             </section>
 
+            <!-- Map Panels -->
             <section id="ews-map" class="panel iframe-panel">
                 <h3 class="panel-heading">Early Warning System Map</h3>
                 <iframe src="https://tarlacpdrrmo.github.io/tarlac-ews-map/" title="EWS Map"></iframe>
