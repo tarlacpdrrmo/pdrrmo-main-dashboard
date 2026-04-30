@@ -13,7 +13,7 @@ let mainPieLabels = [];
 let mainPieData = [];
 let detailedPieData = {};
 let globalLineData = []; 
-let globalDocRecords = []; // 🟢 NEW: Stores raw data for filtering
+let globalDocRecords = []; 
 
 const pieColorPalette = ['#e11d48', '#06b6d4', '#2563eb', '#ea580c', '#16a34a', '#9333ea', '#f43f5e', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#d946ef', '#f97316', '#14b8a6', '#6366f1'];
 
@@ -73,7 +73,6 @@ document.addEventListener("DOMContentLoaded", function() {
     setInterval(updateClock, 1000);
     updateClock(); 
 
-    // Filter Logic for the Dynamic Donut Chart
     document.getElementById('docPieMonthFilter').addEventListener('change', function(e) {
         renderDocPieChart(e.target.value);
     });
@@ -208,15 +207,12 @@ function parseCustomDate(dateStr) {
     return null;
 }
 
-// ----------------------------------------------------
-// 🟢 UPDATED: PROCESS DOCUMENTS DATA (WITH FILTERING) 🟢
-// ----------------------------------------------------
 function processDocumentsData(data) {
     let totalReq = 0, totalAction = 0, catered = 0, invAttended = 0;
     let notCatered = 0, others = 0, invNotAttended = 0, cancelled = 0, noAction = 0;
 
     globalLineData = []; 
-    globalDocRecords = []; // Clears the record list
+    globalDocRecords = []; 
     let uniqueMonths = new Set();
     let totalsCaptured = false;
 
@@ -224,7 +220,6 @@ function processDocumentsData(data) {
         let rawOffice = row['Received From Office'] || row['RECEIVED FROM OFFICE'] || '';
         let keys = Object.keys(row);
         
-        // Grab the grand totals for the KPI boxes
         if (!totalsCaptured) {
             let colCValue = Number(row['TOTAL RECEIVED FROM OFFICE']) || Number(row['Column C']) || Number(row['COLUMN C']) || Number(row[keys[2]]) || 0;
             if (colCValue > totalReq) {
@@ -245,6 +240,8 @@ function processDocumentsData(data) {
         }
 
         let dateStr = row['Column M'] || row['COLUMN M'] || row['Date Received'] || row['DATE RECEIVED'] || row[keys[12]] || '';
+        
+        // 🟢 FIX: Defaults to 1 if blank, ensuring it always shows up in the charts
         let rowCount = Number(row['Total Requests']) || Number(row['TOTAL REQUESTS']) || 1; 
         
         let monthYearKey = 'all';
@@ -254,7 +251,6 @@ function processDocumentsData(data) {
             if (parsedDate) {
                 globalLineData.push({ dateObj: parsedDate, count: rowCount, timestamp: parsedDate.getTime() });
                 
-                // Extracts "YYYY-MM" to use as a filter key
                 let m = parsedDate.getMonth() + 1;
                 let y = parsedDate.getFullYear();
                 monthYearKey = `${y}-${m.toString().padStart(2, '0')}`;
@@ -262,7 +258,9 @@ function processDocumentsData(data) {
             }
         }
 
-        let officeReqs = Number(row['Total Requests']) || Number(row['TOTAL REQUESTS']) || 0;
+        // 🟢 FIX: Maps officeReqs directly to rowCount so it is never 0 unless explicitly typed as 0
+        let officeReqs = rowCount; 
+        
         if (rawOffice && officeReqs > 0) {
             let upperOffice = rawOffice.toUpperCase();
             let parentCategory = rawOffice; 
@@ -288,7 +286,6 @@ function processDocumentsData(data) {
                 }
             }
 
-            // Pushes raw data into the array for dynamic filtering later
             globalDocRecords.push({
                 dateKey: monthYearKey,
                 parent: parentCategory,
@@ -308,11 +305,10 @@ function processDocumentsData(data) {
     document.getElementById('doc-kpi-cancelled').innerText = cancelled;
     document.getElementById('doc-kpi-no-action').innerText = noAction;
 
-    // Build the Dropdown UI options based on the discovered dates
     let monthSelect = document.getElementById('docPieMonthFilter');
     if (monthSelect) {
         monthSelect.innerHTML = '<option value="all">All Time</option>';
-        let sortedMonths = Array.from(uniqueMonths).sort().reverse(); // Newest months first
+        let sortedMonths = Array.from(uniqueMonths).sort().reverse(); 
         sortedMonths.forEach(my => {
             if(my === 'all') return;
             let [y, m] = my.split('-');
@@ -329,13 +325,11 @@ function processDocumentsData(data) {
     renderLineChartByTimeframe('daily');
 }
 
-// 🟢 NEW: Renders the Pie Chart based on the selected Date Filter 🟢
 function renderDocPieChart(filterKey) {
     let sourceMap = {};
     detailedPieData = {}; 
 
     globalDocRecords.forEach(record => {
-        // If 'all' is selected OR the record's date matches the dropdown, add it to the chart
         if (filterKey === 'all' || record.dateKey === filterKey) {
             sourceMap[record.parent] = (sourceMap[record.parent] || 0) + record.count;
             if (!detailedPieData[record.parent]) detailedPieData[record.parent] = {};
@@ -349,7 +343,6 @@ function renderDocPieChart(filterKey) {
     mainPieLabels = sortedSources.map(item => item.label);
     mainPieData = sortedSources.map(item => item.value);
 
-    // Reset title and button state on filter change
     const titleEl = document.getElementById('pieChartTitle');
     const backBtn = document.getElementById('pieBackButton');
     if (titleEl) titleEl.innerText = 'Received Request from PDRRM Office:';
@@ -368,7 +361,7 @@ function renderLineChartByTimeframe(timeframe) {
             key = item.dateObj.toLocaleString('en-US', { month: 'short', year: 'numeric' });
         } else if (timeframe === 'yearly') {
             key = item.dateObj.getFullYear().toString();
-        } else { // daily
+        } else { 
             key = item.dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         }
         groupedObj[key] = (groupedObj[key] || 0) + item.count;
@@ -378,7 +371,7 @@ function renderLineChartByTimeframe(timeframe) {
     const dataValues = Object.values(groupedObj);
     
     if(labels.length === 0) {
-        drawLineChart('docDateLineChart', ['No Date Data Found in Column M'], [0]);
+        drawLineChart('docDateLineChart', ['No Date Data Found'], [0]);
     } else {
         drawLineChart('docDateLineChart', labels, dataValues);
     }
