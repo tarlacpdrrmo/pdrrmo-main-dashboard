@@ -2,9 +2,9 @@ Chart.register(ChartDataLabels);
 
 // 1. YOUR PUBLISHED GOOGLE SHEET CSV LINKS
 const sheetUrls = {
-    operations: "PASTE_OPERATIONS_CSV_LINK_HERE", 
-    documents: "PASTE_DOCUMENTS_CSV_LINK_HERE",   
-    volunteers: "PASTE_VOLUNTEERS_CSV_LINK_HERE"  
+    operations: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEOujzNEOrDEv0W2CMKNDjXKW8WUusQkXmrNFuaR_Vh171r7rDsKpcCdwxwhWPqpjTr0iYICMVK5lv/pub?output=csv", 
+    documents: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS4FYdO-pxACzJxrw7vEMLJKsxgEBQm_8Afh_hsKFxhxA3eiJz5kNZLkr3ArNmoEIVo5BtPBbNIz-oz/pub?gid=433918484&single=true&output=csv",   
+    volunteers: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQu11mhIuAL2jr_ZrMze5ZhXRk6puER_QUBVLlm6gfRq88sa1FrfFlRRjL3pvlyYfO4Mb3GwF_nZpA7/pub?gid=0&single=true&output=csv"  
 };
 
 let docPieChartInstance = null;
