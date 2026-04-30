@@ -21,7 +21,6 @@ let toggleChartData = {};
 
 const pieColorPalette = ['#e11d48', '#06b6d4', '#2563eb', '#ea580c', '#16a34a', '#9333ea', '#f43f5e', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#d946ef', '#f97316', '#14b8a6', '#6366f1'];
 
-// 🟢 MOVED TO TOP: Safely defined before any charts try to use them 🟢
 const sharedTooltipConfig = {
     backgroundColor: function(context) {
         try {
@@ -59,7 +58,6 @@ const singleBarOptions = {
     scales: { x: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } }, y: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } } },
     elements: { bar: { borderRadius: 3 } } 
 };
-// 🟢 END MOVED SECTION 🟢
 
 function scrollToSection(panelId) {
     const section = document.getElementById(panelId);
@@ -137,14 +135,19 @@ document.addEventListener("DOMContentLoaded", function() {
         renderLineChartByTimeframe(e.target.value);
     });
     
-    // Global event listener catches toggles and instantly animates the swap
-    document.addEventListener('change', function(e) {
-        if(e.target.classList.contains('type-toggle')) {
-            const targetCanvas = e.target.getAttribute('data-target');
+    // 🟢 UPDATED: Single master listener triggers ALL 10 charts 🟢
+    const masterToggle = document.getElementById('masterChartToggle');
+    if (masterToggle) {
+        masterToggle.addEventListener('change', function(e) {
             const isPie = e.target.checked;
-            renderToggleableChart(targetCanvas, isPie ? 'pie' : 'bar');
-        }
-    });
+            const type = isPie ? 'pie' : 'bar';
+            const chartIds = [
+                'vehicularChart', 'roadsideChart', 'patientChart', 'medicalChart', 'standbyChart',
+                'othersChart', 'clearingChart', 'firetruckChart', 'haulingChart', 'ledvanChart'
+            ];
+            chartIds.forEach(id => renderToggleableChart(id, type));
+        });
+    }
 });
 
 function loadAllData() {
@@ -662,9 +665,9 @@ function processOperationsData(data) {
     toggleChartData['haulingChart'] = { labels, labelText: 'Hauling', data: hauling, color: '#ea580c' };
     toggleChartData['ledvanChart'] = { labels, labelText: 'Ledvan Truck', data: ledvan, color: '#eab308' };
 
+    const masterToggle = document.getElementById('masterChartToggle');
+    const isPie = masterToggle ? masterToggle.checked : false;
     ['vehicularChart', 'roadsideChart', 'patientChart', 'medicalChart', 'standbyChart', 'othersChart', 'clearingChart', 'firetruckChart', 'haulingChart', 'ledvanChart'].forEach(id => {
-        const toggleEl = document.querySelector(`.type-toggle[data-target="${id}"]`);
-        const isPie = toggleEl ? toggleEl.checked : false;
         renderToggleableChart(id, isPie ? 'pie' : 'bar');
     });
 }
