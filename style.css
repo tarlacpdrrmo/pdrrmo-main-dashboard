@@ -214,24 +214,44 @@ body {
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12), 0 4px 6px rgba(0, 0, 0, 0.04);
 }
 
-/* --- ASSETS LAYOUT & TREND HEADERS --- */
+/* --- 🟢 UPDATED: ASSETS LAYOUT & NEW TIGHTER GRIDS 🟢 --- */
 .assets-layout { display: flex; gap: 16px; } 
 .kpi-column { display: flex; flex-direction: column; gap: 12px; width: 180px; flex-shrink: 0; }
-.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; flex: 1; }
+
+.charts-wrapper { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.small-grid { grid-template-columns: repeat(3, 1fr); }
+
+.section-divider-title {
+    font-size: 0.75rem; 
+    color: #475569; 
+    font-weight: 800; 
+    text-transform: uppercase; 
+    letter-spacing: 1.5px; 
+    border-bottom: 2px solid #cbd5e1; 
+    padding-bottom: 6px; 
+    margin: 4px 0 0 0;
+}
 
 .flex-col { display: flex; flex-direction: column; align-items: stretch; }
-
 .p-0 { padding: 0 !important; overflow: hidden; }
+
+/* 🟢 FIX: Making the charts smaller so they all fit perfectly 🟢 */
 .card-inner-title {
-    font-size: 0.75rem; 
+    font-size: 0.7rem; 
     color: #1e293b; 
     font-weight: 800; 
     margin: 0; 
     text-transform: uppercase; 
     letter-spacing: 0.5px;
-    padding: 16px 16px 0 16px;
+    padding: 12px 12px 0 12px;
 }
-.chart-render-area { flex: 1; position: relative; min-height: 140px; padding: 0 16px 10px 16px; }
+.chart-render-area { 
+    flex: 1; 
+    position: relative; 
+    min-height: 100px; /* Reduced from 140px */
+    padding: 0 12px 6px 12px; 
+}
 .chart-trend-footer {
     width: 100%;
     margin-top: auto;
@@ -431,16 +451,15 @@ td {
 
 .mt-2 { margin-top: 16px; }
 
-
-/* 🟢 UPDATED: MASSIVE MAPS WITH INTEGRATED, CLEAN TITLES 🟢 */
+/* --- MAPS --- */
 .iframe-panel { 
-    height: 85vh; /* Massive height for maximum map space */
-    margin-bottom: 80px; /* Safe spacing to prevent overlapping titles */
+    height: 85vh; 
+    margin-bottom: 80px; 
     opacity: 0; 
-    transform: translateY(30px); /* Clean, gentle slide up */
-    transition: opacity 0.8s cubic-bezier(0.165, 0.84, 0.44, 1), transform 0.8s cubic-bezier(0.165, 0.84, 0.44, 1); /* Ultra-smooth glide */
+    transform: translateY(30px); 
+    transition: opacity 0.8s cubic-bezier(0.165, 0.84, 0.44, 1), transform 0.8s cubic-bezier(0.165, 0.84, 0.44, 1); 
     display: flex; 
-    flex-direction: column; /* Glues the title and map together so they animate as one unit */
+    flex-direction: column; 
 }
 
 .iframe-panel.map-in-view {
@@ -448,7 +467,6 @@ td {
     transform: translateY(0);
 }
 
-/* Sleek, clean title design that doesn't overwhelm */
 .iframe-panel .panel-heading {
     font-size: 0.85rem; 
     color: #334155; 
@@ -457,16 +475,16 @@ td {
     letter-spacing: 1.5px; 
     margin-bottom: 16px; 
     padding-left: 12px; 
-    border-left: 4px solid #2563eb; /* Sharp blue accent line */
+    border-left: 4px solid #2563eb; 
     opacity: 0.9; 
     line-height: 1;
 }
 
 .iframe-panel iframe { 
     width: 100%; 
-    flex: 1; /* Automatically expands to fill the entire remaining 85vh */
+    flex: 1; 
     border: none; 
     border-radius: 12px; 
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); /* Clean flat shadow */
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); 
     background-color: #ffffff;
 }
