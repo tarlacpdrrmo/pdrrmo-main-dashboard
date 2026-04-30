@@ -181,7 +181,7 @@ body {
     margin-top: 4px;
 }
 
-/* --- 🟢 UPDATED: PANELS & SECTION HEADINGS 🟢 --- */
+/* --- PANELS & CARDS --- */
 .panel { 
     padding-bottom: 30px; 
     margin-bottom: 30px; 
@@ -190,19 +190,17 @@ body {
 }
 .panel:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 20px; }
 
-/* The new, perfectly aligned section titles */
 .panel-heading { 
     color: #0f172a; 
     text-transform: uppercase; 
     font-size: 0.9rem; 
     letter-spacing: 1.2px; 
     font-weight: 800; 
-    margin: 0 0 24px 0; /* Gives proper 24px breathing room above the boxes */
+    margin: 0 0 24px 0; 
     display: flex;
     align-items: center;
 }
 
-/* Sleek gradient accent line next to the titles */
 .panel-heading::before {
     content: '';
     display: inline-block;
@@ -213,7 +211,6 @@ body {
     border-radius: 4px;
 }
 
-/* Container for the Master Toggle */
 .panel-header-wrapper {
     display: flex;
     justify-content: space-between;
@@ -221,7 +218,7 @@ body {
     margin-bottom: 24px;
 }
 .panel-header-wrapper .panel-heading {
-    margin-bottom: 0; /* Prevent double-margin when flexed */
+    margin-bottom: 0; 
 }
 .master-toggle-wrapper {
     display: flex;
@@ -257,7 +254,22 @@ body {
     gap: 16px; 
 }
 
-/* 🟢 UPDATED: Section Divider Margin 🟢 */
+/* 🟢 NEW: 2x2 GRID SPANNER FOR THE MASTER CHART 🟢 */
+.span-2x2 {
+    grid-column: span 2;
+    grid-row: span 2;
+    display: flex;
+    flex-direction: column;
+}
+.large-pie-container {
+    display: flex;
+    gap: 16px;
+    flex: 1; /* stretches to fill the 2x2 block */
+    align-items: stretch;
+    margin-top: 8px;
+    min-height: 350px;
+}
+
 .section-divider-title {
     font-size: 0.75rem; 
     color: #475569; 
@@ -266,13 +278,19 @@ body {
     letter-spacing: 1.5px; 
     border-bottom: 2px solid #cbd5e1; 
     padding-bottom: 6px; 
-    margin: 16px 0; /* Ensures proper spacing above and below */
+    margin: 16px 0; 
 }
 
 .flex-col { display: flex; flex-direction: column; align-items: stretch; }
 .p-0 { padding: 0 !important; overflow: hidden; }
 
-/* HARD LOCKED BOX SIZE */
+/* HARD LOCKED BOX SIZE FOR STANDARD CHARTS */
+.card-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 16px 0 16px;
+}
 .card-inner-title {
     font-size: 0.7rem; 
     color: #1e293b; 
@@ -506,7 +524,6 @@ td {
 .iframe-panel .panel-heading {
     font-size: 0.85rem; 
     opacity: 0.9; 
-    /* Removed individual border logic because all panel-headings now share the sleek ::before indicator */
 }
 
 .iframe-panel iframe { 
