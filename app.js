@@ -392,6 +392,7 @@ function renderLineChartByTimeframe(timeframe) {
     }
 }
 
+// 🟢 FIX: Slimmed down padding so smaller charts fit nicely 🟢
 function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = false) {
     const el = document.getElementById(elementId);
     if (!el) return;
@@ -418,7 +419,7 @@ function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = fa
     if (dataArray.length < 2) {
         trendHtml = `<span>No prior data</span>`;
         el.style.backgroundColor = bgColor;
-        el.style.padding = '10px 16px';
+        el.style.padding = '8px 12px'; /* Tighter padding */
         el.innerHTML = `<div style="font-weight:600; font-size:0.75rem; color:#fff;">${trendHtml}</div>`;
         return;
     }
@@ -426,9 +427,10 @@ function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = fa
     let symbol = '—';
     let sign = diff > 0 ? '+' : '';
 
-    const arrowUp = `<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>`;
-    const arrowDown = `<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"></path></svg>`;
+    const arrowUp = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>`;
+    const arrowDown = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"></path></svg>`;
 
+    // Uses the custom logic you established earlier for your primary services
     if (diff > 0) {
         symbol = arrowUp;
         bgColor = inverseColors ? '#ef4444' : '#10b981'; 
@@ -451,12 +453,12 @@ function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = fa
     `;
 
     el.style.backgroundColor = bgColor;
-    el.style.padding = '10px 16px';
+    el.style.padding = '8px 12px'; /* Tighter padding */
     el.style.color = '#ffffff';
 
     el.innerHTML = `
         <div class="has-tooltip" style="display:flex; width:100%; justify-content:space-between; align-items:center; cursor:pointer;">
-            <span style="font-weight:600; font-size:0.75rem;">${Math.abs(diff)} (${sign}${pct}%) vs ${prevLabel}</span>
+            <span style="font-weight:600; font-size:0.75rem;">${Math.abs(diff)} (${sign}${pct}%)</span>
             <span style="display:flex; align-items:center;">${symbol}</span>
             ${tooltipHtml}
         </div>
@@ -476,7 +478,6 @@ function processOperationsData(data) {
         if(row['MONTH']) { 
             labels.push(row['MONTH']);
             
-            // 🟢 UPDATED: Reads from either column name safely 🟢
             let vehData = Number(row['VEHICULAR ACCIDENT']) || Number(row['TRAUMA (ROADCRASH INCIDENT)']) || 0;
             vehicular.push(vehData);
             
@@ -519,28 +520,34 @@ function processOperationsData(data) {
     document.getElementById('kpi-outside').innerText = totalOutside;
     document.getElementById('pct-outside').innerText = referenceTotal > 0 ? ((totalOutside / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
 
+    // Primary charts (uses user's custom inverse red/green logic where requested)
     renderTrendFooter('trend-vehicular', vehicular, labels, true); 
     renderTrendFooter('trend-roadside', roadside, labels, false); 
     renderTrendFooter('trend-patient', patient, labels, true);      
     renderTrendFooter('trend-medical', medical, labels, true);                
     renderTrendFooter('trend-standby', standby, labels, false); 
     
-    const combinedTotal = [];
-    for(let i=0; i<labels.length; i++) {
-         combinedTotal.push(others[i] + clearing[i] + firetruck[i] + hauling[i] + ledvan[i]);
-    }
-    renderTrendFooter('trend-combined', combinedTotal, labels, false);
+    // 🟢 NEW: Renders standard trend footers for the newly split individual boxes
+    renderTrendFooter('trend-others', others, labels, false);
+    renderTrendFooter('trend-clearing', clearing, labels, false);
+    renderTrendFooter('trend-firetruck', firetruck, labels, false);
+    renderTrendFooter('trend-hauling', hauling, labels, false);
+    renderTrendFooter('trend-ledvan', ledvan, labels, false);
 
     drawDonutChart('monthlyPieChart', labels, monthlyTotalServices, overallGrandTotal);
     
-    // 🟢 UPDATED: Injects new display label to the chart generator 🟢
     drawHorizontalBar('vehicularChart', labels, 'TRAUMA (ROADCRASH INCIDENT)', vehicular, '#2563eb', singleBarOptions);
     drawHorizontalBar('roadsideChart', labels, 'Roadside Assistance', roadside, '#2563eb', singleBarOptions);
     drawHorizontalBar('patientChart', labels, 'Patient Transport', patient, '#2563eb', singleBarOptions);
     drawHorizontalBar('medicalChart', labels, 'Medical', medical, '#2563eb', singleBarOptions);
     drawHorizontalBar('standbyChart', labels, 'Standby Medic, Marshal & VIP', standby, '#2563eb', singleBarOptions);
     
-    drawCombinedBarChart('combinedChart', labels, others, clearing, firetruck, hauling, ledvan);
+    // 🟢 NEW: Renders the individual separated chart boxes instead of the massive combined one
+    drawHorizontalBar('othersChart', labels, 'Others', others, '#6366f1', singleBarOptions);
+    drawHorizontalBar('clearingChart', labels, 'Clearing Operations', clearing, '#06b6d4', singleBarOptions);
+    drawHorizontalBar('firetruckChart', labels, 'Firetruck', firetruck, '#e11d48', singleBarOptions);
+    drawHorizontalBar('haulingChart', labels, 'Hauling', hauling, '#ea580c', singleBarOptions);
+    drawHorizontalBar('ledvanChart', labels, 'Ledvan Truck', ledvan, '#eab308', singleBarOptions);
 }
 
 const sharedTooltipConfig = {
@@ -797,35 +804,9 @@ const singleBarOptions = {
     elements: { bar: { borderRadius: 3 } } 
 };
 
-const combinedBarOptions = {
-    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-    layout: { padding: { top: 15, right: 25, bottom: 10, left: 10 } }, 
-    plugins: { datalabels: { display: false }, legend: { position: 'top', labels: { boxWidth: 10, usePointStyle: true, font: { family: 'Inter', size: 10 } } }, tooltip: sharedTooltipConfig },
-    scales: { x: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } }, y: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } } },
-    elements: { bar: { borderRadius: 3 } } 
-};
-
 function drawHorizontalBar(canvasId, labels, labelText, dataArr, color, optionsObj) {
     const ctx = document.getElementById(canvasId).getContext('2d');
-    new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [{ label: labelText, data: dataArr, backgroundColor: color, maxBarThickness: 20 }] }, options: optionsObj });
-}
-
-function drawCombinedBarChart(canvasId, labels, others, clearing, firetruck, hauling, ledvan) {
-    const ctx = document.getElementById(canvasId).getContext('2d');
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [
-                { label: 'OTHERS', data: others, backgroundColor: '#2563eb', maxBarThickness: 20 },
-                { label: 'CLEARING OPE...', data: clearing, backgroundColor: '#06b6d4', maxBarThickness: 20 },
-                { label: 'FIRETRUCK', data: firetruck, backgroundColor: '#e11d48', maxBarThickness: 20 },
-                { label: 'HAULING', data: hauling, backgroundColor: '#ea580c', maxBarThickness: 20 },
-                { label: 'LEDVAN TRUCK', data: ledvan, backgroundColor: '#eab308', maxBarThickness: 20 }
-            ]
-        },
-        options: combinedBarOptions
-    });
+    new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [{ label: labelText, data: dataArr, backgroundColor: color, maxBarThickness: 15 }] }, options: optionsObj });
 }
 
 window.onload = loadAllData;
