@@ -431,22 +431,42 @@ td {
 
 .mt-2 { margin-top: 16px; }
 
-/* 🟢 FIX: MASSIVE MAPS WITH CLEAN FADE/SLIDE ANIMATION 🟢 */
+
+/* 🟢 UPDATED: MASSIVE MAPS WITH INTEGRATED, CLEAN TITLES 🟢 */
 .iframe-panel { 
-    height: 75vh; /* Large but safe height so it perfectly fits standard monitors */
-    margin-bottom: 80px; /* Massive spacing so headers NEVER overlap */
+    height: 85vh; /* Massive height for maximum map space */
+    margin-bottom: 80px; /* Safe spacing to prevent overlapping titles */
     opacity: 0; 
     transform: translateY(30px); /* Clean, gentle slide up */
-    transition: opacity 0.8s ease, transform 0.8s ease-out; /* Super smooth, easy on the eyes */
+    transition: opacity 0.8s cubic-bezier(0.165, 0.84, 0.44, 1), transform 0.8s cubic-bezier(0.165, 0.84, 0.44, 1); /* Ultra-smooth glide */
+    display: flex; 
+    flex-direction: column; /* Glues the title and map together so they animate as one unit */
 }
+
 .iframe-panel.map-in-view {
     opacity: 1;
     transform: translateY(0);
 }
+
+/* Sleek, clean title design that doesn't overwhelm */
+.iframe-panel .panel-heading {
+    font-size: 0.85rem; 
+    color: #334155; 
+    font-weight: 800; 
+    text-transform: uppercase; 
+    letter-spacing: 1.5px; 
+    margin-bottom: 16px; 
+    padding-left: 12px; 
+    border-left: 4px solid #2563eb; /* Sharp blue accent line */
+    opacity: 0.9; 
+    line-height: 1;
+}
+
 .iframe-panel iframe { 
     width: 100%; 
-    height: calc(100% - 30px); 
+    flex: 1; /* Automatically expands to fill the entire remaining 85vh */
     border: none; 
     border-radius: 12px; 
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Clean, modern flat shadow */
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); /* Clean flat shadow */
+    background-color: #ffffff;
 }
