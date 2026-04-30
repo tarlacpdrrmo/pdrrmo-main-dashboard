@@ -51,8 +51,15 @@ const sharedTooltipConfig = {
     caretPadding: 6
 };
 
+// Added smooth animations to the Bar Charts as well
 const singleBarOptions = {
-    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+    indexAxis: 'y', 
+    responsive: true, 
+    maintainAspectRatio: false,
+    animation: {
+        duration: 700,
+        easing: 'easeOutQuart'
+    },
     layout: { padding: { top: 15, right: 25, bottom: 10, left: 10 } }, 
     plugins: { datalabels: { display: false }, legend: { display: false }, tooltip: sharedTooltipConfig },
     scales: { x: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } }, y: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } } },
@@ -135,7 +142,7 @@ document.addEventListener("DOMContentLoaded", function() {
         renderLineChartByTimeframe(e.target.value);
     });
     
-    // 🟢 UPDATED: Single master listener triggers ALL 10 charts 🟢
+    // Master Toggle Handler (Passes `false` for initialLoad to trigger animations)
     const masterToggle = document.getElementById('masterChartToggle');
     if (masterToggle) {
         masterToggle.addEventListener('change', function(e) {
@@ -145,7 +152,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 'vehicularChart', 'roadsideChart', 'patientChart', 'medicalChart', 'standbyChart',
                 'othersChart', 'clearingChart', 'firetruckChart', 'haulingChart', 'ledvanChart'
             ];
-            chartIds.forEach(id => renderToggleableChart(id, type));
+            chartIds.forEach(id => renderToggleableChart(id, type, false));
         });
     }
 });
@@ -520,69 +527,87 @@ function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = fa
 }
 
 // ----------------------------------------------------
-// MASTER RENDERER FOR TOGGLED CHARTS
+// 🟢 UPDATED: MASTER RENDERER WITH CSS CROSSFADE ENGINE 🟢
 // ----------------------------------------------------
-function renderToggleableChart(canvasId, type) {
-    const ctx = document.getElementById(canvasId).getContext('2d');
-    
-    if (toggleChartInstances[canvasId]) {
-        toggleChartInstances[canvasId].destroy();
+function renderToggleableChart(canvasId, type, isInitialLoad = false) {
+    const canvas = document.getElementById(canvasId);
+    const container = canvas.parentElement;
+
+    // If it's not the first time loading, trigger the CSS fade-out animation first
+    if (!isInitialLoad) {
+        container.classList.add('chart-fade-out');
     }
 
-    const dataObj = toggleChartData[canvasId];
+    // Wait exactly 300ms for the CSS fade-out to finish, then swap the charts while invisible
+    setTimeout(() => {
+        const ctx = canvas.getContext('2d');
+        
+        if (toggleChartInstances[canvasId]) {
+            toggleChartInstances[canvasId].destroy();
+        }
 
-    if (type === 'bar') {
-        toggleChartInstances[canvasId] = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: dataObj.labels,
-                datasets: [{
-                    label: dataObj.labelText,
-                    data: dataObj.data,
-                    backgroundColor: dataObj.color,
-                    maxBarThickness: 15
-                }]
-            },
-            options: singleBarOptions
-        });
-    } else {
-        const mappedColors = dataObj.data.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
-        toggleChartInstances[canvasId] = new Chart(ctx, {
-            type: 'pie',
-            data: {
-                labels: dataObj.labels,
-                datasets: [{
-                    data: dataObj.data,
-                    backgroundColor: mappedColors,
-                    borderWidth: 1,
-                    borderColor: '#ffffff',
-                    hoverOffset: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                layout: { padding: 10 },
-                animation: { animateScale: true, animateRotate: true, duration: 600, easing: 'easeOutQuart' },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: sharedTooltipConfig,
-                    datalabels: {
-                        color: '#ffffff',
-                        font: { weight: '800', family: 'Inter', size: 9 },
-                        formatter: (value, context) => {
-                            let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                            if (sum === 0) return '';
-                            let pctFloat = (value * 100) / sum;
-                            return pctFloat >= 6 ? pctFloat.toFixed(0) + '%' : '';
+        const dataObj = toggleChartData[canvasId];
+
+        if (type === 'bar') {
+            toggleChartInstances[canvasId] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: dataObj.labels,
+                    datasets: [{
+                        label: dataObj.labelText,
+                        data: dataObj.data,
+                        backgroundColor: dataObj.color,
+                        maxBarThickness: 15
+                    }]
+                },
+                options: singleBarOptions
+            });
+        } else {
+            const mappedColors = dataObj.data.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
+            toggleChartInstances[canvasId] = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: dataObj.labels,
+                    datasets: [{
+                        data: dataObj.data,
+                        backgroundColor: mappedColors,
+                        borderWidth: 1,
+                        borderColor: '#ffffff',
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: 10 },
+                    animation: { animateScale: true, animateRotate: true, duration: 700, easing: 'easeOutQuart' },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: sharedTooltipConfig,
+                        datalabels: {
+                            color: '#ffffff',
+                            font: { weight: '800', family: 'Inter', size: 9 },
+                            formatter: (value, context) => {
+                                let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                if (sum === 0) return '';
+                                let pctFloat = (value * 100) / sum;
+                                return pctFloat >= 6 ? pctFloat.toFixed(0) + '%' : '';
+                            }
                         }
                     }
                 }
-            }
-        });
-    }
-}
+            });
+        }
 
+        // Once the new chart is built, remove the fade class so it animates back into view
+        if (!isInitialLoad) {
+            setTimeout(() => {
+                container.classList.remove('chart-fade-out');
+            }, 50); // Tiny 50ms buffer ensures the browser has rendered the new chart frame first
+        }
+
+    }, isInitialLoad ? 0 : 300); // 300ms matches the CSS animation time
+}
 
 function processOperationsData(data) {
     const labels = [];
@@ -668,7 +693,7 @@ function processOperationsData(data) {
     const masterToggle = document.getElementById('masterChartToggle');
     const isPie = masterToggle ? masterToggle.checked : false;
     ['vehicularChart', 'roadsideChart', 'patientChart', 'medicalChart', 'standbyChart', 'othersChart', 'clearingChart', 'firetruckChart', 'haulingChart', 'ledvanChart'].forEach(id => {
-        renderToggleableChart(id, isPie ? 'pie' : 'bar');
+        renderToggleableChart(id, isPie ? 'pie' : 'bar', true); // TRUE passes the "initialLoad" flag to bypass fading on boot
     });
 }
 
