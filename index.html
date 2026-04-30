@@ -69,7 +69,6 @@
                     <svg class="menu-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                     </svg>
-                    <!-- 🟢 UPDATED: Sidebar Title 🟢 -->
                     <span>Critical Facilities</span>
                 </li>
             </ul>
@@ -168,7 +167,13 @@
                         <div class="card doc-chart-card">
                             <div class="chart-header-actions">
                                 <h4 class="chart-title" id="pieChartTitle">Received Request from PDRRM Office:</h4>
-                                <button id="pieBackButton" class="btn-back">&larr; Back to Main List</button>
+                                <!-- 🟢 NEW: Dynamic Date Filter Dropdown 🟢 -->
+                                <div style="display:flex; gap:8px; align-items:center;">
+                                    <select id="docPieMonthFilter" class="chart-filter">
+                                        <option value="all">All Time</option>
+                                    </select>
+                                    <button id="pieBackButton" class="btn-back">&larr; Back to Main List</button>
+                                </div>
                             </div>
                             <div class="interactive-pie-container">
                                 <div class="doc-pie-wrapper"><canvas id="docSourcePieChart"></canvas></div>
@@ -228,7 +233,6 @@
                 <iframe src="https://tarlacpdrrmo.github.io/tarlac-incidents/" title="Incident Heatmap"></iframe>
             </section>
             
-            <!-- 🟢 UPDATED: Map Panel Title 🟢 -->
             <section id="evac-map" class="panel iframe-panel">
                 <h3 class="panel-heading">Critical Facilities</h3>
                 <iframe src="https://tarlacpdrrmo.github.io/tarlac-evacuation-centers/" title="Critical Facilities Map"></iframe>
