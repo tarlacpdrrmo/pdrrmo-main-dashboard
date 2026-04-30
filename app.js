@@ -15,7 +15,7 @@ let detailedPieData = {};
 let globalLineData = []; 
 let globalDocRecords = []; 
 
-// 🟢 NEW: Storage objects to remember data and track active instances for toggling 🟢
+// Storage objects to remember data and track active instances for toggling
 let toggleChartInstances = {};
 let toggleChartData = {};
 
@@ -97,7 +97,7 @@ document.addEventListener("DOMContentLoaded", function() {
         renderLineChartByTimeframe(e.target.value);
     });
     
-    // 🟢 NEW: Global event listener catches toggles and instantly animates the swap 🟢
+    // Global event listener catches toggles and instantly animates the swap
     document.addEventListener('change', function(e) {
         if(e.target.classList.contains('type-toggle')) {
             const targetCanvas = e.target.getAttribute('data-target');
@@ -477,7 +477,7 @@ function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = fa
 }
 
 // ----------------------------------------------------
-// 🟢 NEW: MASTER RENDERER FOR TOGGLED CHARTS 🟢
+// MASTER RENDERER FOR TOGGLED CHARTS
 // ----------------------------------------------------
 const singleBarOptions = {
     indexAxis: 'y', responsive: true, maintainAspectRatio: false,
@@ -621,7 +621,7 @@ function processOperationsData(data) {
 
     drawDonutChart('monthlyPieChart', labels, monthlyTotalServices, overallGrandTotal);
     
-    // 🟢 UPDATED: Instead of hard-drawing bars, save data and let the toggle engine render them 🟢
+    // Instead of hard-drawing bars, save data and let the toggle engine render them
     toggleChartData['vehicularChart'] = { labels, labelText: 'TRAUMA (ROADCRASH INCIDENT)', data: vehicular, color: '#2563eb' };
     toggleChartData['roadsideChart'] = { labels, labelText: 'Roadside Assistance', data: roadside, color: '#2563eb' };
     toggleChartData['patientChart'] = { labels, labelText: 'Patient Transport', data: patient, color: '#2563eb' };
