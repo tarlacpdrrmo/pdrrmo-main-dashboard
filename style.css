@@ -288,7 +288,6 @@ body {
 .outside-card .red-pct { color: #dc2626; }
 
 .pie-card { display: flex; flex-direction: column; align-items: center; justify-content: center; }
-
 .pie-title {
     font-size: 0.55rem; 
     color: rgba(71, 85, 105, 0.7); 
@@ -432,22 +431,22 @@ td {
 
 .mt-2 { margin-top: 16px; }
 
-/* 🟢 UPDATED: MASSIVE MAPS WITH POP-UP ANIMATIONS 🟢 */
+/* 🟢 FIX: MASSIVE MAPS WITH CLEAN FADE/SLIDE ANIMATION 🟢 */
 .iframe-panel { 
-    height: 85vh; /* Maximizes the map to take up almost the full screen */
-    margin-bottom: 40px;
-    opacity: 0.3; /* Start faded out */
-    transform: scale(0.96) translateY(30px); /* Start slightly smaller and lower */
-    transition: all 0.7s cubic-bezier(0.165, 0.84, 0.44, 1); /* Ultra-smooth, non-bouncy transition */
+    height: 75vh; /* Large but safe height so it perfectly fits standard monitors */
+    margin-bottom: 80px; /* Massive spacing so headers NEVER overlap */
+    opacity: 0; 
+    transform: translateY(30px); /* Clean, gentle slide up */
+    transition: opacity 0.8s ease, transform 0.8s ease-out; /* Super smooth, easy on the eyes */
 }
 .iframe-panel.map-in-view {
     opacity: 1;
-    transform: scale(1) translateY(0); /* Pops into full size when scrolling to it */
+    transform: translateY(0);
 }
 .iframe-panel iframe { 
     width: 100%; 
     height: calc(100% - 30px); 
     border: none; 
     border-radius: 12px; 
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); /* Deeper shadow for a floating pop-up effect */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Clean, modern flat shadow */
 }
