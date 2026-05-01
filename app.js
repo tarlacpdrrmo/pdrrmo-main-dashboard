@@ -136,7 +136,7 @@ document.addEventListener("DOMContentLoaded", function() {
             docPieChartInstance.update();
         }
         this.style.display = 'none';
-        document.getElementById('pieChartTitle').innerText = 'Received Request from PDRRM Office:';
+        document.getElementById('pieChartTitle').innerText = 'COMMUNICATION LETTERS RECEIVED';
         updateCustomLegend(mainPieLabels, mainPieData);
     });
 
@@ -306,16 +306,16 @@ function processDocumentsData(data) {
             }
         }
 
-        // --- 2. TARGET COLUMN N AND O FOR TRUE DATA ---
-        let rawOffice = row['Column N'] || 
-                        row['COLUMN N'] || 
-                        row['Received From (OFFICE)'] || 
-                        row['RECEIVED FROM (OFFICE)'] || '';
+        // --- 2. TARGET COLUMNS FOR NEW PIE HIERARCHY (NATURE -> CATEGORY) ---
+        let rawNature = row['Nature of Letter'] || 
+                        row['NATURE OF LETTER'] || 
+                        row['Column P'] || 
+                        row['COLUMN P'] || '';
                         
-        let rawCategory = row['Column O'] || 
-                          row['COLUMN O'] || 
-                          row['Category of Writing Party'] || 
-                          row['CATEGORY OF WRITING PARTY'] || '';
+        let rawCategory = row['Category of Writing Party'] || 
+                          row['CATEGORY OF WRITING PARTY'] || 
+                          row['Column O'] || 
+                          row['COLUMN O'] || '';
 
         let dateStr = row['Column M'] || row['COLUMN M'] || row['Date Received'] || row['DATE RECEIVED'] || row[keys[12]] || '';
         
@@ -323,15 +323,24 @@ function processDocumentsData(data) {
         let isSummaryRow = (row['TOTAL ACTION TAKEN (OVERALL)'] !== undefined && String(row['TOTAL ACTION TAKEN (OVERALL)']).trim() !== '') || 
                            (row['TOTAL REQUEST CATERED'] !== undefined && String(row['TOTAL REQUEST CATERED']).trim() !== '');
                            
-        let isBlankRow = (!rawOffice || String(rawOffice).trim() === '') && 
-                         (!rawCategory || String(rawCategory).trim() === '');
+        let isBlankRow = (!rawNature || String(rawNature).trim() === '') && 
+                         (!rawCategory || String(rawCategory).trim() === '') &&
+                         (!dateStr || String(dateStr).trim() === '');
 
-        // Only process real rows based on Column N and O
+        // Only process real rows based on valid tracking data
         if (!isSummaryRow && !isBlankRow) {
-            let parentCategory = rawCategory.trim() !== '' ? rawCategory.trim() : 'Uncategorized';
-            if (!rawOffice || String(rawOffice).trim() === '') {
-                rawOffice = 'Unspecified Office';
-            }
+            
+            // Map Nature of Letter (Scrubbing logic)
+            let mappedNature = rawNature.trim();
+            let upperNature = mappedNature.toUpperCase();
+            
+            if (upperNature === 'FYI') mappedNature = 'For Information';
+            else if (upperNature === 'REQUEST') mappedNature = 'Request';
+            else if (upperNature === 'INVITATION') mappedNature = 'Invitation';
+            else if (upperNature === 'OFFER/PROPOSAL' || upperNature === 'OFFER / PROPOSAL') mappedNature = 'Offer/Proposal';
+            else if (mappedNature === '') mappedNature = 'Uncategorized';
+            
+            let subCategory = rawCategory.trim() !== '' ? rawCategory.trim() : 'Uncategorized';
             
             let monthYearKey = 'all';
             
@@ -349,14 +358,13 @@ function processDocumentsData(data) {
 
             globalDocRecords.push({
                 dateKey: monthYearKey,
-                parent: parentCategory,
-                raw: rawOffice,
-                count: 1 // FIX: Strictly 1 per actual row. Eliminates the 520 multiplier bug.
+                parent: mappedNature, // TOP LEVEL: Nature of Letter
+                raw: subCategory,     // SUB LEVEL: Category of Writing Party
+                count: 1 
             });
         }
     });
 
-    // --- SET KPI STRICTLY TO THE TRUE SPREADSHEET NUMBER (331) ---
     document.getElementById('doc-kpi-request').innerText = totalReq; 
     document.getElementById('doc-kpi-action').innerText = totalAction;
     document.getElementById('doc-kpi-catered').innerText = catered;
@@ -414,7 +422,7 @@ function renderDocPieChart(filterKey) {
 
     const titleEl = document.getElementById('pieChartTitle');
     const backBtn = document.getElementById('pieBackButton');
-    if (titleEl) titleEl.innerText = 'Received Request from PDRRM Office:';
+    if (titleEl) titleEl.innerText = 'COMMUNICATION LETTERS RECEIVED';
     if (backBtn) backBtn.style.display = 'none';
 
     if (docPieChartInstance) {
