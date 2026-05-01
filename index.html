@@ -317,6 +317,21 @@
             
         </main>
     </div>
+    
+    <!-- SECURITY DETERRENTS -->
+    <script>
+        // Disable Right-Click
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        
+        // Disable Developer Tools Keyboard Shortcuts
+        document.onkeydown = function(e) {
+            if(e.keyCode == 123) { return false; } // Blocks F12
+            if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) { return false; } // Blocks Ctrl+Shift+I
+            if(e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) { return false; } // Blocks Ctrl+Shift+C
+            if(e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) { return false; } // Blocks Ctrl+Shift+J
+            if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) { return false; } // Blocks Ctrl+U (View Source)
+        }
+    </script>
     <script src="app.js"></script>
 </body>
 </html>
