@@ -3,13 +3,19 @@ Chart.register(ChartDataLabels);
 // 1. YOUR SECURE GOOGLE APPS SCRIPT WEB APP URL
 const webAppUrl = "https://script.google.com/macros/s/AKfycbwdl6df9uXUtM0-ufyh10tNz1X_4WZi03fqXrRwtdysOjsblDwSOkeAlBriw3txXe2lXQ/exec";
 
+// Global Chart & State Trackers
 let docPieChartInstance = null;
 let docLineChartInstance = null;
-let mainPieLabels = [];
-let mainPieData = [];
-let detailedPieData = {};
 let globalLineData = []; 
 let globalDocRecords = []; 
+
+// NEW: 3-Layer Interactive State Tracker
+let currentPieState = { 
+    level: 1, 
+    filterKey: 'all', 
+    level1Target: null, 
+    level2Target: null 
+};
 
 let toggleChartInstances = {};
 let toggleChartData = {};
@@ -124,20 +130,22 @@ document.addEventListener("DOMContentLoaded", function() {
     setInterval(updateClock, 1000);
     updateClock(); 
 
+    // Filter Logic
     document.getElementById('docPieMonthFilter').addEventListener('change', function(e) {
-        renderDocPieChart(e.target.value);
+        currentPieState.filterKey = e.target.value;
+        renderDocPieChart();
     });
 
+    // Back Button Logic for 3-Level Drill Down
     document.getElementById('pieBackButton').addEventListener('click', function() {
-        if(docPieChartInstance) {
-            docPieChartInstance.data.labels = mainPieLabels;
-            docPieChartInstance.data.datasets[0].data = mainPieData;
-            docPieChartInstance.data.datasets[0].backgroundColor = mainPieData.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
-            docPieChartInstance.update();
+        if (currentPieState.level === 3) {
+            currentPieState.level = 2;
+            currentPieState.level2Target = null;
+        } else if (currentPieState.level === 2) {
+            currentPieState.level = 1;
+            currentPieState.level1Target = null;
         }
-        this.style.display = 'none';
-        document.getElementById('pieChartTitle').innerText = 'NATURE OF LETTER';
-        updateCustomLegend(mainPieLabels, mainPieData);
+        renderDocPieChart();
     });
 
     document.getElementById('lineChartFilter').addEventListener('change', function(e) {
@@ -307,7 +315,7 @@ function processDocumentsData(data) {
             }
         }
 
-        // --- 2. TARGET COLUMNS FOR NEW PIE HIERARCHY (NATURE -> CATEGORY) ---
+        // --- 2. TARGET COLUMNS FOR 3-LEVEL PIE HIERARCHY ---
         let rawNature = row['Nature of Letter'] || 
                         row['NATURE OF LETTER'] || 
                         row['Column P'] || 
@@ -317,6 +325,13 @@ function processDocumentsData(data) {
                           row['CATEGORY OF WRITING PARTY'] || 
                           row['Column O'] || 
                           row['COLUMN O'] || '';
+                          
+        let rawOffice = row['Received From (OFFICE)'] || 
+                        row['RECEIVED FROM (OFFICE)'] || 
+                        row['Received From Office'] || 
+                        row['RECEIVED FROM OFFICE'] || 
+                        row['Column N'] || 
+                        row['COLUMN N'] || '';
 
         let dateStr = row['Column M'] || row['COLUMN M'] || row['Date Received'] || row['DATE RECEIVED'] || row[keys[12]] || '';
         
@@ -331,10 +346,8 @@ function processDocumentsData(data) {
         // Only process real rows based on valid tracking data
         if (!isSummaryRow && !isBlankRow) {
             
-            // Map Nature of Letter (Scrubbing logic)
             let mappedNature = rawNature.trim();
             let upperNature = mappedNature.toUpperCase();
-            
             if (upperNature === 'FYI') mappedNature = 'For Information';
             else if (upperNature === 'REQUEST') mappedNature = 'Request';
             else if (upperNature === 'INVITATION') mappedNature = 'Invitation';
@@ -342,6 +355,7 @@ function processDocumentsData(data) {
             else if (mappedNature === '') mappedNature = 'Uncategorized';
             
             let subCategory = rawCategory.trim() !== '' ? rawCategory.trim() : 'Uncategorized';
+            let specificOffice = rawOffice.trim() !== '' ? rawOffice.trim() : 'Unspecified Office';
             
             let monthYearKey = 'all';
             
@@ -349,7 +363,6 @@ function processDocumentsData(data) {
                 let parsedDate = parseCustomDate(dateStr);
                 if (parsedDate) {
                     globalLineData.push({ dateObj: parsedDate, count: 1, timestamp: parsedDate.getTime() });
-                    
                     let m = parsedDate.getMonth() + 1;
                     let y = parsedDate.getFullYear();
                     monthYearKey = `${y}-${m.toString().padStart(2, '0')}`;
@@ -359,8 +372,9 @@ function processDocumentsData(data) {
 
             globalDocRecords.push({
                 dateKey: monthYearKey,
-                parent: mappedNature, // TOP LEVEL: Nature of Letter
-                raw: subCategory,     // SUB LEVEL: Category of Writing Party
+                level1: mappedNature,     // Level 1: Request, Invitation...
+                level2: subCategory,      // Level 2: PGT, Academe...
+                level3: specificOffice,   // Level 3: PHO, PESO...
                 count: 1 
             });
         }
@@ -392,21 +406,32 @@ function processDocumentsData(data) {
         });
     }
 
-    renderDocPieChart('all');
+    renderDocPieChart();
     renderLineChartByTimeframe('daily');
 }
 
-function renderDocPieChart(filterKey) {
+// THE NEW PIPELINE RENDERING ENGINE
+function renderDocPieChart() {
     let sourceMap = {};
-    detailedPieData = {}; 
     let hasData = false;
 
+    // Filter and aggregate dynamically based on current level
     globalDocRecords.forEach(record => {
-        if (filterKey === 'all' || record.dateKey === filterKey) {
-            sourceMap[record.parent] = (sourceMap[record.parent] || 0) + record.count;
-            if (!detailedPieData[record.parent]) detailedPieData[record.parent] = {};
-            detailedPieData[record.parent][record.raw] = (detailedPieData[record.parent][record.raw] || 0) + record.count;
-            hasData = true;
+        if (currentPieState.filterKey === 'all' || record.dateKey === currentPieState.filterKey) {
+            
+            if (currentPieState.level === 1) {
+                sourceMap[record.level1] = (sourceMap[record.level1] || 0) + record.count;
+                hasData = true;
+            } 
+            else if (currentPieState.level === 2 && record.level1 === currentPieState.level1Target) {
+                sourceMap[record.level2] = (sourceMap[record.level2] || 0) + record.count;
+                hasData = true;
+            } 
+            else if (currentPieState.level === 3 && record.level1 === currentPieState.level1Target && record.level2 === currentPieState.level2Target) {
+                sourceMap[record.level3] = (sourceMap[record.level3] || 0) + record.count;
+                hasData = true;
+            }
+
         }
     });
 
@@ -418,28 +443,124 @@ function renderDocPieChart(filterKey) {
         sortedSources.sort((a, b) => b.value - a.value);
     }
 
-    mainPieLabels = sortedSources.map(item => item.label);
-    mainPieData = sortedSources.map(item => item.value);
+    let labels = sortedSources.map(item => item.label);
+    let dataValues = sortedSources.map(item => item.value);
 
+    // Render Titles & Back Buttons
     const titleEl = document.getElementById('pieChartTitle');
     const backBtn = document.getElementById('pieBackButton');
-    if (titleEl) titleEl.innerText = 'NATURE OF LETTER';
-    if (backBtn) backBtn.style.display = 'none';
+
+    if (currentPieState.level === 1) {
+        titleEl.innerText = 'COMMUNICATION LETTERS RECEIVED';
+        backBtn.style.display = 'none';
+    } 
+    else if (currentPieState.level === 2) {
+        titleEl.innerHTML = `BREAKDOWN: ${currentPieState.level1Target.toUpperCase()} <span style="color: #64748b; font-weight: 600; font-size: 0.65rem; opacity: 0.7; letter-spacing: 0.5px;">(CATEGORY OF REQUESTING/ WRITING PARTY)</span>`;
+        backBtn.style.display = 'block';
+    } 
+    else if (currentPieState.level === 3) {
+        titleEl.innerHTML = `BREAKDOWN: ${currentPieState.level2Target.toUpperCase()} <span style="color: #64748b; font-weight: 600; font-size: 0.65rem; opacity: 0.7; letter-spacing: 0.5px;">(SPECIFIC OFFICE / ENTITY)</span>`;
+        backBtn.style.display = 'block';
+    }
 
     if (docPieChartInstance) {
-        let mappedColors = mainPieData.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
+        let mappedColors = labels.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
         if (!hasData) mappedColors = ['#e2e8f0'];
 
-        docPieChartInstance.data.labels = mainPieLabels;
-        docPieChartInstance.data.datasets[0].data = mainPieData;
+        docPieChartInstance.data.labels = labels;
+        docPieChartInstance.data.datasets[0].data = dataValues;
         docPieChartInstance.data.datasets[0].backgroundColor = mappedColors;
         docPieChartInstance.data.datasets[0].hoverOffset = !hasData ? 0 : 8;
         
         docPieChartInstance.update();
-        updateCustomLegend(mainPieLabels, mainPieData, !hasData);
+        updateCustomLegend(labels, dataValues, !hasData);
     } else {
-        drawInteractiveDonutChart('docSourcePieChart', mainPieLabels, mainPieData, !hasData);
+        drawInteractiveDonutChart('docSourcePieChart', labels, dataValues, !hasData);
     }
+}
+
+function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = false) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    if(docPieChartInstance) docPieChartInstance.destroy();
+    
+    let mappedColors = labels.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
+    if (isEmptyState) mappedColors = ['#e2e8f0']; 
+    
+    docPieChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: mappedColors, borderWidth: 1, borderColor: '#ffffff', hoverOffset: isEmptyState ? 0 : 8 }] },
+        options: {
+            responsive: true, maintainAspectRatio: false, cutout: '55%',
+            onClick: (event, elements, chart) => {
+                if (chart.data.labels.length === 1 && chart.data.labels[0] === 'No Data Found') return;
+                
+                if (elements[0]) {
+                    const index = elements[0].index;
+                    const label = chart.data.labels[index];
+                    
+                    if (currentPieState.level === 1) {
+                        currentPieState.level = 2;
+                        currentPieState.level1Target = label;
+                        renderDocPieChart();
+                    } else if (currentPieState.level === 2) {
+                        currentPieState.level = 3;
+                        currentPieState.level2Target = label;
+                        renderDocPieChart();
+                    }
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                datalabels: {
+                    color: (context) => (context.chart.data.labels.length === 1 && context.chart.data.labels[0] === 'No Data Found') ? '#94a3b8' : '#ffffff', 
+                    font: (context) => ({ weight: '800', family: 'Inter', size: (context.chart.data.labels.length === 1 && context.chart.data.labels[0] === 'No Data Found') ? 12 : 9 }), 
+                    anchor: 'center',
+                    align: 'center',
+                    formatter: (value, context) => { 
+                        if (context.chart.data.labels.length === 1 && context.chart.data.labels[0] === 'No Data Found') return 'No Data';
+                        
+                        let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); 
+                        if (sum === 0) return ''; 
+                        
+                        let pctStr = ((value * 100) / sum).toFixed(1);
+                        let pctFloat = parseFloat(pctStr);
+                        
+                        return pctFloat >= 8 ? pctStr + '%' : ''; 
+                    } 
+                },
+                tooltip: {
+                    filter: function(tooltipItem) { return tooltipItem.label !== 'No Data Found'; },
+                    ...sharedTooltipConfig, 
+                    callbacks: {
+                        label: function(context) {
+                            let suffix = '';
+                            if (currentPieState.level < 3) {
+                                suffix = ' (Click to zoom)';
+                            }
+                            return `${context.raw} requests ${suffix}`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    updateCustomLegend(labels, dataArr, isEmptyState);
+}
+
+function updateCustomLegend(labels, data, isEmptyState = false) {
+    const legendContainer = document.getElementById('customLegend');
+    legendContainer.innerHTML = '';
+    labels.forEach((label, index) => {
+        let color = isEmptyState ? '#e2e8f0' : pieColorPalette[index % pieColorPalette.length];
+        let val = isEmptyState ? '-' : data[index];
+        legendContainer.innerHTML += `
+            <div class="legend-item" style="animation-delay: ${index * 0.04}s;">
+                <div class="legend-color" style="background-color: ${color}"></div>
+                <div class="legend-text" title="${label}">${label}</div>
+                <div class="legend-val">${val}</div>
+            </div>
+        `;
+    });
 }
 
 function renderLineChartByTimeframe(timeframe) {
@@ -952,98 +1073,6 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
                 }
             } 
         }
-    });
-}
-
-function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = false) {
-    const ctx = document.getElementById(canvasId).getContext('2d');
-    if(docPieChartInstance) docPieChartInstance.destroy();
-    
-    let mappedColors = dataArr.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
-    if (isEmptyState) mappedColors = ['#e2e8f0']; 
-    
-    docPieChartInstance = new Chart(ctx, {
-        type: 'doughnut',
-        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: mappedColors, borderWidth: 1, borderColor: '#ffffff', hoverOffset: isEmptyState ? 0 : 8 }] },
-        options: {
-            responsive: true, maintainAspectRatio: false, cutout: '55%',
-            onClick: (event, elements, chart) => {
-                if (chart.data.labels.length === 1 && chart.data.labels[0] === 'No Data Found') return;
-                
-                if (elements[0]) {
-                    const index = elements[0].index;
-                    const label = chart.data.labels[index];
-                    
-                    if (detailedPieData[label] && Object.keys(detailedPieData[label]).length > 1 && document.getElementById('pieBackButton').style.display !== 'block') {
-                        let subData = detailedPieData[label];
-                        let sortedSub = Object.keys(subData).map(key => ({ l: key, v: subData[key] })).sort((a, b) => b.v - a.v);
-                        
-                        chart.data.labels = sortedSub.map(i => i.l);
-                        chart.data.datasets[0].data = sortedSub.map(i => i.v);
-                        
-                        chart.data.datasets[0].backgroundColor = sortedSub.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
-                        
-                        chart.update(); 
-
-                        // Injecting HTML for the customized title typography
-                        document.getElementById('pieChartTitle').innerHTML = `BREAKDOWN: ${label.toUpperCase()} <span style="color: #64748b; font-weight: 600; font-size: 0.65rem; opacity: 0.7; letter-spacing: 0.5px;">(CATEGORY OF REQUESTING/ WRITING PARTY)</span>`;
-                        
-                        document.getElementById('pieBackButton').style.display = 'block';
-                        updateCustomLegend(chart.data.labels, chart.data.datasets[0].data);
-                    }
-                }
-            },
-            plugins: {
-                legend: { display: false },
-                datalabels: {
-                    color: (context) => (context.chart.data.labels.length === 1 && context.chart.data.labels[0] === 'No Data Found') ? '#94a3b8' : '#ffffff', 
-                    font: (context) => ({ weight: '800', family: 'Inter', size: (context.chart.data.labels.length === 1 && context.chart.data.labels[0] === 'No Data Found') ? 12 : 9 }), 
-                    anchor: 'center',
-                    align: 'center',
-                    formatter: (value, context) => { 
-                        if (context.chart.data.labels.length === 1 && context.chart.data.labels[0] === 'No Data Found') return 'No Data';
-                        
-                        let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); 
-                        if (sum === 0) return ''; 
-                        
-                        let pctStr = ((value * 100) / sum).toFixed(1);
-                        let pctFloat = parseFloat(pctStr);
-                        
-                        return pctFloat >= 8 ? pctStr + '%' : ''; 
-                    } 
-                },
-                tooltip: {
-                    filter: function(tooltipItem) { return tooltipItem.label !== 'No Data Found'; },
-                    ...sharedTooltipConfig, 
-                    callbacks: {
-                        label: function(context) {
-                            let suffix = '';
-                            if (document.getElementById('pieBackButton').style.display !== 'block' && detailedPieData[context.label] && Object.keys(detailedPieData[context.label]).length > 1) {
-                                suffix = ' (Click to zoom)';
-                            }
-                            return `${context.raw} requests ${suffix}`;
-                        }
-                    }
-                }
-            }
-        }
-    });
-    updateCustomLegend(labels, dataArr, isEmptyState);
-}
-
-function updateCustomLegend(labels, data, isEmptyState = false) {
-    const legendContainer = document.getElementById('customLegend');
-    legendContainer.innerHTML = '';
-    labels.forEach((label, index) => {
-        let color = isEmptyState ? '#e2e8f0' : pieColorPalette[index % pieColorPalette.length];
-        let val = isEmptyState ? '-' : data[index];
-        legendContainer.innerHTML += `
-            <div class="legend-item" style="animation-delay: ${index * 0.04}s;">
-                <div class="legend-color" style="background-color: ${color}"></div>
-                <div class="legend-text" title="${label}">${label}</div>
-                <div class="legend-val">${val}</div>
-            </div>
-        `;
     });
 }
 
