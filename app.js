@@ -27,7 +27,7 @@ let masterServicePieInstance = null;
 let operationsMonthlyCache = {}; 
 const serviceCategoryLabels = [
     'TRAUMA (ROADCRASH)', 'Roadside Assistance', 'Patient Transport',
-    'Medical', 'Standby Medic & VIP', 'SUPPORT SERVICES (manpower and service resources transportation Assistance)',
+    'Medical Emergencies', 'Standby Medic & VIP', 'SUPPORT SERVICES (manpower and service resources transportation Assistance)',
     'Clearing Operations', 'Firetruck', 'Hauling', 'Ledvan Truck'
 ];
 
@@ -285,7 +285,6 @@ function processDocumentsData(data) {
     data.forEach(row => {
         let keys = Object.keys(row);
         
-        // --- 1. CAPTURE SHEET SUMMARY TOTALS FOR MAIN LIST BASELINE ---
         if (!totalsCaptured) {
             let colCValue = Number(row['TOTAL COMMUNICATION RECEIVED']) || 
                             Number(row['TOTAL RECEIVED FROM OFFICE']) || 
@@ -328,7 +327,6 @@ function processDocumentsData(data) {
 
         if (!isSummaryRow && !isBlankRow) {
             
-            // --- DATA SCRUBBING ---
             let mappedNature = rawNature.trim();
             let upperNature = mappedNature.toUpperCase();
             
@@ -347,7 +345,6 @@ function processDocumentsData(data) {
             let subCategory = rawCategory.trim() !== '' ? rawCategory.trim() : 'Uncategorized';
             let specificOffice = rawOffice.trim() !== '' ? rawOffice.trim() : 'Unspecified Office';
             
-            // Check Column Q for actual text to count as an "Action Taken"
             let actionActuallyTaken = false;
             if (rawActionTaken && String(rawActionTaken).trim() !== '' && String(rawActionTaken).trim().toUpperCase() !== 'NULL') {
                 actionActuallyTaken = true;
@@ -397,7 +394,6 @@ function processDocumentsData(data) {
     renderLineChartByTimeframe('daily');
 }
 
-// --- DYNAMIC KPI RE-COUNTER & VISIBILITY MANAGER ---
 function updateTrackingKPIDisplays() {
     const cardReqCount = document.getElementById('doc-kpi-request').parentElement; 
     const cardAction = document.getElementById('doc-kpi-action').parentElement; 
@@ -409,11 +405,9 @@ function updateTrackingKPIDisplays() {
     const cardCancelled = document.getElementById('doc-kpi-cancelled').parentElement; 
     const cardNoAction = document.getElementById('doc-kpi-no-action').parentElement; 
 
-    // Total Comm Received always stays visible
     cardReqCount.style.display = '';
 
     if (currentPieState.level === 1) {
-        // --- MAIN LIST VIEW: Restore everything ---
         [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => card.style.display = '');
         
         document.getElementById('doc-kpi-request').innerText = originalKPITotals.req;
@@ -426,9 +420,6 @@ function updateTrackingKPIDisplays() {
         document.getElementById('doc-kpi-cancelled').innerText = originalKPITotals.cancelled;
         document.getElementById('doc-kpi-no-action').innerText = originalKPITotals.noAction;
     } else {
-        // --- DRILL DOWN VIEW ---
-        
-        // Step 1: Recount dynamic total and action taken
         let dynTotalRequestsMatched = 0;
         let dynActionsActuallyTakenMatched = 0;
         let targetCategory = currentPieState.level1Target;
@@ -447,10 +438,8 @@ function updateTrackingKPIDisplays() {
         document.getElementById('doc-kpi-request').innerText = dynTotalRequestsMatched;
         document.getElementById('doc-kpi-action').innerText = dynActionsActuallyTakenMatched;
 
-        // Step 2: Hide everything first
         [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => card.style.display = 'none');
         
-        // Step 3: Reveal specific cards based on the slice clicked
         if (targetCategory === 'Request') {
             cardCatered.style.display = '';
             cardNotCatered.style.display = '';
@@ -459,7 +448,6 @@ function updateTrackingKPIDisplays() {
             cardInvAtt.style.display = '';
             cardInvNot.style.display = '';
         } else if (targetCategory === 'Offer/Proposal' || targetCategory === 'For Information') {
-            // Only show Action Taken for these two!
             cardAction.style.display = ''; 
         } else {
             cardAction.style.display = '';
@@ -515,7 +503,6 @@ function renderDocPieChart() {
         backBtn.style.display = 'block';
     }
 
-    // Call the KPI visibility manager right before drawing chart
     updateTrackingKPIDisplays();
 
     if (docPieChartInstance) {
@@ -988,8 +975,8 @@ function processOperationsData(data) {
     toggleChartData['vehicularChart'] = { labels, labelText: 'TRAUMA (ROADCRASH INCIDENT)', data: vehicular, color: barColors };
     toggleChartData['roadsideChart'] = { labels, labelText: 'Roadside Assistance', data: roadside, color: barColors };
     toggleChartData['patientChart'] = { labels, labelText: 'Patient Transport', data: patient, color: barColors };
-    toggleChartData['medicalChart'] = { labels, labelText: 'Medical', data: medical, color: barColors };
-    toggleChartData['standbyChart'] = { labels, labelText: 'Standby Medic, Marshal & VIP', data: standby, color: barColors };
+    toggleChartData['medicalChart'] = { labels, labelText: 'MEDICAL EMERGENCIES', data: medical, color: barColors };
+    toggleChartData['standbyChart'] = { labels, labelText: 'Standby Medic & VIP', data: standby, color: barColors };
     
     toggleChartData['othersChart'] = { labels, labelText: 'SUPPORT SERVICES (manpower and service resources transportation Assistance)', data: others, color: barColors };
     toggleChartData['clearingChart'] = { labels, labelText: 'Clearing Operations', data: clearing, color: barColors };
