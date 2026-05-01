@@ -100,12 +100,20 @@
                 <div class="panel-header-wrapper">
                     <h3 class="panel-heading">Assets and Personnel Dispatched</h3>
                     
-                    <div class="master-toggle-wrapper">
-                        <span style="font-size: 0.65rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">View as Pie Charts</span>
-                        <label class="chart-toggle" title="Toggle All Pie Charts">
-                            <input type="checkbox" id="masterChartToggle">
-                            <span class="toggle-slider"></span>
-                        </label>
+                    <div class="master-toggle-wrapper" style="display: flex; gap: 15px; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 6px; border-right: 1px solid #cbd5e1; padding-right: 15px;">
+                            <span style="font-size: 0.65rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Filter Year</span>
+                            <select id="globalYearSelect" class="chart-filter" style="padding: 4px 8px; font-size: 0.75rem;">
+                                <option value="all">All Time</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="font-size: 0.65rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">View as Pie Charts</span>
+                            <label class="chart-toggle" title="Toggle All Pie Charts">
+                                <input type="checkbox" id="masterChartToggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
                     </div>
                 </div>
 
