@@ -216,7 +216,7 @@ function hideLoader() {
         setTimeout(() => {
             loader.style.visibility = 'hidden';
             loader.style.display = 'none';
-        }, 600); 
+        }, 800); 
     }
 }
 
@@ -272,12 +272,10 @@ async function loadAllData() {
         
         if (rawVolunteersData.length > 0) processVolunteersData(rawVolunteersData);
         
-        // Remove loading screen on success
         hideLoader();
 
     } catch (error) {
         console.error("Error fetching secure data:", error);
-        // Remove loading screen on error so user isn't stuck
         hideLoader();
     }
 }
@@ -503,6 +501,34 @@ function processDocumentsData(data) {
     renderLineChartByTimeframe('daily');
 }
 
+// ----------------------------------------------------
+// NEW: SMOOTH KPI ANIMATION FUNCTION
+// ----------------------------------------------------
+function toggleKpiCard(card, show) {
+    if (show) {
+        // First put it back in the grid layout flow
+        card.style.display = ''; 
+        
+        // Wait exactly one visual frame so the browser registers the grid placement 
+        // before firing the CSS animation to fade/scale it up.
+        requestAnimationFrame(() => {
+            card.classList.remove('kpi-hidden');
+        });
+    } else {
+        // Trigger the CSS scale-down and fade-out
+        card.classList.add('kpi-hidden');
+        
+        // Wait for the animation to finish, then cleanly remove it from the grid 
+        // to prevent any empty layout gaps.
+        setTimeout(() => {
+            // Safety check: only hide if it hasn't been re-summoned while animating
+            if (card.classList.contains('kpi-hidden')) {
+                card.style.display = 'none';
+            }
+        }, 350); // Matches the CSS transition length
+    }
+}
+
 function updateTrackingKPIDisplays() {
     const cardReqCount = document.getElementById('doc-kpi-request').parentElement; 
     const cardAction = document.getElementById('doc-kpi-action').parentElement; 
@@ -514,20 +540,16 @@ function updateTrackingKPIDisplays() {
     const cardCancelled = document.getElementById('doc-kpi-cancelled').parentElement; 
     const cardNoAction = document.getElementById('doc-kpi-no-action').parentElement; 
 
-    cardReqCount.style.display = '';
+    // The Anchor must always remain visible
+    toggleKpiCard(cardReqCount, true);
 
     if (currentPieState.level === 1) {
-        [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => card.style.display = '');
-        
+        // Reset anchor text
         document.getElementById('doc-kpi-request').innerText = originalKPITotals.req;
         document.getElementById('doc-kpi-action').innerText = originalKPITotals.action;
-        document.getElementById('doc-kpi-catered').innerText = originalKPITotals.catered;
-        document.getElementById('doc-kpi-inv-att').innerText = originalKPITotals.invAttended;
-        document.getElementById('doc-kpi-not-catered').innerText = originalKPITotals.notCatered;
-        document.getElementById('doc-kpi-others').innerText = originalKPITotals.others;
-        document.getElementById('doc-kpi-inv-not').innerText = originalKPITotals.invNotAttended;
-        document.getElementById('doc-kpi-cancelled').innerText = originalKPITotals.cancelled;
-        document.getElementById('doc-kpi-no-action').innerText = originalKPITotals.noAction;
+        
+        // Smoothly reveal all specific cards back to the grid
+        [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => toggleKpiCard(card, true));
     } else {
         let dynTotalRequestsMatched = 0;
         let dynActionsActuallyTakenMatched = 0;
@@ -544,22 +566,25 @@ function updateTrackingKPIDisplays() {
             }
         });
 
+        // Set the dynamic anchor numbers
         document.getElementById('doc-kpi-request').innerText = dynTotalRequestsMatched;
         document.getElementById('doc-kpi-action').innerText = dynActionsActuallyTakenMatched;
 
-        [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => card.style.display = 'none');
+        // Smoothly collapse all cards out of the grid...
+        [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => toggleKpiCard(card, false));
         
+        // ...then instantly bring back only the relevant ones based on category
         if (targetCategory === 'Request') {
-            cardCatered.style.display = '';
-            cardNotCatered.style.display = '';
-            cardCancelled.style.display = ''; 
+            toggleKpiCard(cardCatered, true);
+            toggleKpiCard(cardNotCatered, true);
+            toggleKpiCard(cardCancelled, true); 
         } else if (targetCategory === 'Invitation') {
-            cardInvAtt.style.display = '';
-            cardInvNot.style.display = '';
+            toggleKpiCard(cardInvAtt, true);
+            toggleKpiCard(cardInvNot, true);
         } else if (targetCategory === 'Offer/Proposal' || targetCategory === 'For Information') {
-            cardAction.style.display = ''; 
+            toggleKpiCard(cardAction, true); 
         } else {
-            cardAction.style.display = '';
+            toggleKpiCard(cardAction, true);
         }
     }
 }
