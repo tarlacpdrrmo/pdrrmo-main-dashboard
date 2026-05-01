@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     
-    <!-- DASHBOARD CUSTOM STYLES & LOADER -->
+    <!-- SMOOTH PREMIUM LOADER STYLES -->
     <style>
         #global-loader {
             position: fixed;
@@ -111,22 +111,6 @@
         @keyframes gentle-pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.4; }
-        }
-
-        /* ------------------------------------- */
-        /* NEW: SMOOTH KPI ANIMATION STYLES      */
-        /* ------------------------------------- */
-        .kpi-card-small {
-            transition: opacity 0.35s ease, transform 0.35s ease !important;
-            transform-origin: center;
-            opacity: 1;
-            transform: scale(1);
-        }
-        
-        .kpi-card-small.kpi-hidden {
-            opacity: 0 !important;
-            transform: scale(0.8) !important;
-            pointer-events: none;
         }
     </style>
 </head>
@@ -411,7 +395,6 @@
                         </div>
                     </div>
 
-                    <!-- THE DYNAMIC KPI GRID -->
                     <div class="tracking-kpis">
                         <div class="card kpi-card-small"><p>Total Communication Received</p><h3 class="green" id="doc-kpi-request">0</h3></div>
                         <div class="card kpi-card-small"><p>Total Action Taken</p><h3 id="doc-kpi-action">0</h3></div>
