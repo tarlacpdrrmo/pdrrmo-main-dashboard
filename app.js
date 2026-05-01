@@ -985,7 +985,9 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
                         
                         chart.update(); 
 
-                        document.getElementById('pieChartTitle').innerText = 'Breakdown: ' + label;
+                        // Injecting HTML for the customized title typography
+                        document.getElementById('pieChartTitle').innerHTML = `BREAKDOWN: ${label.toUpperCase()} <span style="color: #64748b; font-weight: 600; font-size: 0.65rem; opacity: 0.7; letter-spacing: 0.5px;">(CATEGORY OF REQUESTING/ WRITING PARTY)</span>`;
+                        
                         document.getElementById('pieBackButton').style.display = 'block';
                         updateCustomLegend(chart.data.labels, chart.data.datasets[0].data);
                     }
