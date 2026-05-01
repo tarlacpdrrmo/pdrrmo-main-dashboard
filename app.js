@@ -136,7 +136,7 @@ document.addEventListener("DOMContentLoaded", function() {
             docPieChartInstance.update();
         }
         this.style.display = 'none';
-        document.getElementById('pieChartTitle').innerText = 'COMMUNICATION LETTERS RECEIVED';
+        document.getElementById('pieChartTitle').innerText = 'NATURE OF LETTER';
         updateCustomLegend(mainPieLabels, mainPieData);
     });
 
@@ -272,6 +272,7 @@ function parseCustomDate(dateStr) {
 function processDocumentsData(data) {
     let totalReq = 0, totalAction = 0, catered = 0, invAttended = 0;
     let notCatered = 0, others = 0, invNotAttended = 0, cancelled = 0, noAction = 0;
+    let dynamicTotalReq = 0; 
 
     globalLineData = []; 
     globalDocRecords = []; 
@@ -422,7 +423,7 @@ function renderDocPieChart(filterKey) {
 
     const titleEl = document.getElementById('pieChartTitle');
     const backBtn = document.getElementById('pieBackButton');
-    if (titleEl) titleEl.innerText = 'COMMUNICATION LETTERS RECEIVED';
+    if (titleEl) titleEl.innerText = 'NATURE OF LETTER';
     if (backBtn) backBtn.style.display = 'none';
 
     if (docPieChartInstance) {
