@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     
-    <!-- SMOOTH LOADER STYLES -->
+    <!-- SMOOTH PREMIUM LOADER STYLES -->
     <style>
         #global-loader {
             position: fixed;
@@ -18,93 +18,115 @@
             left: 0;
             width: 100vw;
             height: 100vh;
-            background-color: rgba(248, 250, 252, 0.75); /* Slate 50 with transparency */
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            background-color: rgba(255, 255, 255, 0.85); /* Cleaner white frosted glass */
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 99999;
-            transition: opacity 0.6s ease-out, visibility 0.6s ease-out;
+            transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.8s;
         }
 
-        /* NEW CIRCULAR TEXT LOADER */
-        .circular-loader {
+        .loader-circle-container {
             position: relative;
-            width: 120px;
-            height: 120px;
-            margin-bottom: 24px;
+            width: 140px;
+            height: 140px;
             display: flex;
             justify-content: center;
             align-items: center;
+            margin-bottom: 24px;
         }
-        .circular-loader svg {
+
+        /* Outer smooth sweeping track */
+        .loader-ring-outer {
             position: absolute;
-            top: 0;
-            left: 0;
             width: 100%;
             height: 100%;
-            animation: spin-smooth 10s linear infinite;
-        }
-        .circular-loader text {
-            font-family: 'Inter', sans-serif;
-            font-weight: 800;
-            font-size: 13px;
-            fill: #2563eb; /* Theme Blue */
-            letter-spacing: 2px;
-        }
-        .inner-dot {
-            width: 16px;
-            height: 16px;
-            background: #e11d48; /* Theme Red */
             border-radius: 50%;
-            animation: pulse-inner 2s ease-in-out infinite;
+            border: 2px solid rgba(226, 232, 240, 0.6); /* Slate-200 transparent */
+            border-top-color: #2563eb; /* Primary Theme Blue */
+            border-right-color: rgba(37, 99, 235, 0.2);
+            animation: spin-smooth 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
         }
 
-        .loader-text {
+        /* Inner counter-rotating subtle ring */
+        .loader-ring-inner {
+            position: absolute;
+            width: 80%;
+            height: 80%;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            border-bottom-color: #0ea5e9; /* Sky Blue accent */
+            border-left-color: rgba(14, 165, 233, 0.2);
+            animation: spin-smooth-reverse 2s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+        }
+
+        /* Clean centered typography */
+        .loader-text-main {
             font-family: 'Inter', sans-serif;
-            font-weight: 800;
-            color: #1e293b;
-            letter-spacing: 1px;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            animation: pulse 1.5s ease-in-out infinite;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
-        @keyframes spin-smooth { 
-            0% { transform: rotate(0deg); } 
-            100% { transform: rotate(360deg); } 
+        .loader-text-main .sub {
+            font-weight: 600;
+            font-size: 0.65rem;
+            color: #64748b; /* Slate 500 */
+            letter-spacing: 3px;
+            margin-bottom: 2px;
         }
-        @keyframes pulse-inner { 
-            0%, 100% { transform: scale(0.8); opacity: 0.7; box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.4); } 
-            50% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 15px 5px rgba(225, 29, 72, 0.3); } 
+
+        .loader-text-main .main {
+            font-weight: 800;
+            font-size: 1rem;
+            color: #0f172a; /* Slate 900 */
+            letter-spacing: 1px;
         }
-        @keyframes pulse { 
-            0%, 100% { opacity: 1; } 
-            50% { opacity: 0.4; } 
+
+        /* Pulsing footer text */
+        .loader-text-footer {
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            font-size: 0.7rem;
+            color: #64748b;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            animation: gentle-pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes spin-smooth {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes spin-smooth-reverse {
+            0% { transform: rotate(360deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        @keyframes gentle-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
         }
     </style>
 </head>
 <body>
     
-    <!-- THE LOADING OVERLAY -->
+    <!-- THE PREMIUM LOADING OVERLAY -->
     <div id="global-loader">
-        <div class="circular-loader">
-            <svg viewBox="0 0 100 100">
-                <defs>
-                    <path id="circlePath" d="M 50, 50 m -35, 0 a 35,35 0 1,1 70,0 a 35,35 0 1,1 -70,0" />
-                </defs>
-                <text>
-                    <!-- textLength="220" ensures the text wraps perfectly around the circumference -->
-                    <textPath href="#circlePath" startOffset="0%" textLength="220" lengthAdjust="spacingAndGlyphs">
-                        TARLAC PDRRMO • TARLAC PDRRMO • 
-                    </textPath>
-                </text>
-            </svg>
-            <div class="inner-dot"></div>
+        <div class="loader-circle-container">
+            <div class="loader-ring-outer"></div>
+            <div class="loader-ring-inner"></div>
+            <div class="loader-text-main">
+                <span class="sub">TARLAC</span>
+                <span class="main">PDRRMO</span>
+            </div>
         </div>
-        <div class="loader-text">Loading Operations Data...</div>
+        <div class="loader-text-footer">Loading Data...</div>
     </div>
 
     <div class="dashboard-container">
