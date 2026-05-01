@@ -3,14 +3,23 @@ Chart.register(ChartDataLabels);
 // 1. YOUR SECURE GOOGLE APPS SCRIPT WEB APP URL
 const webAppUrl = "https://script.google.com/macros/s/AKfycbwdl6df9uXUtM0-ufyh10tNz1X_4WZi03fqXrRwtdysOjsblDwSOkeAlBriw3txXe2lXQ/exec";
 
+// Global Raw Data Vault (Stores pure data before filtering)
+let rawOperationsData = [];
+let rawDocumentsData = [];
+let rawVolunteersData = [];
+
 // Global Chart & State Trackers
 let docPieChartInstance = null;
 let docLineChartInstance = null;
+let masterServicePieInstance = null;
+let monthlyTotalPieInstance = null; 
+let toggleChartInstances = {};
+
 let globalLineData = []; 
 let globalDocRecords = []; 
-
-// Global Storage for Original Summary Totals
 let originalKPITotals = {};
+let operationsMonthlyCache = {}; 
+let toggleChartData = {};
 
 // 3-Layer Interactive State Tracker
 let currentPieState = { 
@@ -20,11 +29,6 @@ let currentPieState = {
     level2Target: null 
 };
 
-let toggleChartInstances = {};
-let toggleChartData = {};
-
-let masterServicePieInstance = null;
-let operationsMonthlyCache = {}; 
 const serviceCategoryLabels = [
     'TRAUMA (ROADCRASH)', 'Roadside Assistance', 'Patient Transport',
     'Medical Emergencies', 'Standby Medic & VIP', 'SUPPORT SERVICES (MANPOWER, TRANSPORTATION & OTHER RESOURCES)',
@@ -130,6 +134,11 @@ document.addEventListener("DOMContentLoaded", function() {
     setInterval(updateClock, 1000);
     updateClock(); 
 
+    // --- NEW: Global Year Filter Listener ---
+    document.getElementById('globalYearSelect').addEventListener('change', function(e) {
+        applyGlobalYearFilter(e.target.value);
+    });
+
     document.getElementById('docPieMonthFilter').addEventListener('change', function(e) {
         currentPieState.filterKey = e.target.value;
         renderDocPieChart();
@@ -168,6 +177,40 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
+function parseCustomDate(dateStr) {
+    if (!dateStr) return null;
+    let d = new Date(dateStr);
+    if (!isNaN(d.getTime())) return d;
+    
+    let parts = dateStr.split(/[\/\-]/);
+    if (parts.length === 3) {
+        let fallbackDate = new Date(`${parts[1]}/${parts[0]}/${parts[2]}`);
+        if (!isNaN(fallbackDate.getTime())) return fallbackDate;
+    }
+    return null;
+}
+
+// --- NEW: Date/Year Extraction Engine ---
+function extractYear(row, type) {
+    if (type === 'doc') {
+        let dStr = row['Column M'] || row['COLUMN M'] || row['Date Received'] || row['DATE RECEIVED'];
+        if (dStr) {
+            let d = parseCustomDate(dStr);
+            if (d) return d.getFullYear().toString();
+        }
+    } else if (type === 'op') {
+        let y = row['YEAR'] || row['Year'] || row['year'];
+        if (y) return String(y).trim();
+        
+        let dStr = row['DATE'] || row['Date'] || row['date'];
+        if (dStr) {
+            let d = parseCustomDate(dStr);
+            if (d) return d.getFullYear().toString();
+        }
+    }
+    return null;
+}
+
 async function loadAllData() {
     if (!webAppUrl || webAppUrl === "PASTE_YOUR_NEW_WEB_APP_URL_HERE") {
         console.error("Please add your Web App URL to app.js");
@@ -177,19 +220,83 @@ async function loadAllData() {
     try {
         const opRes = await fetch(`${webAppUrl}?type=operations`);
         const opData = await opRes.json();
-        if (!opData.error) processOperationsData(opData);
+        if (!opData.error) rawOperationsData = opData;
 
         const docRes = await fetch(`${webAppUrl}?type=documents`);
         const docData = await docRes.json();
-        if (!docData.error) processDocumentsData(docData);
+        if (!docData.error) rawDocumentsData = docData;
 
         const volRes = await fetch(`${webAppUrl}?type=volunteers`);
         const volData = await volRes.json();
-        if (!volData.error) processVolunteersData(volData);
+        if (!volData.error) rawVolunteersData = volData;
+
+        // Auto-extract years to populate dropdown
+        let yearsSet = new Set();
+        
+        rawOperationsData.forEach(r => {
+            let y = extractYear(r, 'op');
+            if (y && !isNaN(y)) yearsSet.add(y);
+        });
+        
+        rawDocumentsData.forEach(r => {
+            let y = extractYear(r, 'doc');
+            if (y && !isNaN(y)) yearsSet.add(y);
+        });
+
+        const yearSelect = document.getElementById('globalYearSelect');
+        if (yearSelect) {
+            let sortedYears = Array.from(yearsSet).sort().reverse();
+            sortedYears.forEach(y => {
+                let opt = document.createElement('option');
+                opt.value = y;
+                opt.innerText = y;
+                yearSelect.appendChild(opt);
+            });
+            
+            // Auto-detect and set current year if available in data
+            const currentYear = new Date().getFullYear().toString();
+            if (yearsSet.has(currentYear)) {
+                yearSelect.value = currentYear;
+            }
+        }
+
+        // Initialize with default filter
+        applyGlobalYearFilter(yearSelect ? yearSelect.value : 'all');
+        
+        if (rawVolunteersData.length > 0) processVolunteersData(rawVolunteersData);
 
     } catch (error) {
         console.error("Error fetching secure data:", error);
     }
+}
+
+// --- NEW: Core Filtering Engine ---
+function applyGlobalYearFilter(targetYear) {
+    let filteredOps = rawOperationsData;
+    let filteredDocs = rawDocumentsData;
+
+    if (targetYear !== 'all') {
+        filteredOps = rawOperationsData.filter(r => extractYear(r, 'op') === targetYear);
+        filteredDocs = rawDocumentsData.filter(r => extractYear(r, 'doc') === targetYear);
+    }
+
+    // Completely reset global state before rewriting charts
+    operationsMonthlyCache = {};
+    globalLineData = [];
+    globalDocRecords = [];
+    originalKPITotals = {};
+    
+    currentPieState = { level: 1, filterKey: 'all', level1Target: null, level2Target: null };
+    
+    let docPieMonthFilter = document.getElementById('docPieMonthFilter');
+    if(docPieMonthFilter) docPieMonthFilter.innerHTML = '<option value="all">All Time</option>';
+    
+    let masterServiceMonthFilter = document.getElementById('masterServiceMonthFilter');
+    if(masterServiceMonthFilter) masterServiceMonthFilter.innerHTML = '<option value="all">All Time</option>';
+
+    // Process fresh filtered data
+    processOperationsData(filteredOps);
+    processDocumentsData(filteredDocs);
 }
 
 function processVolunteersData(data) {
@@ -262,56 +369,18 @@ function processVolunteersData(data) {
     document.getElementById('vol-ind').innerText = grandTotalHumans.toLocaleString();
 }
 
-function parseCustomDate(dateStr) {
-    if (!dateStr) return null;
-    let d = new Date(dateStr);
-    if (!isNaN(d.getTime())) return d;
-    
-    let parts = dateStr.split(/[\/\-]/);
-    if (parts.length === 3) {
-        let fallbackDate = new Date(`${parts[1]}/${parts[0]}/${parts[2]}`);
-        if (!isNaN(fallbackDate.getTime())) return fallbackDate;
-    }
-    return null;
-}
-
 function processDocumentsData(data) {
-    let totalReq = 0;
-    globalLineData = []; 
-    globalDocRecords = []; 
     let uniqueMonths = new Set();
-    let totalsCaptured = false;
+
+    // Since we are filtering by year, counting must be perfectly synced to the actual DOM records shown
+    let dynamicKPIs = {
+        req: 0, action: 0, catered: 0, notCatered: 0, cancelled: 0, 
+        invAttended: 0, invNotAttended: 0, others: 0, noAction: 0
+    };
 
     data.forEach(row => {
         let keys = Object.keys(row);
         
-        if (!totalsCaptured) {
-            let colCValue = Number(row['TOTAL COMMUNICATION RECEIVED']) || 
-                            Number(row['TOTAL RECEIVED FROM OFFICE']) || 
-                            Number(row['Column C']) || 
-                            Number(row['COLUMN C']) || 
-                            Number(row[keys[2]]) || 0;
-                            
-            if (colCValue > totalReq) {
-                totalReq = colCValue; 
-            }
-
-            if (row['TOTAL ACTION TAKEN (OVERALL)'] || row['TOTAL REQUEST CATERED']) {
-                originalKPITotals = {
-                    req: totalReq, 
-                    action: Number(row['TOTAL ACTION TAKEN (OVERALL)']) || 0, 
-                    catered: Number(row['TOTAL REQUEST CATERED']) || 0,     
-                    notCatered: Number(row['TOTAL REQUEST NOT CATERED']) || 0, 
-                    cancelled: Number(row['TOTAL CANCELLED']) || 0,     
-                    invAttended: Number(row['TOTAL INVITATION ATTENDED']) || 0, 
-                    invNotAttended: Number(row['TOTAL INVITATION NOT ATTENDED']) || 0, 
-                    others: Number(row['OTHERS, SPECIFY:']) || Number(row['OTHERS']) || 0,
-                    noAction: Number(row['TOTAL NO ACTION']) || 0
-                };
-                totalsCaptured = true;
-            }
-        }
-
         let rawNature = row['Nature of Letter'] || row['NATURE OF LETTER'] || row['Column P'] || row['COLUMN P'] || '';
         let rawCategory = row['Category of Writing Party'] || row['CATEGORY OF WRITING PARTY'] || row['Column O'] || row['COLUMN O'] || '';
         let rawOffice = row['Received From (OFFICE)'] || row['RECEIVED FROM (OFFICE)'] || row['Received From Office'] || row['Column N'] || row['COLUMN N'] || '';
@@ -327,6 +396,32 @@ function processDocumentsData(data) {
 
         if (!isSummaryRow && !isBlankRow) {
             
+            // Dynamic Counters Builder
+            dynamicKPIs.req++;
+            let actionTxt = (rawActionTaken || '').toString().trim().toLowerCase();
+            let actionActuallyTaken = false;
+            
+            if (actionTxt !== '' && actionTxt !== 'null') {
+                actionActuallyTaken = true;
+                dynamicKPIs.action++;
+                
+                if (actionTxt.includes('not catered')) {
+                    dynamicKPIs.notCatered++;
+                } else if (actionTxt.includes('catered') || actionTxt === 'catered') {
+                    dynamicKPIs.catered++;
+                } else if (actionTxt.includes('cancelled')) {
+                    dynamicKPIs.cancelled++;
+                } else if (actionTxt.includes('not attended')) {
+                    dynamicKPIs.invNotAttended++;
+                } else if (actionTxt.includes('attended')) {
+                    dynamicKPIs.invAttended++;
+                } else {
+                    dynamicKPIs.others++;
+                }
+            } else {
+                dynamicKPIs.noAction++;
+            }
+
             let mappedNature = rawNature.trim();
             let upperNature = mappedNature.toUpperCase();
             
@@ -344,11 +439,6 @@ function processDocumentsData(data) {
             
             let subCategory = rawCategory.trim() !== '' ? rawCategory.trim() : 'Uncategorized';
             let specificOffice = rawOffice.trim() !== '' ? rawOffice.trim() : 'Unspecified Office';
-            
-            let actionActuallyTaken = false;
-            if (rawActionTaken && String(rawActionTaken).trim() !== '' && String(rawActionTaken).trim().toUpperCase() !== 'NULL') {
-                actionActuallyTaken = true;
-            }
             
             let monthYearKey = 'all';
             
@@ -373,6 +463,19 @@ function processDocumentsData(data) {
             });
         }
     });
+
+    // Save accurate, filtered state to global baseline
+    originalKPITotals = {
+        req: dynamicKPIs.req, 
+        action: dynamicKPIs.action, 
+        catered: dynamicKPIs.catered,     
+        notCatered: dynamicKPIs.notCatered, 
+        cancelled: dynamicKPIs.cancelled,     
+        invAttended: dynamicKPIs.invAttended, 
+        invNotAttended: dynamicKPIs.invNotAttended, 
+        others: dynamicKPIs.others,
+        noAction: dynamicKPIs.noAction
+    };
 
     let monthSelect = document.getElementById('docPieMonthFilter');
     if (monthSelect) {
@@ -882,6 +985,40 @@ function renderToggleableChart(canvasId, type, isInitialLoad = false) {
 }
 
 function processOperationsData(data) {
+    operationsMonthlyCache['all'] = new Array(10).fill(0);
+    let monthSet = new Set();
+    const monthlyAgg = {};
+    
+    // Process purely from filtered array
+    data.forEach(row => {
+        if(row['MONTH']) { 
+            let m = row['MONTH'].trim().toUpperCase();
+            if(!monthlyAgg[m]) {
+                monthlyAgg[m] = { vehicular:0, roadside:0, patient:0, medical:0, standby:0, others:0, clearing:0, firetruck:0, hauling:0, ledvan:0, grandTotal:0, total1st:0, total2nd:0, total3rd:0, totalOutside:0 };
+            }
+            
+            monthlyAgg[m].vehicular += Number(row['VEHICULAR ACCIDENT']) || Number(row['TRAUMA (ROADCRASH INCIDENT)']) || 0;
+            monthlyAgg[m].roadside += Number(row['ROADSIDE ASSISTANCE']) || 0;
+            monthlyAgg[m].patient += Number(row['PATIENT TRANSPORT']) || 0;
+            monthlyAgg[m].medical += Number(row['MEDICAL']) || 0;
+            monthlyAgg[m].standby += Number(row['STANDBY MEDIC, MARSHAL & VIP']) || 0;
+            monthlyAgg[m].others += Number(row['OTHERS']) || 0;
+            monthlyAgg[m].clearing += Number(row['CLEARING OPERATIONS']) || 0;
+            monthlyAgg[m].firetruck += Number(row['FIRETRUCK']) || 0;
+            monthlyAgg[m].hauling += Number(row['HAULING']) || 0;
+            monthlyAgg[m].ledvan += Number(row['LEDVAN TRUCK']) || 0;
+
+            for (let key in row) {
+                let upperKey = key.toUpperCase();
+                if (upperKey.includes("1ST DISTRICT")) { monthlyAgg[m].total1st += Number(row[key]) || 0; }
+                if (upperKey.includes("2ND DISTRICT")) { monthlyAgg[m].total2nd += Number(row[key]) || 0; }
+                if (upperKey.includes("3RD DISTRICT")) { monthlyAgg[m].total3rd += Number(row[key]) || 0; }
+                if (upperKey.includes("OUTSIDE")) { monthlyAgg[m].totalOutside += Number(row[key]) || 0; }
+                if (upperKey === "GRAND TOTAL") { monthlyAgg[m].grandTotal += Number(row[key]) || 0; }
+            }
+        }
+    });
+
     const labels = [];
     const vehicular = [], roadside = [], patient = [], medical = [], standby = [];
     const others = [], clearing = [], firetruck = [], hauling = [], ledvan = [];
@@ -889,55 +1026,42 @@ function processOperationsData(data) {
 
     let total1st = 0, total2nd = 0, total3rd = 0, totalOutside = 0;
     let overallGrandTotal = 0;
-    
-    operationsMonthlyCache['all'] = new Array(10).fill(0);
-    let monthSet = new Set();
 
-    data.forEach(row => {
-        if(row['MONTH']) { 
-            let m = row['MONTH'].trim().toUpperCase();
-            labels.push(row['MONTH']);
+    // Strict chronological rendering mapping
+    const monthOrder = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
+    
+    monthOrder.forEach(m => {
+        if(monthlyAgg[m]) {
+            labels.push(m);
             monthSet.add(m);
             
-            if(!operationsMonthlyCache[m]) operationsMonthlyCache[m] = new Array(10).fill(0);
+            operationsMonthlyCache[m] = [
+                monthlyAgg[m].vehicular, monthlyAgg[m].roadside, monthlyAgg[m].patient,
+                monthlyAgg[m].medical, monthlyAgg[m].standby, monthlyAgg[m].others,
+                monthlyAgg[m].clearing, monthlyAgg[m].firetruck, monthlyAgg[m].hauling, monthlyAgg[m].ledvan
+            ];
+
+            vehicular.push(monthlyAgg[m].vehicular);
+            roadside.push(monthlyAgg[m].roadside);
+            patient.push(monthlyAgg[m].patient);
+            medical.push(monthlyAgg[m].medical);
+            standby.push(monthlyAgg[m].standby);
+            others.push(monthlyAgg[m].others);
+            clearing.push(monthlyAgg[m].clearing);
+            firetruck.push(monthlyAgg[m].firetruck);
+            hauling.push(monthlyAgg[m].hauling);
+            ledvan.push(monthlyAgg[m].ledvan);
+
+            monthlyTotalServices.push(monthlyAgg[m].grandTotal);
+            overallGrandTotal += monthlyAgg[m].grandTotal;
             
-            let v1 = Number(row['VEHICULAR ACCIDENT']) || Number(row['TRAUMA (ROADCRASH INCIDENT)']) || 0;
-            vehicular.push(v1);
-            let v2 = Number(row['ROADSIDE ASSISTANCE']) || 0;
-            roadside.push(v2);
-            let v3 = Number(row['PATIENT TRANSPORT']) || 0;
-            patient.push(v3);
-            let v4 = Number(row['MEDICAL']) || 0;
-            medical.push(v4);
-            let v5 = Number(row['STANDBY MEDIC, MARSHAL & VIP']) || 0;
-            standby.push(v5);
-            let v6 = Number(row['OTHERS']) || 0;
-            others.push(v6);
-            let v7 = Number(row['CLEARING OPERATIONS']) || 0;
-            clearing.push(v7);
-            let v8 = Number(row['FIRETRUCK']) || 0;
-            firetruck.push(v8);
-            let v9 = Number(row['HAULING']) || 0;
-            hauling.push(v9);
-            let v10 = Number(row['LEDVAN TRUCK']) || 0;
-            ledvan.push(v10);
-
-            let rowVals = [v1, v2, v3, v4, v5, v6, v7, v8, v9, v10];
+            total1st += monthlyAgg[m].total1st;
+            total2nd += monthlyAgg[m].total2nd;
+            total3rd += monthlyAgg[m].total3rd;
+            totalOutside += monthlyAgg[m].totalOutside;
+            
             for(let i=0; i<10; i++) {
-                operationsMonthlyCache[m][i] += rowVals[i];
-                operationsMonthlyCache['all'][i] += rowVals[i];
-            }
-
-            let rowGrandTotal = Number(row['GRAND TOTAL']) || 0;
-            monthlyTotalServices.push(rowGrandTotal);
-            overallGrandTotal += rowGrandTotal; 
-
-            for (let key in row) {
-                let upperKey = key.toUpperCase();
-                if (upperKey.includes("1ST DISTRICT")) { total1st += Number(row[key]) || 0; }
-                if (upperKey.includes("2ND DISTRICT")) { total2nd += Number(row[key]) || 0; }
-                if (upperKey.includes("3RD DISTRICT")) { total3rd += Number(row[key]) || 0; }
-                if (upperKey.includes("OUTSIDE")) { totalOutside += Number(row[key]) || 0; }
+                operationsMonthlyCache['all'][i] += operationsMonthlyCache[m][i];
             }
         }
     });
@@ -1062,14 +1186,19 @@ function drawLineChart(canvasId, labels, dataArr) {
 
 function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
     const ctx = document.getElementById(canvasId).getContext('2d');
-    const vibrantColors = ['#2563eb', '#06b6d4', '#e11d48', '#ea580c', '#16a34a', '#9333ea'];
     
+    // Properly clean up total catered pie instance
+    if (monthlyTotalPieInstance) {
+        monthlyTotalPieInstance.destroy();
+    }
+
+    const vibrantColors = ['#2563eb', '#06b6d4', '#e11d48', '#ea580c', '#16a34a', '#9333ea'];
     const mappedVibrant = dataArr.map((_, i) => vibrantColors[i % vibrantColors.length]);
     
     const gtEl = document.getElementById('pie-grand-total');
     if(gtEl) gtEl.innerText = grandTotal.toLocaleString();
 
-    new Chart(ctx, {
+    monthlyTotalPieInstance = new Chart(ctx, {
         type: 'pie', 
         data: { 
             labels: labels, 
@@ -1085,12 +1214,7 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
             responsive: true, 
             maintainAspectRatio: false, 
             layout: { padding: 15 }, 
-            animation: {
-                animateScale: true,
-                animateRotate: true,
-                duration: 500,
-                easing: 'easeOutQuart'
-            },
+            animation: { animateScale: true, animateRotate: true, duration: 500, easing: 'easeOutQuart' },
             plugins: { 
                 legend: { display: false }, 
                 datalabels: { 
@@ -1101,10 +1225,8 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
                     formatter: (value, context) => { 
                         let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); 
                         if (sum === 0) return ''; 
-                        
                         let pctStr = ((value * 100) / sum).toFixed(1);
                         let pctFloat = parseFloat(pctStr);
-                        
                         return pctFloat >= 8 ? pctStr + '%' : ''; 
                     } 
                 },
@@ -1114,10 +1236,7 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
                         label: function(context) {
                             let val = context.raw;
                             let pct = grandTotal > 0 ? ((val / grandTotal) * 100).toFixed(1) : 0;
-                            return [
-                                `${val} Services Catered`,
-                                `vs Grand Total: ${pct}%`
-                            ];
+                            return [`${val} Services Catered`, `vs Grand Total: ${pct}%`];
                         }
                     }
                 }
