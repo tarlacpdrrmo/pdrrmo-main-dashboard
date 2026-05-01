@@ -9,7 +9,7 @@ let docLineChartInstance = null;
 let globalLineData = []; 
 let globalDocRecords = []; 
 
-// NEW: 3-Layer Interactive State Tracker
+// 3-Layer Interactive State Tracker
 let currentPieState = { 
     level: 1, 
     filterKey: 'all', 
@@ -130,13 +130,11 @@ document.addEventListener("DOMContentLoaded", function() {
     setInterval(updateClock, 1000);
     updateClock(); 
 
-    // Filter Logic
     document.getElementById('docPieMonthFilter').addEventListener('change', function(e) {
         currentPieState.filterKey = e.target.value;
         renderDocPieChart();
     });
 
-    // Back Button Logic for 3-Level Drill Down
     document.getElementById('pieBackButton').addEventListener('click', function() {
         if (currentPieState.level === 3) {
             currentPieState.level = 2;
@@ -290,7 +288,6 @@ function processDocumentsData(data) {
     data.forEach(row => {
         let keys = Object.keys(row);
         
-        // --- 1. GRAB THE TRUE SUMMARY DATA FROM THE SHEET ---
         if (!totalsCaptured) {
             let colCValue = Number(row['TOTAL COMMUNICATION RECEIVED']) || 
                             Number(row['TOTAL RECEIVED FROM OFFICE']) || 
@@ -315,7 +312,6 @@ function processDocumentsData(data) {
             }
         }
 
-        // --- 2. TARGET COLUMNS FOR 3-LEVEL PIE HIERARCHY ---
         let rawNature = row['Nature of Letter'] || 
                         row['NATURE OF LETTER'] || 
                         row['Column P'] || 
@@ -335,7 +331,6 @@ function processDocumentsData(data) {
 
         let dateStr = row['Column M'] || row['COLUMN M'] || row['Date Received'] || row['DATE RECEIVED'] || row[keys[12]] || '';
         
-        // --- 3. FILTER OUT GHOSTS AND SUMMARY ROWS ---
         let isSummaryRow = (row['TOTAL ACTION TAKEN (OVERALL)'] !== undefined && String(row['TOTAL ACTION TAKEN (OVERALL)']).trim() !== '') || 
                            (row['TOTAL REQUEST CATERED'] !== undefined && String(row['TOTAL REQUEST CATERED']).trim() !== '');
                            
@@ -343,16 +338,23 @@ function processDocumentsData(data) {
                          (!rawCategory || String(rawCategory).trim() === '') &&
                          (!dateStr || String(dateStr).trim() === '');
 
-        // Only process real rows based on valid tracking data
         if (!isSummaryRow && !isBlankRow) {
             
+            // --- AGGRESSIVE DATA SCRUBBING FOR DIRTY DATA ---
             let mappedNature = rawNature.trim();
             let upperNature = mappedNature.toUpperCase();
-            if (upperNature === 'FYI') mappedNature = 'For Information';
-            else if (upperNature === 'REQUEST') mappedNature = 'Request';
-            else if (upperNature === 'INVITATION') mappedNature = 'Invitation';
-            else if (upperNature === 'OFFER/PROPOSAL' || upperNature === 'OFFER / PROPOSAL') mappedNature = 'Offer/Proposal';
-            else if (mappedNature === '') mappedNature = 'Uncategorized';
+            
+            if (upperNature.includes('OFFER') || upperNature.includes('PROPOSAL')) {
+                mappedNature = 'Offer/Proposal';
+            } else if (upperNature.includes('REQUEST')) {
+                mappedNature = 'Request';
+            } else if (upperNature.includes('INVITATION')) {
+                mappedNature = 'Invitation';
+            } else if (upperNature.includes('FYI') || upperNature.includes('INFORMATION')) {
+                mappedNature = 'For Information';
+            } else {
+                mappedNature = 'Uncategorized';
+            }
             
             let subCategory = rawCategory.trim() !== '' ? rawCategory.trim() : 'Uncategorized';
             let specificOffice = rawOffice.trim() !== '' ? rawOffice.trim() : 'Unspecified Office';
@@ -372,9 +374,9 @@ function processDocumentsData(data) {
 
             globalDocRecords.push({
                 dateKey: monthYearKey,
-                level1: mappedNature,     // Level 1: Request, Invitation...
-                level2: subCategory,      // Level 2: PGT, Academe...
-                level3: specificOffice,   // Level 3: PHO, PESO...
+                level1: mappedNature,     
+                level2: subCategory,      
+                level3: specificOffice,   
                 count: 1 
             });
         }
@@ -410,12 +412,10 @@ function processDocumentsData(data) {
     renderLineChartByTimeframe('daily');
 }
 
-// THE NEW PIPELINE RENDERING ENGINE
 function renderDocPieChart() {
     let sourceMap = {};
     let hasData = false;
 
-    // Filter and aggregate dynamically based on current level
     globalDocRecords.forEach(record => {
         if (currentPieState.filterKey === 'all' || record.dateKey === currentPieState.filterKey) {
             
@@ -446,12 +446,11 @@ function renderDocPieChart() {
     let labels = sortedSources.map(item => item.label);
     let dataValues = sortedSources.map(item => item.value);
 
-    // Render Titles & Back Buttons
     const titleEl = document.getElementById('pieChartTitle');
     const backBtn = document.getElementById('pieBackButton');
 
     if (currentPieState.level === 1) {
-        titleEl.innerText = 'COMMUNICATION LETTERS RECEIVED';
+        titleEl.innerText = 'NATURE OF LETTER';
         backBtn.style.display = 'none';
     } 
     else if (currentPieState.level === 2) {
@@ -537,7 +536,16 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
                             if (currentPieState.level < 3) {
                                 suffix = ' (Click to zoom)';
                             }
-                            return `${context.raw} requests ${suffix}`;
+                            
+                            // --- DYNAMIC GRAMMAR GENERATOR BASED ON NATURE ---
+                            let activeNature = (currentPieState.level === 1) ? context.label : currentPieState.level1Target;
+                            let unitStr = "Requests"; 
+                            
+                            if (activeNature === 'Invitation') unitStr = 'Invitations';
+                            else if (activeNature === 'For Information') unitStr = 'Information';
+                            else if (activeNature === 'Offer/Proposal') unitStr = 'Offers/Proposals';
+                            
+                            return `${context.raw} ${unitStr}${suffix}`;
                         }
                     }
                 }
