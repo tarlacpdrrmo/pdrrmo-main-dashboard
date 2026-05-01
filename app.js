@@ -501,34 +501,6 @@ function processDocumentsData(data) {
     renderLineChartByTimeframe('daily');
 }
 
-// ----------------------------------------------------
-// NEW: SMOOTH KPI ANIMATION FUNCTION
-// ----------------------------------------------------
-function toggleKpiCard(card, show) {
-    if (show) {
-        // First put it back in the grid layout flow
-        card.style.display = ''; 
-        
-        // Wait exactly one visual frame so the browser registers the grid placement 
-        // before firing the CSS animation to fade/scale it up.
-        requestAnimationFrame(() => {
-            card.classList.remove('kpi-hidden');
-        });
-    } else {
-        // Trigger the CSS scale-down and fade-out
-        card.classList.add('kpi-hidden');
-        
-        // Wait for the animation to finish, then cleanly remove it from the grid 
-        // to prevent any empty layout gaps.
-        setTimeout(() => {
-            // Safety check: only hide if it hasn't been re-summoned while animating
-            if (card.classList.contains('kpi-hidden')) {
-                card.style.display = 'none';
-            }
-        }, 350); // Matches the CSS transition length
-    }
-}
-
 function updateTrackingKPIDisplays() {
     const cardReqCount = document.getElementById('doc-kpi-request').parentElement; 
     const cardAction = document.getElementById('doc-kpi-action').parentElement; 
@@ -540,16 +512,20 @@ function updateTrackingKPIDisplays() {
     const cardCancelled = document.getElementById('doc-kpi-cancelled').parentElement; 
     const cardNoAction = document.getElementById('doc-kpi-no-action').parentElement; 
 
-    // The Anchor must always remain visible
-    toggleKpiCard(cardReqCount, true);
+    cardReqCount.style.display = '';
 
     if (currentPieState.level === 1) {
-        // Reset anchor text
+        [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => card.style.display = '');
+        
         document.getElementById('doc-kpi-request').innerText = originalKPITotals.req;
         document.getElementById('doc-kpi-action').innerText = originalKPITotals.action;
-        
-        // Smoothly reveal all specific cards back to the grid
-        [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => toggleKpiCard(card, true));
+        document.getElementById('doc-kpi-catered').innerText = originalKPITotals.catered;
+        document.getElementById('doc-kpi-inv-att').innerText = originalKPITotals.invAttended;
+        document.getElementById('doc-kpi-not-catered').innerText = originalKPITotals.notCatered;
+        document.getElementById('doc-kpi-others').innerText = originalKPITotals.others;
+        document.getElementById('doc-kpi-inv-not').innerText = originalKPITotals.invNotAttended;
+        document.getElementById('doc-kpi-cancelled').innerText = originalKPITotals.cancelled;
+        document.getElementById('doc-kpi-no-action').innerText = originalKPITotals.noAction;
     } else {
         let dynTotalRequestsMatched = 0;
         let dynActionsActuallyTakenMatched = 0;
@@ -566,25 +542,22 @@ function updateTrackingKPIDisplays() {
             }
         });
 
-        // Set the dynamic anchor numbers
         document.getElementById('doc-kpi-request').innerText = dynTotalRequestsMatched;
         document.getElementById('doc-kpi-action').innerText = dynActionsActuallyTakenMatched;
 
-        // Smoothly collapse all cards out of the grid...
-        [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => toggleKpiCard(card, false));
+        [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => card.style.display = 'none');
         
-        // ...then instantly bring back only the relevant ones based on category
         if (targetCategory === 'Request') {
-            toggleKpiCard(cardCatered, true);
-            toggleKpiCard(cardNotCatered, true);
-            toggleKpiCard(cardCancelled, true); 
+            cardCatered.style.display = '';
+            cardNotCatered.style.display = '';
+            cardCancelled.style.display = ''; 
         } else if (targetCategory === 'Invitation') {
-            toggleKpiCard(cardInvAtt, true);
-            toggleKpiCard(cardInvNot, true);
+            cardInvAtt.style.display = '';
+            cardInvNot.style.display = '';
         } else if (targetCategory === 'Offer/Proposal' || targetCategory === 'For Information') {
-            toggleKpiCard(cardAction, true); 
+            cardAction.style.display = ''; 
         } else {
-            toggleKpiCard(cardAction, true);
+            cardAction.style.display = '';
         }
     }
 }
