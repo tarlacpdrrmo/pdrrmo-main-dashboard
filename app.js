@@ -787,17 +787,21 @@ function processOperationsData(data) {
 
     drawDonutChart('monthlyPieChart', labels, monthlyTotalServices, overallGrandTotal);
     
-    toggleChartData['vehicularChart'] = { labels, labelText: 'TRAUMA (ROADCRASH INCIDENT)', data: vehicular, color: '#2563eb' };
-    toggleChartData['roadsideChart'] = { labels, labelText: 'Roadside Assistance', data: roadside, color: '#2563eb' };
-    toggleChartData['patientChart'] = { labels, labelText: 'Patient Transport', data: patient, color: '#2563eb' };
-    toggleChartData['medicalChart'] = { labels, labelText: 'Medical', data: medical, color: '#2563eb' };
-    toggleChartData['standbyChart'] = { labels, labelText: 'Standby Medic, Marshal & VIP', data: standby, color: '#2563eb' };
+    // --- START OF INJECTED COLOR LOGIC ---
+    const barColors = labels.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
+
+    toggleChartData['vehicularChart'] = { labels, labelText: 'TRAUMA (ROADCRASH INCIDENT)', data: vehicular, color: barColors };
+    toggleChartData['roadsideChart'] = { labels, labelText: 'Roadside Assistance', data: roadside, color: barColors };
+    toggleChartData['patientChart'] = { labels, labelText: 'Patient Transport', data: patient, color: barColors };
+    toggleChartData['medicalChart'] = { labels, labelText: 'Medical', data: medical, color: barColors };
+    toggleChartData['standbyChart'] = { labels, labelText: 'Standby Medic, Marshal & VIP', data: standby, color: barColors };
     
-    toggleChartData['othersChart'] = { labels, labelText: 'SUPPORT SERVICES (manpower and service resources transportation Assistance)', data: others, color: '#6366f1' };
-    toggleChartData['clearingChart'] = { labels, labelText: 'Clearing Operations', data: clearing, color: '#06b6d4' };
-    toggleChartData['firetruckChart'] = { labels, labelText: 'Firetruck', data: firetruck, color: '#e11d48' };
-    toggleChartData['haulingChart'] = { labels, labelText: 'Hauling', data: hauling, color: '#ea580c' };
-    toggleChartData['ledvanChart'] = { labels, labelText: 'Ledvan Truck', data: ledvan, color: '#eab308' };
+    toggleChartData['othersChart'] = { labels, labelText: 'SUPPORT SERVICES (manpower and service resources transportation Assistance)', data: others, color: barColors };
+    toggleChartData['clearingChart'] = { labels, labelText: 'Clearing Operations', data: clearing, color: barColors };
+    toggleChartData['firetruckChart'] = { labels, labelText: 'Firetruck', data: firetruck, color: barColors };
+    toggleChartData['haulingChart'] = { labels, labelText: 'Hauling', data: hauling, color: barColors };
+    toggleChartData['ledvanChart'] = { labels, labelText: 'Ledvan Truck', data: ledvan, color: barColors };
+    // --- END OF INJECTED COLOR LOGIC ---
 
     const masterToggle = document.getElementById('masterChartToggle');
     const isPie = masterToggle ? masterToggle.checked : false;
