@@ -278,7 +278,6 @@ function parseCustomDate(dateStr) {
 function processDocumentsData(data) {
     let totalReq = 0, totalAction = 0, catered = 0, invAttended = 0;
     let notCatered = 0, others = 0, invNotAttended = 0, cancelled = 0, noAction = 0;
-    let dynamicTotalReq = 0; 
 
     globalLineData = []; 
     globalDocRecords = []; 
@@ -340,7 +339,6 @@ function processDocumentsData(data) {
 
         if (!isSummaryRow && !isBlankRow) {
             
-            // --- AGGRESSIVE DATA SCRUBBING FOR DIRTY DATA ---
             let mappedNature = rawNature.trim();
             let upperNature = mappedNature.toUpperCase();
             
@@ -412,13 +410,48 @@ function processDocumentsData(data) {
     renderLineChartByTimeframe('daily');
 }
 
+// --- DYNAMIC KPI TOGGLER ---
+function updateTrackingKPIVisibility() {
+    const cardAction = document.getElementById('doc-kpi-action').parentElement;
+    const cardCatered = document.getElementById('doc-kpi-catered').parentElement;
+    const cardInvAtt = document.getElementById('doc-kpi-inv-att').parentElement;
+    const cardNotCatered = document.getElementById('doc-kpi-not-catered').parentElement;
+    const cardOthers = document.getElementById('doc-kpi-others').parentElement;
+    const cardInvNot = document.getElementById('doc-kpi-inv-not').parentElement;
+    const cardCancelled = document.getElementById('doc-kpi-cancelled').parentElement;
+    const cardNoAction = document.getElementById('doc-kpi-no-action').parentElement;
+
+    if (currentPieState.level === 1) {
+        // Main View: Reveal everything to the grid
+        [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => card.style.display = '');
+    } else {
+        // Drill Down View: Hide everything first
+        [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => card.style.display = 'none');
+        
+        let activeNature = currentPieState.level1Target;
+
+        if (activeNature === 'Request') {
+            cardCatered.style.display = '';
+            cardNotCatered.style.display = '';
+            cardCancelled.style.display = '';
+        } else if (activeNature === 'Invitation') {
+            cardInvAtt.style.display = '';
+            cardInvNot.style.display = '';
+        } else if (activeNature === 'Offer/Proposal' || activeNature === 'For Information') {
+            cardAction.style.display = '';
+        } else {
+            // Fallback
+            cardAction.style.display = '';
+        }
+    }
+}
+
 function renderDocPieChart() {
     let sourceMap = {};
     let hasData = false;
 
     globalDocRecords.forEach(record => {
         if (currentPieState.filterKey === 'all' || record.dateKey === currentPieState.filterKey) {
-            
             if (currentPieState.level === 1) {
                 sourceMap[record.level1] = (sourceMap[record.level1] || 0) + record.count;
                 hasData = true;
@@ -431,7 +464,6 @@ function renderDocPieChart() {
                 sourceMap[record.level3] = (sourceMap[record.level3] || 0) + record.count;
                 hasData = true;
             }
-
         }
     });
 
@@ -461,6 +493,9 @@ function renderDocPieChart() {
         titleEl.innerHTML = `BREAKDOWN: ${currentPieState.level2Target.toUpperCase()} <span style="color: #64748b; font-weight: 600; font-size: 0.65rem; opacity: 0.7; letter-spacing: 0.5px;">(SPECIFIC OFFICE / ENTITY)</span>`;
         backBtn.style.display = 'block';
     }
+
+    // Call the KPI grid re-formatter right before drawing the chart
+    updateTrackingKPIVisibility();
 
     if (docPieChartInstance) {
         let mappedColors = labels.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
@@ -537,7 +572,6 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
                                 suffix = ' (Click to zoom)';
                             }
                             
-                            // --- DYNAMIC GRAMMAR GENERATOR BASED ON NATURE ---
                             let activeNature = (currentPieState.level === 1) ? context.label : currentPieState.level1Target;
                             let unitStr = "Requests"; 
                             
