@@ -280,6 +280,8 @@ function processDocumentsData(data) {
     let totalReq = 0, totalAction = 0, catered = 0, invAttended = 0;
     let notCatered = 0, others = 0, invNotAttended = 0, cancelled = 0, noAction = 0;
 
+    let dynamicTotalReq = 0; // Added for Option A Dynamic Match
+
     globalLineData = []; 
     globalDocRecords = []; 
     let uniqueMonths = new Set();
@@ -344,17 +346,24 @@ function processDocumentsData(data) {
 
         let officeReqs = rowCount; 
         
-        if (officeReqs > 0) {
+        // --- START OPTION A LOGIC ---
+        let isSummaryRow = row['TOTAL ACTION TAKEN (OVERALL)'] !== undefined || row['TOTAL REQUEST CATERED'] !== undefined;
+        let isBlankRow = !dateStr && !row['Category of Writing Party'] && !row['Received From (OFFICE)'];
+
+        if (officeReqs > 0 && !isSummaryRow && !isBlankRow) {
             globalDocRecords.push({
                 dateKey: monthYearKey,
                 parent: parentCategory,
                 raw: rawOffice,
                 count: officeReqs
             });
+            dynamicTotalReq += officeReqs; // Dynamic matching count
         }
+        // --- END OPTION A LOGIC ---
     });
 
-    document.getElementById('doc-kpi-request').innerText = totalReq; 
+    // Replaced static totalReq with dynamicTotalReq to force match with Donut Chart
+    document.getElementById('doc-kpi-request').innerText = dynamicTotalReq; 
     document.getElementById('doc-kpi-action').innerText = totalAction;
     document.getElementById('doc-kpi-catered').innerText = catered;
     document.getElementById('doc-kpi-inv-att').innerText = invAttended;
