@@ -3,7 +3,7 @@ Chart.register(ChartDataLabels);
 // 1. YOUR SECURE GOOGLE APPS SCRIPT WEB APP URL
 const webAppUrl = "https://script.google.com/macros/s/AKfycbwdl6df9uXUtM0-ufyh10tNz1X_4WZi03fqXrRwtdysOjsblDwSOkeAlBriw3txXe2lXQ/exec";
 
-// Global Raw Data Vault (Stores pure data before filtering)
+// Global Raw Data Vault
 let rawOperationsData = [];
 let rawDocumentsData = [];
 let rawVolunteersData = [];
@@ -134,7 +134,6 @@ document.addEventListener("DOMContentLoaded", function() {
     setInterval(updateClock, 1000);
     updateClock(); 
 
-    // --- NEW: Global Year Filter Listener ---
     document.getElementById('globalYearSelect').addEventListener('change', function(e) {
         applyGlobalYearFilter(e.target.value);
     });
@@ -190,7 +189,6 @@ function parseCustomDate(dateStr) {
     return null;
 }
 
-// --- NEW: Date/Year Extraction Engine ---
 function extractYear(row, type) {
     if (type === 'doc') {
         let dStr = row['Column M'] || row['COLUMN M'] || row['Date Received'] || row['DATE RECEIVED'];
@@ -211,9 +209,21 @@ function extractYear(row, type) {
     return null;
 }
 
+function hideLoader() {
+    const loader = document.getElementById('global-loader');
+    if (loader) {
+        loader.style.opacity = '0';
+        setTimeout(() => {
+            loader.style.visibility = 'hidden';
+            loader.style.display = 'none';
+        }, 600); 
+    }
+}
+
 async function loadAllData() {
     if (!webAppUrl || webAppUrl === "PASTE_YOUR_NEW_WEB_APP_URL_HERE") {
         console.error("Please add your Web App URL to app.js");
+        hideLoader();
         return;
     }
 
@@ -230,7 +240,6 @@ async function loadAllData() {
         const volData = await volRes.json();
         if (!volData.error) rawVolunteersData = volData;
 
-        // Auto-extract years to populate dropdown
         let yearsSet = new Set();
         
         rawOperationsData.forEach(r => {
@@ -253,24 +262,26 @@ async function loadAllData() {
                 yearSelect.appendChild(opt);
             });
             
-            // Auto-detect and set current year if available in data
             const currentYear = new Date().getFullYear().toString();
             if (yearsSet.has(currentYear)) {
                 yearSelect.value = currentYear;
             }
         }
 
-        // Initialize with default filter
         applyGlobalYearFilter(yearSelect ? yearSelect.value : 'all');
         
         if (rawVolunteersData.length > 0) processVolunteersData(rawVolunteersData);
+        
+        // Remove loading screen on success
+        hideLoader();
 
     } catch (error) {
         console.error("Error fetching secure data:", error);
+        // Remove loading screen on error so user isn't stuck
+        hideLoader();
     }
 }
 
-// --- NEW: Core Filtering Engine ---
 function applyGlobalYearFilter(targetYear) {
     let filteredOps = rawOperationsData;
     let filteredDocs = rawDocumentsData;
@@ -280,7 +291,6 @@ function applyGlobalYearFilter(targetYear) {
         filteredDocs = rawDocumentsData.filter(r => extractYear(r, 'doc') === targetYear);
     }
 
-    // Completely reset global state before rewriting charts
     operationsMonthlyCache = {};
     globalLineData = [];
     globalDocRecords = [];
@@ -294,7 +304,6 @@ function applyGlobalYearFilter(targetYear) {
     let masterServiceMonthFilter = document.getElementById('masterServiceMonthFilter');
     if(masterServiceMonthFilter) masterServiceMonthFilter.innerHTML = '<option value="all">All Time</option>';
 
-    // Process fresh filtered data
     processOperationsData(filteredOps);
     processDocumentsData(filteredDocs);
 }
@@ -372,7 +381,6 @@ function processVolunteersData(data) {
 function processDocumentsData(data) {
     let uniqueMonths = new Set();
 
-    // Since we are filtering by year, counting must be perfectly synced to the actual DOM records shown
     let dynamicKPIs = {
         req: 0, action: 0, catered: 0, notCatered: 0, cancelled: 0, 
         invAttended: 0, invNotAttended: 0, others: 0, noAction: 0
@@ -396,7 +404,6 @@ function processDocumentsData(data) {
 
         if (!isSummaryRow && !isBlankRow) {
             
-            // Dynamic Counters Builder
             dynamicKPIs.req++;
             let actionTxt = (rawActionTaken || '').toString().trim().toLowerCase();
             let actionActuallyTaken = false;
@@ -464,7 +471,6 @@ function processDocumentsData(data) {
         }
     });
 
-    // Save accurate, filtered state to global baseline
     originalKPITotals = {
         req: dynamicKPIs.req, 
         action: dynamicKPIs.action, 
@@ -989,7 +995,6 @@ function processOperationsData(data) {
     let monthSet = new Set();
     const monthlyAgg = {};
     
-    // Process purely from filtered array
     data.forEach(row => {
         if(row['MONTH']) { 
             let m = row['MONTH'].trim().toUpperCase();
@@ -1027,7 +1032,6 @@ function processOperationsData(data) {
     let total1st = 0, total2nd = 0, total3rd = 0, totalOutside = 0;
     let overallGrandTotal = 0;
 
-    // Strict chronological rendering mapping
     const monthOrder = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
     
     monthOrder.forEach(m => {
@@ -1187,7 +1191,6 @@ function drawLineChart(canvasId, labels, dataArr) {
 function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     
-    // Properly clean up total catered pie instance
     if (monthlyTotalPieInstance) {
         monthlyTotalPieInstance.destroy();
     }
