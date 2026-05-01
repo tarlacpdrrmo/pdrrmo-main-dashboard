@@ -1,11 +1,8 @@
 Chart.register(ChartDataLabels);
 
-// 1. YOUR PUBLISHED GOOGLE SHEET CSV LINKS
-const sheetUrls = {
-    operations: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSEOujzNEOrDEv0W2CMKNDjXKW8WUusQkXmrNFuaR_Vh171r7rDsKpcCdwxwhWPqpjTr0iYICMVK5lv/pub?output=csv", // <-- MUST BE FILLED
-    documents: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS4FYdO-pxACzJxrw7vEMLJKsxgEBQm_8Afh_hsKFxhxA3eiJz5kNZLkr3ArNmoEIVo5BtPBbNIz-oz/pub?gid=433918484&single=true&output=csv",   // <-- MUST BE FILLED
-    volunteers: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQu11mhIuAL2jr_ZrMze5ZhXRk6puER_QUBVLlm6gfRq88sa1FrfFlRRjL3pvlyYfO4Mb3GwF_nZpA7/pub?gid=0&single=true&output=csv"  // <-- MUST BE FILLED 
-};
+// 1. YOUR SECURE GOOGLE APPS SCRIPT WEB APP URL
+// Replace this with the Web App URL you generated from the Switchboard deployment!
+const webAppUrl = "https://script.google.com/macros/s/AKfycbwdl6df9uXUtM0-ufyh10tNz1X_4WZi03fqXrRwtdysOjsblDwSOkeAlBriw3txXe2lXQ/exec";
 
 let docPieChartInstance = null;
 let docLineChartInstance = null;
@@ -166,31 +163,31 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
-function loadAllData() {
-    const cacheBuster = new Date().getTime(); 
-
-    if(sheetUrls.operations.includes("http")) {
-        const opSeparator = sheetUrls.operations.includes("?") ? "&" : "?";
-        Papa.parse(sheetUrls.operations + opSeparator + "t=" + cacheBuster, { 
-            download: true, header: true, skipEmptyLines: true, 
-            complete: function(results) { processOperationsData(results.data); } 
-        });
-    }
-    
-    if(sheetUrls.documents.includes("http")) {
-        const docSeparator = sheetUrls.documents.includes("?") ? "&" : "?";
-        Papa.parse(sheetUrls.documents + docSeparator + "t=" + cacheBuster, { 
-            download: true, header: true, skipEmptyLines: true, 
-            complete: function(results) { processDocumentsData(results.data); } 
-        });
+// 🟢 SECURE API FETCHING ENGINE (No more raw CSV links!) 🟢
+async function loadAllData() {
+    if (!webAppUrl || webAppUrl === "PASTE_YOUR_NEW_WEB_APP_URL_HERE") {
+        console.error("Please add your Web App URL to app.js");
+        return;
     }
 
-    if(sheetUrls.volunteers.includes("http")) {
-        const volSeparator = sheetUrls.volunteers.includes("?") ? "&" : "?";
-        Papa.parse(sheetUrls.volunteers + volSeparator + "t=" + cacheBuster, { 
-            download: true, header: true, skipEmptyLines: true, 
-            complete: function(results) { processVolunteersData(results.data); } 
-        });
+    try {
+        // Fetch Operations Data
+        const opRes = await fetch(`${webAppUrl}?type=operations`);
+        const opData = await opRes.json();
+        if (!opData.error) processOperationsData(opData);
+
+        // Fetch Documents Data
+        const docRes = await fetch(`${webAppUrl}?type=documents`);
+        const docData = await docRes.json();
+        if (!docData.error) processDocumentsData(docData);
+
+        // Fetch Volunteers Data
+        const volRes = await fetch(`${webAppUrl}?type=volunteers`);
+        const volData = await volRes.json();
+        if (!volData.error) processVolunteersData(volData);
+
+    } catch (error) {
+        console.error("Error fetching secure data:", error);
     }
 }
 
