@@ -28,15 +28,40 @@
             z-index: 99999;
             transition: opacity 0.6s ease-out, visibility 0.6s ease-out;
         }
-        .loader-spinner {
-            width: 48px;
-            height: 48px;
-            border: 4px solid rgba(37, 99, 235, 0.2);
-            border-left-color: #2563eb; /* Theme Blue */
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 16px;
+
+        /* NEW CIRCULAR TEXT LOADER */
+        .circular-loader {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
+        .circular-loader svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            animation: spin-smooth 10s linear infinite;
+        }
+        .circular-loader text {
+            font-family: 'Inter', sans-serif;
+            font-weight: 800;
+            font-size: 13px;
+            fill: #2563eb; /* Theme Blue */
+            letter-spacing: 2px;
+        }
+        .inner-dot {
+            width: 16px;
+            height: 16px;
+            background: #e11d48; /* Theme Red */
+            border-radius: 50%;
+            animation: pulse-inner 2s ease-in-out infinite;
+        }
+
         .loader-text {
             font-family: 'Inter', sans-serif;
             font-weight: 800;
@@ -46,15 +71,39 @@
             text-transform: uppercase;
             animation: pulse 1.5s ease-in-out infinite;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        @keyframes spin-smooth { 
+            0% { transform: rotate(0deg); } 
+            100% { transform: rotate(360deg); } 
+        }
+        @keyframes pulse-inner { 
+            0%, 100% { transform: scale(0.8); opacity: 0.7; box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.4); } 
+            50% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 15px 5px rgba(225, 29, 72, 0.3); } 
+        }
+        @keyframes pulse { 
+            0%, 100% { opacity: 1; } 
+            50% { opacity: 0.4; } 
+        }
     </style>
 </head>
 <body>
     
     <!-- THE LOADING OVERLAY -->
     <div id="global-loader">
-        <div class="loader-spinner"></div>
+        <div class="circular-loader">
+            <svg viewBox="0 0 100 100">
+                <defs>
+                    <path id="circlePath" d="M 50, 50 m -35, 0 a 35,35 0 1,1 70,0 a 35,35 0 1,1 -70,0" />
+                </defs>
+                <text>
+                    <!-- textLength="220" ensures the text wraps perfectly around the circumference -->
+                    <textPath href="#circlePath" startOffset="0%" textLength="220" lengthAdjust="spacingAndGlyphs">
+                        TARLAC PDRRMO • TARLAC PDRRMO • 
+                    </textPath>
+                </text>
+            </svg>
+            <div class="inner-dot"></div>
+        </div>
         <div class="loader-text">Loading Operations Data...</div>
     </div>
 
