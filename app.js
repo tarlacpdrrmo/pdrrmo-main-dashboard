@@ -27,7 +27,7 @@ let masterServicePieInstance = null;
 let operationsMonthlyCache = {}; 
 const serviceCategoryLabels = [
     'TRAUMA (ROADCRASH)', 'Roadside Assistance', 'Patient Transport',
-    'Medical Emergencies', 'Standby Medic & VIP', 'SUPPORT SERVICES (manpower and service resources transportation Assistance)',
+    'Medical Emergencies', 'Standby Medic & VIP', 'SUPPORT SERVICES (MANPOWER, TRANSPORTATION & OTHER RESOURCES)',
     'Clearing Operations', 'Firetruck', 'Hauling', 'Ledvan Truck'
 ];
 
@@ -978,7 +978,7 @@ function processOperationsData(data) {
     toggleChartData['medicalChart'] = { labels, labelText: 'MEDICAL EMERGENCIES', data: medical, color: barColors };
     toggleChartData['standbyChart'] = { labels, labelText: 'Standby Medic & VIP', data: standby, color: barColors };
     
-    toggleChartData['othersChart'] = { labels, labelText: 'SUPPORT SERVICES (manpower and service resources transportation Assistance)', data: others, color: barColors };
+    toggleChartData['othersChart'] = { labels, labelText: 'SUPPORT SERVICES (MANPOWER, TRANSPORTATION & OTHER RESOURCES)', data: others, color: barColors };
     toggleChartData['clearingChart'] = { labels, labelText: 'Clearing Operations', data: clearing, color: barColors };
     toggleChartData['firetruckChart'] = { labels, labelText: 'Firetruck', data: firetruck, color: barColors };
     toggleChartData['haulingChart'] = { labels, labelText: 'Hauling', data: hauling, color: barColors };
