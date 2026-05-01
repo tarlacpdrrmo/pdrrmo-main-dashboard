@@ -272,7 +272,6 @@ function parseCustomDate(dateStr) {
 function processDocumentsData(data) {
     let totalReq = 0, totalAction = 0, catered = 0, invAttended = 0;
     let notCatered = 0, others = 0, invNotAttended = 0, cancelled = 0, noAction = 0;
-    let dynamicTotalReq = 0; 
 
     globalLineData = []; 
     globalDocRecords = []; 
@@ -280,17 +279,16 @@ function processDocumentsData(data) {
     let totalsCaptured = false;
 
     data.forEach(row => {
-        let rawOffice = row['Received From (OFFICE)'] || 
-                        row['RECEIVED FROM (OFFICE)'] || 
-                        row['Received From Office'] || 
-                        row['RECEIVED FROM OFFICE'] || 
-                        row['Column N'] || 
-                        row['COLUMN N'] || '';
-                        
         let keys = Object.keys(row);
         
+        // --- 1. GRAB THE TRUE SUMMARY DATA FROM THE SHEET ---
         if (!totalsCaptured) {
-            let colCValue = Number(row['TOTAL RECEIVED FROM OFFICE']) || Number(row['Column C']) || Number(row['COLUMN C']) || Number(row[keys[2]]) || 0;
+            let colCValue = Number(row['TOTAL COMMUNICATION RECEIVED']) || 
+                            Number(row['TOTAL RECEIVED FROM OFFICE']) || 
+                            Number(row['Column C']) || 
+                            Number(row['COLUMN C']) || 
+                            Number(row[keys[2]]) || 0;
+                            
             if (colCValue > totalReq) {
                 totalReq = colCValue; 
             }
@@ -308,56 +306,58 @@ function processDocumentsData(data) {
             }
         }
 
+        // --- 2. TARGET COLUMN N AND O FOR TRUE DATA ---
+        let rawOffice = row['Column N'] || 
+                        row['COLUMN N'] || 
+                        row['Received From (OFFICE)'] || 
+                        row['RECEIVED FROM (OFFICE)'] || '';
+                        
+        let rawCategory = row['Column O'] || 
+                          row['COLUMN O'] || 
+                          row['Category of Writing Party'] || 
+                          row['CATEGORY OF WRITING PARTY'] || '';
+
         let dateStr = row['Column M'] || row['COLUMN M'] || row['Date Received'] || row['DATE RECEIVED'] || row[keys[12]] || '';
-        let rowCount = Number(row['Total Requests']) || Number(row['TOTAL REQUESTS']) || 1; 
         
-        let monthYearKey = 'all';
-
-        if (dateStr) {
-            let parsedDate = parseCustomDate(dateStr);
-            if (parsedDate) {
-                globalLineData.push({ dateObj: parsedDate, count: rowCount, timestamp: parsedDate.getTime() });
-                
-                let m = parsedDate.getMonth() + 1;
-                let y = parsedDate.getFullYear();
-                monthYearKey = `${y}-${m.toString().padStart(2, '0')}`;
-                uniqueMonths.add(monthYearKey);
-            }
-        }
-
-        if (!rawOffice || String(rawOffice).trim() === '') {
-            rawOffice = 'Unspecified Office';
-        }
-
-        let rawCategory = row['Category of Writing Party'] || 
-                          row['CATEGORY OF WRITING PARTY'] || 
-                          row['Column O'] || 
-                          row['COLUMN O'] || '';
-                          
-        let parentCategory = rawCategory.trim() !== '' ? rawCategory.trim() : 'Uncategorized';
-        let officeReqs = rowCount; 
-        
-        let actionVal = row['TOTAL ACTION TAKEN (OVERALL)'];
-        let cateredVal = row['TOTAL REQUEST CATERED'];
-        
-        let isSummaryRow = (actionVal && String(actionVal).trim() !== '') || 
-                           (cateredVal && String(cateredVal).trim() !== '');
+        // --- 3. FILTER OUT GHOSTS AND SUMMARY ROWS ---
+        let isSummaryRow = (row['TOTAL ACTION TAKEN (OVERALL)'] !== undefined && String(row['TOTAL ACTION TAKEN (OVERALL)']).trim() !== '') || 
+                           (row['TOTAL REQUEST CATERED'] !== undefined && String(row['TOTAL REQUEST CATERED']).trim() !== '');
                            
-        let isBlankRow = (!dateStr || String(dateStr).trim() === '') && 
+        let isBlankRow = (!rawOffice || String(rawOffice).trim() === '') && 
                          (!rawCategory || String(rawCategory).trim() === '');
 
-        if (officeReqs > 0 && !isSummaryRow && !isBlankRow) {
+        // Only process real rows based on Column N and O
+        if (!isSummaryRow && !isBlankRow) {
+            let parentCategory = rawCategory.trim() !== '' ? rawCategory.trim() : 'Uncategorized';
+            if (!rawOffice || String(rawOffice).trim() === '') {
+                rawOffice = 'Unspecified Office';
+            }
+            
+            let monthYearKey = 'all';
+            
+            if (dateStr && String(dateStr).trim() !== '') {
+                let parsedDate = parseCustomDate(dateStr);
+                if (parsedDate) {
+                    globalLineData.push({ dateObj: parsedDate, count: 1, timestamp: parsedDate.getTime() });
+                    
+                    let m = parsedDate.getMonth() + 1;
+                    let y = parsedDate.getFullYear();
+                    monthYearKey = `${y}-${m.toString().padStart(2, '0')}`;
+                    uniqueMonths.add(monthYearKey);
+                }
+            }
+
             globalDocRecords.push({
                 dateKey: monthYearKey,
                 parent: parentCategory,
                 raw: rawOffice,
-                count: officeReqs
+                count: 1 // FIX: Strictly 1 per actual row. Eliminates the 520 multiplier bug.
             });
-            dynamicTotalReq += officeReqs; 
         }
     });
 
-    document.getElementById('doc-kpi-request').innerText = dynamicTotalReq; 
+    // --- SET KPI STRICTLY TO THE TRUE SPREADSHEET NUMBER (331) ---
+    document.getElementById('doc-kpi-request').innerText = totalReq; 
     document.getElementById('doc-kpi-action').innerText = totalAction;
     document.getElementById('doc-kpi-catered').innerText = catered;
     document.getElementById('doc-kpi-inv-att').innerText = invAttended;
