@@ -9,7 +9,7 @@ let docLineChartInstance = null;
 let globalLineData = []; 
 let globalDocRecords = []; 
 
-// Global Storage for Original Summary Totals (needed for Main List restoration)
+// Global Storage for Original Summary Totals
 let originalKPITotals = {};
 
 // 3-Layer Interactive State Tracker
@@ -67,241 +67,7 @@ const singleBarOptions = {
     indexAxis: 'y', 
     responsive: true, 
     maintainAspectRatio: false,
-    animation: {
-        duration: 700,
-        easing: 'easeOutQuart'
-    },
-    layout: { padding: { top: 15, right: 25, bottom: 10, left: 10 } }, 
-    plugins: { datalabels: { display: false }, legend: { display: false }, tooltip: sharedTooltipConfig },
-    scales: { x: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } }, y: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } } },
-    elements: { bar: { borderRadius: 3 } } 
-};
-
-function scrollToSection(panelId) {
-    const section = document.getElementById(panelId);
-    if(section) {
-        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-}
-
-document.addEventListener("DOMContentLoaded", function() {
-    const panels = document.querySelectorAll('.panel');
-    const navLinks = document.querySelectorAll('.sidebar li:not(.section-title)');
-    
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                navLinks.forEach(link => link.classList.remove('active'));
-                const id = entry.target.getAttribute('id');
-                const activeLink = document.querySelector(`.sidebar li[onclick="scrollToSection('${id}')"]`);
-                if(activeLink) activeLink.classList.add('active');
-                
-                if (entry.target.classList.contains('iframe-panel')) {
-                    entry.target.classList.add('map-in-view');
-                }
-            } else {
-                if (entry.target.classList.contains('iframe-panel')) {
-                    entry.target.classList.remove('map-in-view');
-                }
-            }
-        });
-    }, { threshold: 0.2 }); 
-
-    panels.forEach(panel => observer.observe(panel));
-
-    function updateClock() {
-        const now = new Date();
-        let hours = now.getHours();
-        let minutes = now.getMinutes();
-        let seconds = now.getSeconds();
-        const ampm = hours >= 12 ? 'PM' : 'AM';
-        hours = hours % 12;
-        hours = hours ? hours : 12; 
-        minutes = minutes < 10 ? '0' + minutes : minutes;
-        seconds = seconds < 10 ? '0' + seconds : seconds;
-        const timeString = hours + ':' + minutes + ':' + seconds + ' ' + ampm;
-        
-        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        const dateString = now.toLocaleDateString('en-US', options);
-        
-        const timeEl = document.getElementById('live-time');
-        const dateEl = document.getElementById('live-date');
-        
-        if(timeEl) timeEl.innerText = timeString;
-        if(dateEl) dateEl.innerText = dateString;
-    }
-    setInterval(updateClock, 1000);
-    updateClock(); 
-
-    document.getElementById('docPieMonthFilter').addEventListener('change', function(e) {
-        currentPieState.filterKey = e.target.value;
-        renderDocPieChart();
-    });
-
-    document.getElementById('pieBackButton').addEventListener('click', function() {
-        if (currentPieState.level === 3) {
-            currentPieState.level = 2;
-            currentPieState.level2Target = null;
-        } else if (currentPieState.level === 2) {
-            currentPieState.level = 1;
-            currentPieState.level1Target = null;
-        }
-        renderDocPieChart();
-    });
-
-    document.getElementById('lineChartFilter').addEventListener('change', function(e) {
-        renderLineChartByTimeframe(e.target.value);
-    });
-    
-    const masterToggle = document.getElementById('masterChartToggle');
-    if (masterToggle) {
-        masterToggle.addEventListener('change', function(e) {
-            const isPie = e.target.checked;
-            const type = isPie ? 'pie' : 'bar';
-            const chartIds = [
-                'vehicularChart', 'roadsideChart', 'patientChart', 'medicalChart', 'standbyChart',
-                'othersChart', 'clearingChart', 'firetruckChart', 'haulingChart', 'ledvanChart'
-            ];
-            chartIds.forEach(id => renderToggleableChart(id, type, false));
-        });
-    }
-
-    document.getElementById('masterServiceMonthFilter').addEventListener('change', function(e) {
-        renderMasterServicePie(e.target.value);
-    });
-});
-
-async function loadAllData() {
-    if (!webAppUrl || webAppUrl === "PASTE_YOUR_NEW_WEB_APP_URL_HERE") {
-        console.error("Please add your Web App URL to app.js");
-        return;
-    }
-
-    try {
-        const opRes = await fetch(`${webAppUrl}?type=operations`);
-        const opData = await opRes.json();
-        if (!opData.error) processOperationsData(opData);
-
-        const docRes = await fetch(`${webAppUrl}?type=documents`);
-        const docData = await docRes.json();
-        if (!docData.error) processDocumentsData(docData);
-
-        const volRes = await fetch(`${webAppUrl}?type=volunteers`);
-        const volData = await volRes.json();
-        if (!volData.error) processVolunteersData(volData);
-
-    } catch (error) {
-        console.error("Error fetching secure data:", error);
-    }
-}
-
-function processVolunteersData(data) {
-    let totalOrgs = 0;
-    let totalIndividualsInOrgs = 0;
-    let standaloneIndividuals = 0;
-    let orgList = []; 
-
-    const tbody = document.querySelector('#volunteerTable tbody');
-    tbody.innerHTML = ''; 
-
-    data.forEach(row => {
-        let keys = Object.keys(row);
-        if (keys.length < 6) return;
-
-        let orgKey = keys.find(k => k.toUpperCase().includes('LIST OF ORGANIZATION')) || keys[5]; 
-        let countKey = keys.find(k => k.toUpperCase().includes('TOTAL COUNT VOLUNTEER')) || keys[6]; 
-        let individualKey = keys.find(k => k.toUpperCase().includes('INDIVIDUAL VOLUNTEER')) || keys[8]; 
-
-        let orgName = row[orgKey] ? row[orgKey].trim() : '';
-        let orgCount = Number(row[countKey]) || 0;
-        let standaloneCount = Number(row[individualKey]) || 0;
-
-        if (standaloneCount > 0) {
-            standaloneIndividuals += standaloneCount;
-        }
-
-        if (orgName && orgCount > 0 && !orgName.toUpperCase().includes('TOTAL')) {
-            totalOrgs++; 
-            totalIndividualsInOrgs += orgCount; 
-            orgList.push({ name: orgName, count: orgCount });
-        }
-    });
-
-    orgList.sort((a, b) => b.count - a.count);
-
-    const maxCount = orgList.length > 0Chart.register(ChartDataLabels);
-
-// 1. YOUR SECURE GOOGLE APPS SCRIPT WEB APP URL
-const webAppUrl = "https://script.google.com/macros/s/AKfycbwdl6df9uXUtM0-ufyh10tNz1X_4WZi03fqXrRwtdysOjsblDwSOkeAlBriw3txXe2lXQ/exec";
-
-// Global Chart & State Trackers
-let docPieChartInstance = null;
-let docLineChartInstance = null;
-let globalLineData = []; 
-let globalDocRecords = []; 
-
-// Global Storage for Original Summary Totals (needed for Main List restoration)
-let originalKPITotals = {};
-
-// 3-Layer Interactive State Tracker
-let currentPieState = { 
-    level: 1, 
-    filterKey: 'all', 
-    level1Target: null, 
-    level2Target: null 
-};
-
-let toggleChartInstances = {};
-let toggleChartData = {};
-
-let masterServicePieInstance = null;
-let operationsMonthlyCache = {}; 
-const serviceCategoryLabels = [
-    'TRAUMA (ROADCRASH)', 'Roadside Assistance', 'Patient Transport',
-    'Medical', 'Standby Medic & VIP', 'SUPPORT SERVICES (manpower and service resources transportation Assistance)',
-    'Clearing Operations', 'Firetruck', 'Hauling', 'Ledvan Truck'
-];
-
-const pieColorPalette = ['#e11d48', '#06b6d4', '#2563eb', '#ea580c', '#16a34a', '#9333ea', '#f43f5e', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#d946ef', '#f97316', '#14b8a6', '#6366f1'];
-
-const sharedTooltipConfig = {
-    backgroundColor: function(context) {
-        try {
-            if (context.tooltip && context.tooltip.dataPoints && context.tooltip.dataPoints.length > 0) {
-                const dp = context.tooltip.dataPoints[0];
-                let bg = dp.dataset.backgroundColor;
-                if (Array.isArray(bg)) bg = bg[dp.dataIndex]; 
-                if (typeof bg === 'string') return bg;
-                let bc = dp.dataset.borderColor;
-                if (Array.isArray(bc)) bc = bc[dp.dataIndex];
-                if (typeof bc === 'string') return bc;
-            }
-        } catch (e) {
-            console.warn("Tooltip color fallback triggered.");
-        }
-        return 'rgba(30, 41, 59, 0.95)';
-    },
-    titleColor: '#ffffff',
-    bodyColor: '#ffffff',
-    titleFont: { family: 'Inter', size: 11, weight: '800' },
-    bodyFont: { family: 'Inter', size: 11, weight: '600' },
-    padding: 10,
-    cornerRadius: 6,
-    displayColors: false, 
-    borderColor: 'rgba(255, 255, 255, 0.4)', 
-    borderWidth: 1,
-    caretSize: 6,
-    caretPadding: 6
-};
-
-const singleBarOptions = {
-    indexAxis: 'y', 
-    responsive: true, 
-    maintainAspectRatio: false,
-    animation: {
-        duration: 700,
-        easing: 'easeOutQuart'
-    },
+    animation: { duration: 700, easing: 'easeOutQuart' },
     layout: { padding: { top: 15, right: 25, bottom: 10, left: 10 } }, 
     plugins: { datalabels: { display: false }, legend: { display: false }, tooltip: sharedTooltipConfig },
     scales: { x: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } }, y: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } } },
@@ -510,10 +276,7 @@ function parseCustomDate(dateStr) {
 }
 
 function processDocumentsData(data) {
-    // These are placeholders for calculated values, not domestic DOM numbers
-    let totalReq = 0, catered = 0, invAttended = 0;
-    let notCatered = 0, others = 0, invNotAttended = 0, cancelled = 0, noAction = 0;
-
+    let totalReq = 0;
     globalLineData = []; 
     globalDocRecords = []; 
     let uniqueMonths = new Set();
@@ -524,7 +287,6 @@ function processDocumentsData(data) {
         
         // --- 1. CAPTURE SHEET SUMMARY TOTALS FOR MAIN LIST BASELINE ---
         if (!totalsCaptured) {
-            // Note: Overall Action Taken (105 in user example) is sheet summary captured here
             let colCValue = Number(row['TOTAL COMMUNICATION RECEIVED']) || 
                             Number(row['TOTAL RECEIVED FROM OFFICE']) || 
                             Number(row['Column C']) || 
@@ -536,51 +298,25 @@ function processDocumentsData(data) {
             }
 
             if (row['TOTAL ACTION TAKEN (OVERALL)'] || row['TOTAL REQUEST CATERED']) {
-                // DOM KPIs captured here (Catered, Action Taken, Attended etc.)
-                let colQoverall = Number(row['TOTAL ACTION TAKEN (OVERALL)']) || 0;
-                catered = Number(row['TOTAL REQUEST CATERED']) || 0;
-                invAttended = Number(row['TOTAL INVITATION ATTENDED']) || 0;
-                notCatered = Number(row['TOTAL REQUEST NOT CATERED']) || 0;
-                others = Number(row['OTHERS, SPECIFY:']) || Number(row['OTHERS']) || 0;
-                invNotAttended = Number(row['TOTAL INVITATION NOT ATTENDED']) || 0;
-                cancelled = Number(row['TOTAL CANCELLED']) || 0;
-                noAction = Number(row['TOTAL NO ACTION']) || 0;
-                
-                // Store Domestic KPI baselines globally for Level 1 main list view
                 originalKPITotals = {
-                    req: totalReq, // Dynamic number - will restore on L1
-                    action: colQoverall, // Dynamic number - will recount and realign, restore L1
-                    catered: catered,     // SPECIFIED KPI: Move and align
-                    notCatered: notCatered, // SPECIFIED KPI: Move and align
-                    cancelled: cancelled,     // SPECIFIED KPI: Move and align
-                    invAttended: invAttended, // SPECIFIED KPI: Move and align
-                    invNotAttended: invNotAttended, // SPECIFIED KPI: Move and align
-                    others: others,
-                    noAction: noAction
+                    req: totalReq, 
+                    action: Number(row['TOTAL ACTION TAKEN (OVERALL)']) || 0, 
+                    catered: Number(row['TOTAL REQUEST CATERED']) || 0,     
+                    notCatered: Number(row['TOTAL REQUEST NOT CATERED']) || 0, 
+                    cancelled: Number(row['TOTAL CANCELLED']) || 0,     
+                    invAttended: Number(row['TOTAL INVITATION ATTENDED']) || 0, 
+                    invNotAttended: Number(row['TOTAL INVITATION NOT ATTENDED']) || 0, 
+                    others: Number(row['OTHERS, SPECIFY:']) || Number(row['OTHERS']) || 0,
+                    noAction: Number(row['TOTAL NO ACTION']) || 0
                 };
                 totalsCaptured = true;
             }
         }
 
-        let rawNature = row['Nature of Letter'] || 
-                        row['NATURE OF LETTER'] || 
-                        row['Column P'] || 
-                        row['COLUMN P'] || '';
-                        
-        let rawCategory = row['Category of Writing Party'] || 
-                          row['CATEGORY OF WRITING PARTY'] || 
-                          row['Column O'] || 
-                          row['COLUMN O'] || '';
-                          
-        let rawOffice = row['Received From (OFFICE)'] || 
-                        row['RECEIVED FROM (OFFICE)'] || 
-                        row['Received From Office'] || 
-                        row['RECEIVED FROM OFFICE'] || 
-                        row['Column N'] || 
-                        row['COLUMN N'] || '';
-                        
+        let rawNature = row['Nature of Letter'] || row['NATURE OF LETTER'] || row['Column P'] || row['COLUMN P'] || '';
+        let rawCategory = row['Category of Writing Party'] || row['CATEGORY OF WRITING PARTY'] || row['Column O'] || row['COLUMN O'] || '';
+        let rawOffice = row['Received From (OFFICE)'] || row['RECEIVED FROM (OFFICE)'] || row['Received From Office'] || row['Column N'] || row['COLUMN N'] || '';
         let rawActionTaken = row['Actions Taken'] || row['ACTIONS TAKEN'] || row['Column Q'] || row['COLUMN Q'] || '';
-
         let dateStr = row['Column M'] || row['COLUMN M'] || row['Date Received'] || row['DATE RECEIVED'] || row[keys[12]] || '';
         
         let isSummaryRow = (row['TOTAL ACTION TAKEN (OVERALL)'] !== undefined && String(row['TOTAL ACTION TAKEN (OVERALL)']).trim() !== '') || 
@@ -592,15 +328,14 @@ function processDocumentsData(data) {
 
         if (!isSummaryRow && !isBlankRow) {
             
-            // --- DATA SCRUBBING & MERGING FOR PERFECT ALIGNMENT ---
+            // --- DATA SCRUBBING ---
             let mappedNature = rawNature.trim();
             let upperNature = mappedNature.toUpperCase();
             
-            // Merge FYI/Offer combo and others based on keywords. Align hybrid text to Nature.
             if (upperNature.includes('OFFER') || upperNature.includes('PROPOSAL')) {
-                mappedNature = 'Offer/Proposal'; // Merged and aligned Offer data
+                mappedNature = 'Offer/Proposal';
             } else if (upperNature.includes('REQUEST')) {
-                mappedNature = 'Request'; // Merged and aligned hybrid requests
+                mappedNature = 'Request';
             } else if (upperNature.includes('INVITATION')) {
                 mappedNature = 'Invitation';
             } else if (upperNature.includes('FYI') || upperNature.includes('INFORMATION')) {
@@ -612,8 +347,11 @@ function processDocumentsData(data) {
             let subCategory = rawCategory.trim() !== '' ? rawCategory.trim() : 'Uncategorized';
             let specificOffice = rawOffice.trim() !== '' ? rawOffice.trim() : 'Unspecified Office';
             
-            // Recount and realign: Count only records that have text in Actions Taken (Q)
-            let actionActuallyTaken = (rawActionTaken.trim() !== '');
+            // Check Column Q for actual text to count as an "Action Taken"
+            let actionActuallyTaken = false;
+            if (rawActionTaken && String(rawActionTaken).trim() !== '' && String(rawActionTaken).trim().toUpperCase() !== 'NULL') {
+                actionActuallyTaken = true;
+            }
             
             let monthYearKey = 'all';
             
@@ -633,22 +371,11 @@ function processDocumentsData(data) {
                 level1: mappedNature,     
                 level2: subCategory,      
                 level3: specificOffice,
-                hasActionTaken: actionActuallyTaken, // extended with Column Q check
+                hasActionTaken: actionActuallyTaken,
                 count: 1 
             });
         }
     });
-
-    // Populate overall summaries into domestic DOM counters
-    document.getElementById('doc-kpi-request').innerText = originalKPITotals.req; // dynamic number box will recount on drill
-    document.getElementById('doc-kpi-action').innerText = originalKPITotals.action; // specified KPI box recount to align
-    document.getElementById('doc-kpi-catered').innerText = originalKPITotals.catered; // move and align on Request drill
-    document.getElementById('doc-kpi-inv-att').innerText = originalKPITotals.invAttended; // move and align on Invitation drill
-    document.getElementById('doc-kpi-not-catered').innerText = originalKPITotals.notCatered; // move and align on Request drill
-    document.getElementById('doc-kpi-others').innerText = originalKPITotals.others; // unmentioned will disappear
-    document.getElementById('doc-kpi-inv-not').innerText = originalKPITotals.invNotAttended; // move and align on Invitation drill
-    document.getElementById('doc-kpi-cancelled').innerText = originalKPITotals.cancelled; // move and align on specific drills
-    document.getElementById('doc-kpi-no-action').innerText = originalKPITotals.noAction; // unmentioned will disappear
 
     let monthSelect = document.getElementById('docPieMonthFilter');
     if (monthSelect) {
@@ -672,31 +399,36 @@ function processDocumentsData(data) {
 
 // --- DYNAMIC KPI RE-COUNTER & VISIBILITY MANAGER ---
 function updateTrackingKPIDisplays() {
-    const cardReqCount = document.getElementById('doc-kpi-request').parentElement; // Dynamic Number Box
-    const cardAction = document.getElementById('doc-kpi-action').parentElement; // Aligned/disappear
-    const cardCatered = document.getElementById('doc-kpi-catered').parentElement; // Move and align on Req
-    const cardInvAtt = document.getElementById('doc-kpi-inv-att').parentElement; // Move and align on Inv
-    const cardNotCatered = document.getElementById('doc-kpi-not-catered').parentElement; // Move and align on Req
-    const cardOthers = document.getElementById('doc-kpi-others').parentElement; // unmentioned/disappear
-    const cardInvNot = document.getElementById('doc-kpi-inv-not').parentElement; // Move and align on Inv
-    const cardCancelled = document.getElementById('doc-kpi-cancelled').parentElement; // specified in Request & Invitation drills
-    const cardNoAction = document.getElementById('doc-kpi-no-action').parentElement; // unmentioned/disappear
+    const cardReqCount = document.getElementById('doc-kpi-request').parentElement; 
+    const cardAction = document.getElementById('doc-kpi-action').parentElement; 
+    const cardCatered = document.getElementById('doc-kpi-catered').parentElement; 
+    const cardInvAtt = document.getElementById('doc-kpi-inv-att').parentElement; 
+    const cardNotCatered = document.getElementById('doc-kpi-not-catered').parentElement; 
+    const cardOthers = document.getElementById('doc-kpi-others').parentElement; 
+    const cardInvNot = document.getElementById('doc-kpi-inv-not').parentElement; 
+    const cardCancelled = document.getElementById('doc-kpi-cancelled').parentElement; 
+    const cardNoAction = document.getElementById('doc-kpi-no-action').parentElement; 
 
-    // Anchor: Total Communication Received (dynamic number box) stays on left
+    // Total Comm Received always stays visible
     cardReqCount.style.display = '';
 
     if (currentPieState.level === 1) {
-        // --- Level 1 Main List View: Restore full alignment ---
-        // Reveal everything and restore original baseline numbers content
-        const visibilityArr = [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction];
-        visibilityArr.forEach(card => card.style.display = '');
+        // --- MAIN LIST VIEW: Restore everything ---
+        [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => card.style.display = '');
         
         document.getElementById('doc-kpi-request').innerText = originalKPITotals.req;
         document.getElementById('doc-kpi-action').innerText = originalKPITotals.action;
+        document.getElementById('doc-kpi-catered').innerText = originalKPITotals.catered;
+        document.getElementById('doc-kpi-inv-att').innerText = originalKPITotals.invAttended;
+        document.getElementById('doc-kpi-not-catered').innerText = originalKPITotals.notCatered;
+        document.getElementById('doc-kpi-others').innerText = originalKPITotals.others;
+        document.getElementById('doc-kpi-inv-not').innerText = originalKPITotals.invNotAttended;
+        document.getElementById('doc-kpi-cancelled').innerText = originalKPITotals.cancelled;
+        document.getElementById('doc-kpi-no-action').innerText = originalKPITotals.noAction;
     } else {
-        // --- Drill Down Level 2 View: Toggling & Recounting for alignment ---
+        // --- DRILL DOWN VIEW ---
         
-        // Step A: Make dynamic number counters recount and perfectly realign. align dynamic counters on DOM.
+        // Step 1: Recount dynamic total and action taken
         let dynTotalRequestsMatched = 0;
         let dynActionsActuallyTakenMatched = 0;
         let targetCategory = currentPieState.level1Target;
@@ -712,30 +444,24 @@ function updateTrackingKPIDisplays() {
             }
         });
 
-        // Aligned and realigned numbers will update on number dynamic boxes/specified summary box. set matching dyn number content.
         document.getElementById('doc-kpi-request').innerText = dynTotalRequestsMatched;
         document.getElementById('doc-kpi-action').innerText = dynActionsActuallyTakenMatched;
 
-        // Step B: Specified Domestic KPI toggling based on nature. Move unmentioned domestic summary items to the list of disappear.
-        // unmentioned that must disappear will not reappear. hide unmentioned domestic summary onDOM.
-        const domesticTogglable = [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction];
-        domesticTogglable.forEach(card => card.style.display = 'none');
+        // Step 2: Hide everything first
+        [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => card.style.display = 'none');
         
-        // DOM Visibility based on direct instruction & previous memory on Offer/ FYI logic. unmentioned items onDOM disappear. domestic items move to list of disappear. unmentioned will disappear. unmentioned items domestic summary move. unmentioned make disappear.
+        // Step 3: Reveal specific cards based on the slice clicked
         if (targetCategory === 'Request') {
-            // domestic unmentioned items will disappear on Req. unmentioned make disappear on Request. move domestic summary items unmentioned make disappear on Request. move domestic items summary unmentioned items. hide domestic unmentioned items summary on Request drill. move unmentioned domestic items summary make disappear on Request. domestic summary unmentioned will disappear Request. move unmentioned summary domestic items disappear on Request. hide unmentioned items summary on Request drill. unmentioned domestic items summary move. unmentioned items domestic summary disappear. domestic unmentioned items make disappear.
             cardCatered.style.display = '';
             cardNotCatered.style.display = '';
-            cardCancelled.style.display = ''; // pro-active alignment for cancelled with other request summaries
+            cardCancelled.style.display = ''; 
         } else if (targetCategory === 'Invitation') {
-            // domestic unmentioned summary make disappear on Invitation. move domestic items unmentioned disappear Invitation. move unmentioned domestic items make disappear on Invitation. move unmentioned summary domestic items disappear Invitation. domestic summary make disappear on Invitation. unmentioned domestic items move. hide domestic unmentioned items summary on Invitation drill. move domestic summary unmentioned disappear on Invitation. domestic summary make disappear Invitation. move domestic unmentioned items disappear. hide domestic unmentioned items summary on Invitation drill. move domestic unmentioned items summary disappear on Invitation. domestic summary make disappear Invitation. hide domestic unmentioned items on Invitation. hide unmentioned domestic items. hide unmentioned domestic summary items on Invitation. domestic summary unmentioned items make disappear. unmentioned items domestic summary move. unmentioned items domestic summary disappear. move domestic items summary. domestic summary move unmentioned disappear. domestic unmentioned items disappear on Invitation. domestic unmentioned items summary make disappear. domestic unmentioned items move make disappear. domestic unmentioned items. domestic items summary domestic. make disappear domestic items summary domestic move unmentioned on Invitation drill. domestic unmentioned items domestic summary. make domestic unmentioned disappear domestic items on drill down. make disappear domestic unmentioned on drill down domestic summary move. make disappear unmentioned domestic items summary domestic. unmentioned disappear on Invitation drill domestic. unmentioned disappear on Invitation. make unmentioned domestic disappear domestic summary move. make unmentioned domestic disappear domestic. unmentioned domestic disappear domestic summary move on drill down. make unmentioned domestic items disappear. make unmentioned domestic items domestic. make unmentioned domestic.
             cardInvAtt.style.display = '';
             cardInvNot.style.display = '';
         } else if (targetCategory === 'Offer/Proposal' || targetCategory === 'For Information') {
-            // Instruction Offer/FYI same logic: ONLY show dynamic action count box. Aligned dynamic counter. unmentioned disappear on Offer/ForInfo. move unmentioned items domestic summary make disappear on drill down. domestic unmentioned make disappear on drill down domestic summary move. unmentioned domestic items. make disappear unmentioned domestic items on drill down Offer/ForInfo. move unmentioned.
+            // Only show Action Taken for these two!
             cardAction.style.display = ''; 
         } else {
-            // Fallback drill view
             cardAction.style.display = '';
         }
     }
@@ -777,7 +503,7 @@ function renderDocPieChart() {
     const backBtn = document.getElementById('pieBackButton');
 
     if (currentPieState.level === 1) {
-        titleEl.innerText = 'NATURE OF LETTER'; // original Nature list
+        titleEl.innerText = 'NATURE OF LETTER';
         backBtn.style.display = 'none';
     } 
     else if (currentPieState.level === 2) {
@@ -789,7 +515,7 @@ function renderDocPieChart() {
         backBtn.style.display = 'block';
     }
 
-    // Pro-active enforcement: Call the re-counter and dynamic toggler right before drawing the chart. Restore L1 grid on Nature list. Realign dynamic domestic counters. unmentioned items domestic summary disappear. domestic unmentioned items domestic make disappear domestic items summary on drill down Offer/ForInfo. Make unmentioned.domestic make disappear unmentioned items on drill down of DOM domestic summary move unmentioned to list make disappear. restore grid nature. realign dynamic counters on DOM. specified domestic move to list. unmentioned domestic disappear unmentioned domestic make unmentioned disappear domestic items on Offer/Proposal drill. realign dynamic domestic counters Offer/Proposal. specified domestic disappear. realign Offer/Proposal dynamic counters domestic numbers Offer/Proposal alignment. realign Offer/Proposal numbers alignment Offer/Proposal. perfect Offer/Proposal numbers alignment Offer/Proposal. Offer/Proposal numbers dynamic recount perfect dynamic number alignment Offer/Proposal alignment. recounts perfect dynamic number box alignment perfect number box alignment on Offer/Proposal breakdown list. perfect динамического alignment. Recalculate dynamic number boxes right before render. unmentioned make disappear.
+    // Call the KPI visibility manager right before drawing chart
     updateTrackingKPIDisplays();
 
     if (docPieChartInstance) {
@@ -872,7 +598,7 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
                             
                             if (activeNature === 'Invitation') unitStr = 'Invitations';
                             else if (activeNature === 'For Information') unitStr = 'Information';
-                            else if (activeNature === 'Offer/Proposal') unitStr = 'Offers/Proposals'; // merged aligned text unit
+                            else if (activeNature === 'Offer/Proposal') unitStr = 'Offers/Proposals';
                             
                             return `${context.raw} ${unitStr}${suffix}`;
                         }
