@@ -419,7 +419,7 @@
                 <h3 class="panel-heading">Trainings and Seminars Dashboard</h3>
                 <div class="assets-layout">
                     
-                    <!-- Left KPIs Column (Now holds PAX and Top Titles) -->
+                    <!-- Left KPIs Column (Holds PAX and Top Titles list) -->
                     <div class="kpi-column" style="width: 220px; display: flex; flex-direction: column;">
                         <div class="card kpi-card">
                             <h4>TOTAL PAX ATTENDEE</h4>
@@ -430,12 +430,12 @@
                                 Training/Lectures <br>
                                 <span style="font-size: 0.85em; opacity: 0.7; text-transform: none; font-weight: 600;">(per Frequency)</span>
                             </h4>
-                            <div id="top-title-list" class="scrollable-legend" style="border-left: none; padding-left: 10px; height: 100%; max-height: 280px;"></div>
+                            <div id="top-title-list" class="scrollable-legend" style="border-left: none; padding-left: 10px; height: 100%; max-height: 480px;"></div>
                         </div>
                     </div>
 
-                    <div class="charts-wrapper">
-                        <!-- Top Analytics Row -->
+                    <div class="charts-wrapper" style="display: flex; flex-direction: column;">
+                        <!-- Top Analytics Row (Retained) -->
                         <div class="charts-grid">
                             <div class="card chart-card flex-col p-0">
                                 <h4 class="card-inner-title">Training Status</h4>
@@ -451,35 +451,26 @@
                             </div>
                         </div>
 
-                        <!-- Progress & Rankings Row -->
-                        <div class="charts-grid">
-                            <div class="card chart-card flex-col p-0">
-                                <h4 class="card-inner-title">Duration</h4>
-                                <div class="chart-render-area"><canvas id="trainDurationChart"></canvas></div>
+                        <!-- Full Width Interactive Calendar (Replacing middle row and old line chart) -->
+                        <div class="card doc-chart-card" style="margin-top: 16px; flex: 1; display: flex; flex-direction: column; min-height: 380px;">
+                            <div class="chart-header-actions" style="margin-bottom: 0; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9;">
+                                <h4 class="chart-title">TRAININGS & SEMINARS CALENDAR</h4>
+                                <div style="display:flex; gap: 8px; align-items: center;">
+                                    <button id="calPrevBtn" class="btn-back" style="display:block; padding: 4px 10px;">&larr;</button>
+                                    <span id="calCurrentLabel" style="font-weight: 800; color: #1e293b; font-size: 0.75rem; min-width: 130px; text-align: center;">...</span>
+                                    <button id="calNextBtn" class="btn-back" style="display:block; padding: 4px 10px;">&rarr;</button>
+                                    
+                                    <select id="trainCalendarFilter" class="chart-filter" style="margin-left: 10px;">
+                                        <option value="monthly">Monthly View</option>
+                                        <option value="quarterly">Quarterly View</option>
+                                        <option value="yearly">Yearly View</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div class="card chart-card flex-col p-0">
-                                <h4 class="card-inner-title">Budget</h4>
-                                <div class="chart-render-area"><canvas id="trainBudgetChart"></canvas></div>
-                            </div>
-                            <!-- Top Departments moved here to take full spot -->
-                            <div class="card flex-col p-0" style="padding:0;">
-                                <h4 class="card-inner-title" style="border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">Top Departments</h4>
-                                <div id="top-dept-list" class="scrollable-legend" style="flex:1; border-left: none;"></div>
-                            </div>
-                        </div>
-
-                        <!-- Full Width Trend with Dropdown Filter -->
-                        <div class="card doc-chart-card" style="margin-top: 16px;">
-                            <div class="chart-header-actions">
-                                <h4 class="chart-title">Monthly Training Numbers</h4>
-                                <select id="trainLineChartFilter" class="chart-filter">
-                                    <option value="monthly">Monthly View</option>
-                                    <option value="daily">Daily View</option>
-                                    <option value="yearly">Yearly View</option>
-                                </select>
-                            </div>
-                            <div class="line-wrapper" style="height: 250px;">
-                                <canvas id="trainMonthlyChart"></canvas>
+                            
+                            <!-- Custom HTML Calendar Grid Container -->
+                            <div id="trainingCalendarContainer" class="calendar-wrapper cal-anim-active">
+                                <!-- JS Injects the CSS Grid Calendar Here -->
                             </div>
                         </div>
                     </div>
