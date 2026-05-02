@@ -421,11 +421,11 @@ function processTrainingsData(data) {
         }
     });
 
-    // KPI Updates
-    document.getElementById('train-kpi-count').innerText = totalPax.toLocaleString();
-    document.getElementById('train-kpi-rating').innerText = 'N/A'; // No Rating Data in Sheet
-    document.getElementById('train-kpi-hours').innerText = 'N/A';  // No Hours Data in Sheet
-    document.getElementById('train-kpi-budget').innerText = 'N/A'; // No Budget Data in Sheet
+    // KPI Updates (Removed N/A boxes from HTML, so only updating PAX)
+    const paxBox = document.getElementById('train-kpi-count');
+    if (paxBox) {
+        paxBox.innerText = totalPax.toLocaleString();
+    }
 
     // Render Charts
     drawTrainBarChart('trainTypesChart', Object.keys(categoryCounts), Object.values(categoryCounts));
