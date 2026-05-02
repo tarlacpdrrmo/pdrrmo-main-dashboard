@@ -651,7 +651,8 @@ td {
     display: flex; 
     flex-direction: column; 
     position: relative; 
-    overflow: hidden; 
+    /* UPDATED: overflow changed from hidden to visible to fix tooltip clipping */
+    overflow: visible; 
     min-height: 400px; 
     padding: 10px 16px 16px 16px; 
 }
