@@ -91,7 +91,6 @@
     </style>
 </head>
 <body>
-    
     <div id="global-loader">
         <div class="loader-circle-container">
             <div class="loader-ring-outer"></div>
@@ -123,14 +122,13 @@
                     </svg>
                     <span>Assets & Personnel</span>
                 </li>
-                
                 <li onclick="scrollToSection('tracking')">
                     <svg class="menu-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     <span>Communication Letters</span>
                 </li>
-
+                <!-- NEW TRAININGS NAV -->
                 <li onclick="scrollToSection('trainings')">
                     <svg class="menu-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" />
@@ -138,23 +136,19 @@
                     </svg>
                     <span>Trainings & Seminars</span>
                 </li>
-                
                 <li onclick="scrollToSection('volunteers')">
                     <svg class="menu-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                     </svg>
                     <span>Volunteer's Section</span>
                 </li>
-                
                 <li class="section-title">GIS & Maps</li>
-                
                 <li onclick="scrollToSection('ews-map')">
                     <svg class="menu-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                     </svg>
                     <span>Early Warning System</span>
                 </li>
-                
                 <li onclick="scrollToSection('incident-map')">
                     <svg class="menu-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.243-4.243a8 8 0 1111.314 0z" />
@@ -162,7 +156,6 @@
                     </svg>
                     <span>Incident Heatmap</span>
                 </li>
-                
                 <li onclick="scrollToSection('evac-map')">
                     <svg class="menu-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -173,7 +166,6 @@
         </nav>
 
         <main class="main-content" id="scroll-area">
-            
             <header class="page-header">
                 <div class="header-titles">
                     <h1>TARLAC PROVINCIAL DISASTER RISK REDUCTION & MANAGEMENT OFFICE</h1>
@@ -195,7 +187,7 @@
             <section id="assets" class="panel">
                 <div class="panel-header-wrapper">
                     <h3 class="panel-heading">Assets and Personnel Dispatched</h3>
-                    <div class="master-toggle-wrapper">
+                    <div class="master-toggle-wrapper" style="display: flex; gap: 15px; align-items: center;">
                         <div style="display: flex; align-items: center; gap: 6px; border-right: 1px solid #cbd5e1; padding-right: 15px;">
                             <span style="font-size: 0.65rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Filter Year</span>
                             <select id="globalYearSelect" class="chart-filter">
@@ -211,7 +203,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="assets-layout">
                     <div class="kpi-column">
                         <div class="card kpi-card">
@@ -240,7 +231,6 @@
                             <div id="pie-grand-total" class="pie-grand-total">0</div>
                         </div>
                     </div>
-                    
                     <div class="charts-wrapper">
                         <div class="charts-grid">
                             <div class="card span-2x2">
@@ -281,7 +271,6 @@
                                 <div class="chart-trend-footer" id="trend-patient"></div>
                             </div>
                         </div>
-
                         <h4 class="section-divider-title">ANCILLARY SERVICES</h4>
                         <div class="charts-grid">
                             <div class="card chart-card flex-col p-0">
@@ -360,69 +349,66 @@
                 </div>
             </section>
 
-            <!-- Panel 3: Trainings & Seminars (NEW) -->
+            <!-- Panel 3: NEW TRAININGS (Based on image_bed106.png) -->
             <section id="trainings" class="panel">
                 <h3 class="panel-heading">Trainings and Seminars Dashboard</h3>
                 <div class="assets-layout">
                     <div class="kpi-column" style="width: 200px;">
                         <div class="card kpi-card">
-                            <h4>Total Trainees</h4>
-                            <p class="big-number" id="training-kpi-total">0</p>
+                            <h4>Trainee Number</h4>
+                            <p class="big-number" id="train-kpi-num">0</p>
                         </div>
                         <div class="card kpi-card">
                             <h4>Average Rating</h4>
-                            <p class="big-number" id="training-kpi-rating">0.0</p>
+                            <p class="big-number" id="train-kpi-rating">0</p>
                         </div>
                         <div class="card kpi-card">
-                            <h4>Total Hours</h4>
-                            <p class="big-number" id="training-kpi-hours">0</p>
+                            <h4>Hours</h4>
+                            <p class="big-number" id="train-kpi-hours">0</p>
                         </div>
                         <div class="card kpi-card">
-                            <h4>Total Budget</h4>
-                            <p class="big-number" id="training-kpi-budget">₱0</p>
+                            <h4>Budget (PHP)</h4>
+                            <p class="big-number" id="train-kpi-budget">0</p>
                         </div>
                     </div>
-
                     <div class="charts-wrapper">
                         <div class="charts-grid">
-                            <div class="card flex-col">
+                            <div class="card flex-col p-0">
                                 <h4 class="card-inner-title">Training Status</h4>
-                                <div class="chart-render-area"><canvas id="trainingStatusChart"></canvas></div>
+                                <div class="chart-render-area"><canvas id="trainStatusChart"></canvas></div>
                             </div>
-                            <div class="card flex-col">
+                            <div class="card flex-col p-0">
                                 <h4 class="card-inner-title">Training Types</h4>
-                                <div class="chart-render-area"><canvas id="trainingTypesChart"></canvas></div>
+                                <div class="chart-render-area"><canvas id="trainTypesChart"></canvas></div>
                             </div>
-                            <div class="card flex-col">
-                                <h4 class="card-inner-title">Participation</h4>
-                                <div class="chart-render-area"><canvas id="trainingParticipationChart"></canvas></div>
+                            <div class="card flex-col p-0">
+                                <h4 class="card-inner-title">Trainee Numbers</h4>
+                                <div class="chart-render-area"><canvas id="trainNumbersChart"></canvas></div>
                             </div>
                         </div>
-
                         <div class="charts-grid">
-                            <div class="card flex-col">
-                                <h4 class="card-inner-title">Duration Completion</h4>
-                                <div class="chart-render-area"><canvas id="trainingDurationDonut"></canvas></div>
+                            <div class="card flex-col p-0">
+                                <h4 class="card-inner-title">Duration</h4>
+                                <div class="chart-render-area"><canvas id="trainDurationChart"></canvas></div>
                             </div>
-                            <div class="card flex-col">
+                            <div class="card flex-col p-0">
                                 <h4 class="card-inner-title">Budget Utilization</h4>
-                                <div class="chart-render-area"><canvas id="trainingBudgetDonut"></canvas></div>
+                                <div class="chart-render-area"><canvas id="trainBudgetChart"></canvas></div>
                             </div>
-                            <div class="card flex-col p-0" style="background: transparent; box-shadow: none;">
-                                <div class="card mb-2" style="height: 50%;">
-                                     <h4 class="card-inner-title" style="padding: 10px;">Top Departments</h4>
-                                     <div id="top-departments-list" class="scrollable-legend" style="width: 100%; border:none;"></div>
+                            <div class="card flex-col p-0">
+                                <div class="card" style="height: 50%; box-shadow: none; border-bottom: 1px solid #f1f5f9;">
+                                    <h4 class="card-inner-title" style="padding: 10px;">Top Departments</h4>
+                                    <div id="top-dept-list" class="scrollable-legend" style="width: 100%; border:none;"></div>
                                 </div>
-                                <div class="card" style="height: 50%;">
-                                    <h4 class="card-inner-title" style="padding: 10px;">Top Training Titles</h4>
-                                    <div id="top-titles-list" class="scrollable-legend" style="width: 100%; border:none;"></div>
+                                <div class="card" style="height: 50%; box-shadow: none;">
+                                    <h4 class="card-inner-title" style="padding: 10px;">Top Titles</h4>
+                                    <div id="top-title-list" class="scrollable-legend" style="width: 100%; border:none;"></div>
                                 </div>
                             </div>
                         </div>
-
-                        <div class="card flex-col mt-2">
+                        <div class="card flex-col p-0" style="margin-top: 16px;">
                             <h4 class="card-inner-title">Monthly Training Numbers</h4>
-                            <div class="chart-render-area" style="height: 250px; max-height: 250px;"><canvas id="monthlyTrainingTrendChart"></canvas></div>
+                            <div class="chart-render-area" style="height: 250px; max-height: 250px;"><canvas id="trainMonthlyChart"></canvas></div>
                         </div>
                     </div>
                 </div>
@@ -435,7 +421,7 @@
                     <div class="card summary-card"><p>Total Volunteer Organizations</p><h3 id="vol-orgs">0</h3></div>
                     <div class="card summary-card"><p>Individual Volunteers</p><h3 class="orange" id="vol-ind">0</h3></div>
                 </div>
-                <div class="card table-card mt-2">
+                <div class="card table-card mt-2" style="max-height: 400px; overflow-y: auto;">
                     <table id="volunteerTable">
                         <thead><tr><th>List of Organization</th><th>Total Count</th></tr></thead>
                         <tbody></tbody>
@@ -456,7 +442,6 @@
                 <h3 class="panel-heading">Critical Facilities</h3>
                 <iframe src="https://tarlacpdrrmo.github.io/tarlac-evacuation-centers/" title="Critical Facilities Map"></iframe>
             </section>
-            
         </main>
     </div>
     
