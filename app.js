@@ -7,6 +7,7 @@ const webAppUrl = "https://script.google.com/macros/s/AKfycbwdl6df9uXUtM0-ufyh10
 let rawOperationsData = [];
 let rawDocumentsData = [];
 let rawVolunteersData = [];
+let rawTrainingsData = []; // New for Calendar
 
 // Global Chart & State Trackers
 let docPieChartInstance = null;
@@ -27,6 +28,15 @@ let currentPieState = {
     filterKey: 'all', 
     level1Target: null, 
     level2Target: null 
+};
+
+// Trainings Calendar State
+let calendarState = {
+    viewDate: new Date(), 
+    filterCategory: 'all', 
+    startDate: null, 
+    endDate: null,   
+    currentMonthEvents: [] 
 };
 
 const serviceCategoryLabels = [
@@ -174,6 +184,11 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById('masterServiceMonthFilter').addEventListener('change', function(e) {
         renderMasterServicePie(e.target.value);
     });
+
+    // Initialize Calendar if HTML elements are present
+    if (document.getElementById('calendarMonthSelect')) {
+        initializeTrainingsCalendar();
+    }
 });
 
 function parseCustomDate(dateStr) {
@@ -185,6 +200,32 @@ function parseCustomDate(dateStr) {
     if (parts.length === 3) {
         let fallbackDate = new Date(`${parts[1]}/${parts[0]}/${parts[2]}`);
         if (!isNaN(fallbackDate.getTime())) return fallbackDate;
+    }
+    return null;
+}
+
+function parseTrainingsDateRange(dateStr) {
+    if (!dateStr || String(dateStr).trim() === "") return null;
+    let parts = String(dateStr).trim().match(/([a-zA-Z]+)\s*(\d{1,2})\s*-\s*(\d{1,2}),\s*(\d{4})/);
+    if (parts) {
+        let month = parts[1];
+        let startDay = parts[2];
+        let endDay = parts[3];
+        let year = parts[4];
+        let startDate = new Date(`${month} ${startDay}, ${year}`);
+        let endDate = new Date(`${month} ${endDay}, ${year}`);
+        if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+            return { startDate, endDate };
+        }
+    } else {
+        // Fallback for single date e.g. "January 28, 2026"
+        let dPart = String(dateStr).match(/([a-zA-Z]+)\s*(\d{1,2}),\s*(\d{4})/);
+        if(dPart) {
+            let singleDate = new Date(`${dPart[1]} ${dPart[2]}, ${dPart[3]}`);
+            if(!isNaN(singleDate.getTime())) {
+                return { startDate: singleDate, endDate: singleDate };
+            }
+        }
     }
     return null;
 }
@@ -240,6 +281,10 @@ async function loadAllData() {
         const volData = await volRes.json();
         if (!volData.error) rawVolunteersData = volData;
 
+        const trainRes = await fetch(`${webAppUrl}?type=trainings`);
+        const trainData = await trainRes.json();
+        if (!trainData.error) rawTrainingsData = trainData;
+
         let yearsSet = new Set();
         
         rawOperationsData.forEach(r => {
@@ -283,10 +328,15 @@ async function loadAllData() {
 function applyGlobalYearFilter(targetYear) {
     let filteredOps = rawOperationsData;
     let filteredDocs = rawDocumentsData;
+    let filteredTrainings = rawTrainingsData;
 
     if (targetYear !== 'all') {
         filteredOps = rawOperationsData.filter(r => extractYear(r, 'op') === targetYear);
         filteredDocs = rawDocumentsData.filter(r => extractYear(r, 'doc') === targetYear);
+        filteredTrainings = rawTrainingsData.filter(r => {
+            let parsed = parseTrainingsDateRange(r['INCLUSIVE DATES']);
+            return parsed && parsed.startDate.getFullYear().toString() === targetYear;
+        });
     }
 
     operationsMonthlyCache = {};
@@ -304,6 +354,203 @@ function applyGlobalYearFilter(targetYear) {
 
     processOperationsData(filteredOps);
     processDocumentsData(filteredDocs);
+    if (document.getElementById('modernCalendar')) {
+        processTrainingsData(filteredTrainings);
+    }
+}
+
+function initializeTrainingsCalendar() {
+    const calendarMonthSelect = document.getElementById('calendarMonthSelect');
+    const calendarYearSelect = document.getElementById('calendarYearSelect');
+    const calendarCategorySelect = document.getElementById('calendarCategorySelect');
+    const calendarStartDatePicker = document.getElementById('calendarStartDatePicker');
+    const calendarEndDatePicker = document.getElementById('calendarEndDatePicker');
+    const closeDetailsButton = document.getElementById('closeDetailsButton');
+
+    let targetYear = new Date().getFullYear().toString();
+    if(targetYear === "2026") {
+         calendarState.viewDate = new Date(2026, 0, 1);
+         calendarYearSelect.value = "2026";
+    }
+
+    calendarMonthSelect.value = new Date().getMonth();
+
+    closeDetailsButton.addEventListener('click', closeDetailsPanel);
+
+    const triggers = [calendarMonthSelect, calendarYearSelect, calendarCategorySelect];
+    triggers.forEach(el => {
+        el.addEventListener('change', function(e) {
+            smoothRenderCalendar();
+        });
+    });
+
+    const pickers = [calendarStartDatePicker, calendarEndDatePicker];
+    pickers.forEach(el => {
+        el.addEventListener('change', function(e) {
+            smoothRenderCalendar();
+        });
+    });
+}
+
+function smoothRenderCalendar() {
+    const container = document.getElementById('modernCalendar').parentElement;
+    container.classList.add('chart-fade-out'); // Reuse fade out style
+
+    setTimeout(() => {
+        const month = parseInt(document.getElementById('calendarMonthSelect').value);
+        const year = parseInt(document.getElementById('calendarYearSelect').value);
+        calendarState.viewDate = new Date(year, month, 1);
+        calendarState.filterCategory = document.getElementById('calendarCategorySelect').value;
+        calendarState.startDate = document.getElementById('calendarStartDatePicker').value ? new Date(document.getElementById('calendarStartDatePicker').value) : null;
+        calendarState.endDate = document.getElementById('calendarEndDatePicker').value ? new Date(document.getElementById('calendarEndDatePicker').value) : null;
+        
+        renderModernCalendar(rawTrainingsData);
+        
+        setTimeout(() => {
+            container.classList.remove('chart-fade-out');
+        }, 50);
+    }, 200); 
+}
+
+function processTrainingsData(data) {
+    const calendarCategorySelect = document.getElementById('calendarCategorySelect');
+    const categoriesSet = new Set();
+    categoriesSet.add("all"); 
+
+    data.forEach(row => {
+        let cat = row['CATEGORY'] || row['Category'];
+        if (cat) categoriesSet.add(cat.trim().toUpperCase());
+    });
+
+    calendarCategorySelect.innerHTML = '<option value="all">All Categories</option>';
+    Array.from(categoriesSet).forEach(cat => {
+        if(cat === "all") return;
+        let opt = document.createElement('option');
+        opt.value = cat; opt.innerText = cat.charAt(0) + cat.slice(1).toLowerCase();
+        calendarCategorySelect.appendChild(opt);
+    });
+    
+    smoothRenderCalendar();
+}
+
+function renderModernCalendar(data) {
+    const container = document.getElementById('modernCalendar');
+    container.innerHTML = '';
+    
+    const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    dayHeaders.forEach(day => {
+        let div = document.createElement('div');
+        div.className = 'calendar-day-header';
+        div.innerText = day;
+        container.appendChild(div);
+    });
+
+    const viewedYear = calendarState.viewDate.getFullYear();
+    const viewedMonth = calendarState.viewDate.getMonth();
+
+    const firstDay = new Date(viewedYear, viewedMonth, 1).getDay();
+    const daysInMonth = new Date(viewedYear, viewedMonth + 1, 0).getDate(); 
+
+    const parsedEvents = [];
+    const trainingSummaryFreq = {};
+
+    data.forEach(row => {
+        let range = parseTrainingsDateRange(row['INCLUSIVE DATES']);
+        if(range) {
+             parsedEvents.push({...row, start: range.startDate, end: range.endDate});
+             
+             let training = (row['TRAINING/LECTURE'] || row['Training/Lecture'] || "").trim();
+             if(training !== "") {
+                 trainingSummaryFreq[training] = (trainingSummaryFreq[training] || 0) + 1;
+             }
+        }
+    });
+
+    calendarState.currentMonthEvents = parsedEvents; 
+
+    const gridDayCount = daysInMonth + firstDay;
+    for (let i = 0; i < gridDayCount; i++) {
+        let cell = document.createElement('div');
+        cell.className = 'calendar-day-cell';
+        
+        if (i < firstDay) {
+            cell.classList.add('empty-cell');
+        } else {
+            const dayNum = i - firstDay + 1;
+            cell.innerHTML = `<div class="day-number">${dayNum}</div>`;
+            
+            const cellDate = new Date(viewedYear, viewedMonth, dayNum);
+            
+            const dayEvents = parsedEvents.filter(event => {
+                const cellTime = cellDate.getTime();
+                const inGridRange = (cellTime >= event.start.getTime() && cellTime <= event.end.getTime());
+                const matchesCat = (calendarState.filterCategory === 'all' || (event['CATEGORY'] || event['Category'] || '').trim().toUpperCase() === calendarState.filterCategory);
+                
+                const pickerStart = calendarState.startDate ? calendarState.startDate.getTime() : 0;
+                const pickerEnd = calendarState.endDate ? calendarState.endDate.getTime() : Infinity;
+                const inPickerRange = (cellTime >= pickerStart && cellTime <= pickerEnd);
+                
+                return inGridRange && matchesCat && inPickerRange;
+            });
+
+            if(dayEvents.length > 0) {
+                if(dayEvents.length >= 5) {
+                    cell.classList.add('freq-5-plus');
+                } else if(dayEvents.length >= 3) {
+                    cell.classList.add('freq-3-4');
+                } else {
+                    cell.classList.add('freq-1-2');
+                }
+                
+                dayEvents.forEach((_, idx) => {
+                    let dot = document.createElement('div');
+                    dot.className = 'event-dot';
+                    dot.style.backgroundColor = idx < 3 ? singleBarOptions.backgroundColor : '#cbd5e1';
+                    cell.appendChild(dot);
+                });
+
+                cell.onclick = () => showEventDetails(cellDate, dayEvents, trainingSummaryFreq);
+            }
+        }
+        container.appendChild(cell);
+    }
+}
+
+function showEventDetails(date, events, freqSummary) {
+    const detailsPanel = document.getElementById('eventDetailsPanel');
+    const title = document.getElementById('detailsDateTitle');
+    const content = document.getElementById('detailsContentList');
+    
+    title.innerText = `Event(s) on ${date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
+    content.innerHTML = ''; 
+
+    events.forEach(event => {
+        let training = (event['TRAINING/LECTURE'] || event['Training/Lecture'] || "").trim();
+        let freq = freqSummary[training] || 0;
+        let remarks = (event['REMARKS'] || event['Remarks'] || '---').trim();
+
+        let block = document.createElement('div');
+        block.className = 'details-event-block';
+        block.innerHTML = `
+            <div class="event-title">${training}</div>
+            <div class="details-meta">
+                CATEGORY: <span style="font-weight:600; color: #64748b;">${event['CATEGORY'] || event['Category']}</span><br>
+                INCLUSIVE DATES: <span style="font-weight:600; color: #64748b;">${event['INCLUSIVE DATES']}</span><br>
+                NO. PAX: <span class="details-pax">${event['NO. PAX'] || event['No. PAX'] || 'N/A'}</span><br>
+                FACILITATOR: <span class="details-fac">${event['FACILITATOR'] || event['Facilitator'] || 'N/A'}</span><br>
+                FREQ: <span style="color: #64748b; font-weight: 700;">${freq}</span><br>
+                REMARKS: <span style="color: #64748b; font-weight: 600;">${remarks}</span>
+            </div>
+        `;
+        content.appendChild(block);
+    });
+
+    detailsPanel.classList.add('panel-details-open'); 
+}
+
+function closeDetailsPanel() {
+    const detailsPanel = document.getElementById('eventDetailsPanel');
+    detailsPanel.classList.remove('panel-details-open'); 
 }
 
 function processVolunteersData(data) {
@@ -313,6 +560,7 @@ function processVolunteersData(data) {
     let orgList = []; 
 
     const tbody = document.querySelector('#volunteerTable tbody');
+    if(!tbody) return;
     tbody.innerHTML = ''; 
 
     data.forEach(row => {
@@ -497,15 +745,16 @@ function processDocumentsData(data) {
         });
     }
 
-    renderDocPieChart();
-    renderLineChartByTimeframe('daily');
+    if (document.getElementById('docSourcePieChart')) {
+        renderDocPieChart();
+        renderLineChartByTimeframe('daily');
+    }
 }
 
-// ----------------------------------------------------
-// SMOOTH KPI ANIMATION FUNCTION
-// ----------------------------------------------------
 function updateTrackingKPIDisplays() {
-    const cardReqCount = document.getElementById('doc-kpi-request').parentElement; 
+    const reqEl = document.getElementById('doc-kpi-request');
+    if(!reqEl) return;
+    const cardReqCount = reqEl.parentElement; 
     const cardAction = document.getElementById('doc-kpi-action').parentElement; 
     const cardCatered = document.getElementById('doc-kpi-catered').parentElement; 
     const cardInvAtt = document.getElementById('doc-kpi-inv-att').parentElement; 
@@ -515,15 +764,12 @@ function updateTrackingKPIDisplays() {
     const cardCancelled = document.getElementById('doc-kpi-cancelled').parentElement; 
     const cardNoAction = document.getElementById('doc-kpi-no-action').parentElement; 
 
-    // The Anchor must always remain visible
     cardReqCount.classList.remove('kpi-hidden');
 
     if (currentPieState.level === 1) {
-        // Reset anchor numbers
         document.getElementById('doc-kpi-request').innerText = originalKPITotals.req;
         document.getElementById('doc-kpi-action').innerText = originalKPITotals.action;
         
-        // Smoothly reveal all specific cards back to the grid
         [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => {
             card.classList.remove('kpi-hidden');
         });
@@ -544,16 +790,13 @@ function updateTrackingKPIDisplays() {
             }
         });
 
-        // Set the dynamic anchor numbers
         document.getElementById('doc-kpi-request').innerText = dynTotalRequestsMatched;
         document.getElementById('doc-kpi-action').innerText = dynActionsActuallyTakenMatched;
 
-        // Smoothly collapse ALL unmentioned cards out of the grid
         [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => {
             card.classList.add('kpi-hidden');
         });
         
-        // Instantly bring back ONLY the relevant ones based on category
         if (targetCategory === 'Request') {
             cardCatered.classList.remove('kpi-hidden');
             cardNotCatered.classList.remove('kpi-hidden');
@@ -603,6 +846,8 @@ function renderDocPieChart() {
 
     const titleEl = document.getElementById('pieChartTitle');
     const backBtn = document.getElementById('pieBackButton');
+
+    if(!titleEl || !backBtn) return;
 
     if (currentPieState.level === 1) {
         titleEl.innerText = 'NATURE OF LETTER';
@@ -713,6 +958,7 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
 
 function updateCustomLegend(labels, data, isEmptyState = false) {
     const legendContainer = document.getElementById('customLegend');
+    if(!legendContainer) return;
     legendContainer.innerHTML = '';
     labels.forEach((label, index) => {
         let color = isEmptyState ? '#e2e8f0' : pieColorPalette[index % pieColorPalette.length];
@@ -846,7 +1092,9 @@ function renderMasterServicePie(monthFilter) {
     filteredData = combined.map(x => x.d);
     mappedColors = combined.map(x => x.c);
 
-    const ctx = document.getElementById('masterServicePieChart').getContext('2d');
+    const canvas = document.getElementById('masterServicePieChart');
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
     
     if(masterServicePieInstance) {
         masterServicePieInstance.data.labels = filteredLabels;
@@ -920,6 +1168,7 @@ function renderMasterServicePie(monthFilter) {
 
 function renderToggleableChart(canvasId, type, isInitialLoad = false) {
     const canvas = document.getElementById(canvasId);
+    if(!canvas) return;
     const container = canvas.parentElement;
 
     if (!isInitialLoad) {
@@ -1077,17 +1326,19 @@ function processOperationsData(data) {
 
     let referenceTotal = overallGrandTotal > 0 ? overallGrandTotal : (total1st + total2nd + total3rd + totalOutside);
 
-    document.getElementById('kpi-1st').innerText = total1st;
-    document.getElementById('pct-1st').innerText = referenceTotal > 0 ? ((total1st / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
+    if (document.getElementById('kpi-1st')) {
+        document.getElementById('kpi-1st').innerText = total1st;
+        document.getElementById('pct-1st').innerText = referenceTotal > 0 ? ((total1st / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
 
-    document.getElementById('kpi-2nd').innerText = total2nd;
-    document.getElementById('pct-2nd').innerText = referenceTotal > 0 ? ((total2nd / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
+        document.getElementById('kpi-2nd').innerText = total2nd;
+        document.getElementById('pct-2nd').innerText = referenceTotal > 0 ? ((total2nd / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
 
-    document.getElementById('kpi-3rd').innerText = total3rd;
-    document.getElementById('pct-3rd').innerText = referenceTotal > 0 ? ((total3rd / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
+        document.getElementById('kpi-3rd').innerText = total3rd;
+        document.getElementById('pct-3rd').innerText = referenceTotal > 0 ? ((total3rd / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
 
-    document.getElementById('kpi-outside').innerText = totalOutside;
-    document.getElementById('pct-outside').innerText = referenceTotal > 0 ? ((totalOutside / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
+        document.getElementById('kpi-outside').innerText = totalOutside;
+        document.getElementById('pct-outside').innerText = referenceTotal > 0 ? ((totalOutside / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
+    }
 
     renderTrendFooter('trend-vehicular', vehicular, labels, true); 
     renderTrendFooter('trend-roadside', roadside, labels, false); 
@@ -1101,7 +1352,9 @@ function processOperationsData(data) {
     renderTrendFooter('trend-hauling', hauling, labels, false);
     renderTrendFooter('trend-ledvan', ledvan, labels, false);
 
-    drawDonutChart('monthlyPieChart', labels, monthlyTotalServices, overallGrandTotal);
+    if (document.getElementById('monthlyPieChart')) {
+        drawDonutChart('monthlyPieChart', labels, monthlyTotalServices, overallGrandTotal);
+    }
     
     const barColors = labels.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
 
@@ -1131,12 +1384,14 @@ function processOperationsData(data) {
             opt.value = m; opt.innerText = m;
             drop.appendChild(opt);
         });
+        renderMasterServicePie('all');
     }
-    renderMasterServicePie('all');
 }
 
 function drawLineChart(canvasId, labels, dataArr) {
-    const ctx = document.getElementById(canvasId).getContext('2d');
+    const canvas = document.getElementById(canvasId);
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
     if(docLineChartInstance) docLineChartInstance.destroy();
 
     let gradient = ctx.createLinearGradient(0, 0, 0, 300);
