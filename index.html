@@ -419,7 +419,7 @@
                 <h3 class="panel-heading">Trainings and Seminars Dashboard</h3>
                 <div class="assets-layout">
                     
-                    <!-- Left KPIs Column (Holds PAX and Top Titles list) -->
+                    <!-- Left KPIs Column -->
                     <div class="kpi-column" style="width: 220px; display: flex; flex-direction: column;">
                         <div class="card kpi-card">
                             <h4>TOTAL PAX ATTENDEE</h4>
@@ -436,20 +436,50 @@
                     </div>
 
                     <div class="charts-wrapper" style="display: flex; flex-direction: column;">
-                        <!-- Top Analytics Row -->
-                        <div class="charts-grid">
-                            <div class="card chart-card flex-col p-0">
-                                <h4 class="card-inner-title">Training Status</h4>
-                                <div class="chart-render-area"><canvas id="trainStatusChart"></canvas></div>
+                        
+                        <!-- NEW OVERVIEW MONTH FILTER (GREEN BOX PLACEMENT) -->
+                        <div style="display: flex; justify-content: center; margin-bottom: 8px;">
+                            <div style="background: #ffffff; padding: 6px 16px; border-radius: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 0.65rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Filter Month</span>
+                                <select id="trainTopMonthFilter" class="chart-filter" style="border: none; background: transparent; padding: 0; font-size: 0.75rem; cursor: pointer; font-weight: 700; color: #2563eb;">
+                                    <option value="all">All Months</option>
+                                    <option value="JANUARY">January</option>
+                                    <option value="FEBRUARY">February</option>
+                                    <option value="MARCH">March</option>
+                                    <option value="APRIL">April</option>
+                                    <option value="MAY">May</option>
+                                    <option value="JUNE">June</option>
+                                    <option value="JULY">July</option>
+                                    <option value="AUGUST">August</option>
+                                    <option value="SEPTEMBER">September</option>
+                                    <option value="OCTOBER">October</option>
+                                    <option value="NOVEMBER">November</option>
+                                    <option value="DECEMBER">December</option>
+                                </select>
                             </div>
+                        </div>
+
+                        <!-- Top Analytics Row (SWAPPED POSITIONS AS REQUESTED) -->
+                        <div class="charts-grid">
+                            
+                            <!-- Box 1 (Was Trainee Numbers) -->
+                            <div class="card chart-card flex-col p-0">
+                                <h4 class="card-inner-title">Attendees no. <br><span style="font-size: 0.85em; opacity: 0.7; text-transform: none; font-weight: 600;">(Category)</span></h4>
+                                <div class="chart-render-area"><canvas id="trainNumbersChart"></canvas></div>
+                            </div>
+                            
+                            <!-- Box 2 (Unchanged) -->
                             <div class="card chart-card flex-col p-0">
                                 <h4 class="card-inner-title">Training Types</h4>
                                 <div class="chart-render-area"><canvas id="trainTypesChart"></canvas></div>
                             </div>
+                            
+                            <!-- Box 3 (Was Training Status -> Now "Remarks") -->
                             <div class="card chart-card flex-col p-0">
-                                <h4 class="card-inner-title">Trainee Numbers (by Type)</h4>
-                                <div class="chart-render-area"><canvas id="trainNumbersChart"></canvas></div>
+                                <h4 class="card-inner-title">Remarks</h4>
+                                <div class="chart-render-area"><canvas id="trainStatusChart"></canvas></div>
                             </div>
+                            
                         </div>
 
                         <!-- Full Width Interactive Calendar -->
@@ -458,7 +488,6 @@
                                 <h4 class="chart-title">TRAININGS & SEMINARS CALENDAR</h4>
                                 <div style="display:flex; gap: 8px; align-items: center;">
                                     
-                                    <!-- NEW: Category Dropdown -->
                                     <select id="trainCategoryFilter" class="chart-filter" style="margin-right: 15px;">
                                         <option value="all">All Categories</option>
                                         <option value="TRAINING">Training Category</option>
