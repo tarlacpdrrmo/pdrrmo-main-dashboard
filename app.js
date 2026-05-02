@@ -15,6 +15,14 @@ let masterServicePieInstance = null;
 let monthlyTotalPieInstance = null; 
 let toggleChartInstances = {};
 
+// Training Charts Placeholders
+let trainStatusChart = null;
+let trainTypesChart = null;
+let trainNumbersChart = null;
+let trainDurationChart = null;
+let trainBudgetChart = null;
+let trainMonthlyChart = null;
+
 let globalLineData = []; 
 let globalDocRecords = []; 
 let originalKPITotals = {};
