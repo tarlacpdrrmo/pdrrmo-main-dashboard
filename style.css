@@ -374,7 +374,6 @@ body {
     transform: translateY(-4px); 
 }
 
-/* CUSTOM CALENDAR TOOLTIP */
 .cal-tooltip {
     transition: opacity 0.25s ease, visibility 0.25s ease, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: none; 
@@ -444,7 +443,6 @@ body {
 .btn-back { display: none; padding: 6px 12px; font-size: 0.7rem; cursor: pointer; border: none; border-radius: 6px; background: #e2e8f0; color: #1e293b; font-weight: 700; transition: 0.2s; }
 .btn-back:hover { background-color: #cbd5e1; }
 
-/* FIX: MODERN, BEAUTIFUL DROPDOWNS */
 .chart-filter { 
     appearance: none;
     -webkit-appearance: none;
@@ -831,6 +829,104 @@ td {
     .cal-view-yearly { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
+/* --- NEW: MODAL OVERLAY STYLES --- */
+.btn-expand {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    margin-top: 12px;
+}
+.btn-expand:hover {
+    background: #f1f5f9;
+    color: #2563eb;
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+.modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+.modal-content {
+    background: #ffffff;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: column;
+    transform: scale(0.95);
+    transition: transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+.modal-overlay.active .modal-content {
+    transform: scale(1);
+}
+.modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.modal-header h2 {
+    font-size: 1.1rem;
+    color: #0f172a;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+.btn-close-modal {
+    background: transparent;
+    border: none;
+    font-size: 1.8rem;
+    color: #64748b;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s;
+}
+.btn-close-modal:hover {
+    color: #ef4444;
+}
+.modal-body {
+    padding: 20px 24px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* OVERRIDE TRUNCATION FOR MODAL ITEMS ONLY */
+.modal-body .legend-item {
+    padding: 12px 0;
+    border-bottom: 1px solid #f1f5f9;
+    align-items: flex-start;
+}
+.modal-body .legend-text {
+    white-space: normal; 
+    overflow: visible;
+    word-wrap: break-word;
+    flex: 1;
+    line-height: 1.4;
+    font-size: 0.8rem;
+}
+.modal-body .legend-val {
+    font-size: 0.9rem;
+    padding: 4px 10px;
+}
+
 /* PRINT ENGINE (LEGAL SIZE) */
 @media print {
     @page { 
@@ -856,7 +952,9 @@ td {
     .chart-filter,
     .btn-back,
     #calPrevBtn,
-    #calNextBtn { 
+    #calNextBtn,
+    .btn-expand,
+    .modal-overlay { 
         display: none !important; 
     }
 
