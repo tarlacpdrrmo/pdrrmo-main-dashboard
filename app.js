@@ -181,7 +181,6 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    // NEW: Listener for the Top 3 Charts Month Filter
     const trainTopMonthFilter = document.getElementById('trainTopMonthFilter');
     if (trainTopMonthFilter) {
         trainTopMonthFilter.addEventListener('change', function(e) {
@@ -366,10 +365,9 @@ function applyGlobalYearFilter(targetYear) {
 }
 
 // ----------------------------------------------------------------------
-// TRAININGS DASHBOARD LOGIC 
+// TRAININGS DASHBOARD LOGIC (WITH GRACE FIX FOR CHART CLIP)
 // ----------------------------------------------------------------------
 
-// Helper for ultra-robust column checking
 const getRobustValue = (row, searchTerms, fallbackKeys) => {
     let keys = Object.keys(row);
     for (let term of searchTerms) {
@@ -420,7 +418,6 @@ function processTrainingsData(data) {
                     if (!latestEventDateObj || parsedDate > latestEventDateObj) {
                         latestEventDateObj = parsedDate;
                     }
-                    // Load global array for the Calendar Engine
                     globalTrainLineData.push({
                         dateObj: parsedDate,
                         rawDates: dates, 
@@ -436,7 +433,6 @@ function processTrainingsData(data) {
             }
         }
 
-        // Process explicit summary lists (Col I and J) once globally
         if (colI_Title && String(colI_Title).trim() !== "") {
             let tName = String(colI_Title).trim();
             if (tName.toUpperCase() !== 'TRAINING/LECTURES') {
@@ -446,21 +442,17 @@ function processTrainingsData(data) {
         }
     });
 
-    // Populate Side List once
     populateAllList('top-title-list', explicitTitleCounts);
 
-    // Initialize Calendar 
     currentCalDate = latestEventDateObj ? new Date(latestEventDateObj) : new Date();
     initCalendarControls();
     renderCalendar();
 
-    // Trigger Initial Render for the Top 3 Charts & KPI
     const trainTopMonthFilter = document.getElementById('trainTopMonthFilter');
     let initMonth = trainTopMonthFilter ? trainTopMonthFilter.value : 'all';
     renderTrainingOverview(initMonth);
 }
 
-// NEW FUNCTION: Dynamically renders the top charts & KPI based on Month Dropdown
 function renderTrainingOverview(monthFilter) {
     let totalPax = 0;
     let categoryCounts = {};
@@ -470,11 +462,10 @@ function renderTrainingOverview(monthFilter) {
     rawTrainingsData.forEach(row => {
         let dates = getRobustValue(row, ['INCLUSIVE DATES', 'DATES', 'DATE'], ['Column A']);
         
-        // Month Filter Logic
         if (monthFilter !== 'all') {
             let parsedDate = parseTrainingDate(dates);
             if (!parsedDate || monthOrder[parsedDate.getMonth()] !== monthFilter.toUpperCase()) {
-                return; // Skip if it doesn't match the selected month
+                return; 
             }
         }
 
@@ -503,10 +494,9 @@ function renderTrainingOverview(monthFilter) {
         paxBox.innerText = totalPax.toLocaleString();
     }
 
-    // Notice we mapped canvas IDs to their specific data appropriately based on your position swap
     drawTrainBarChart('trainTypesChart', Object.keys(categoryCounts), Object.values(categoryCounts));
-    drawTrainBarChart('trainStatusChart', Object.keys(statusCounts), Object.values(statusCounts)); // Status is now "Remarks" on the right
-    drawTrainBarChart('trainNumbersChart', Object.keys(paxByCategory), Object.values(paxByCategory)); // Numbers is now "Attendees" on the left
+    drawTrainBarChart('trainStatusChart', Object.keys(statusCounts), Object.values(statusCounts)); 
+    drawTrainBarChart('trainNumbersChart', Object.keys(paxByCategory), Object.values(paxByCategory)); 
 }
 
 function initCalendarControls() {
@@ -697,10 +687,13 @@ function drawTrainBarChart(canvasId, labels, dataArr) {
         data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: colors, borderRadius: 4, maxBarThickness: 30 }] },
         options: {
             responsive: true, maintainAspectRatio: false,
+            // UPDATED: Added top padding to layout to ensure numbers NEVER clip the canvas border.
+            layout: { padding: { top: 25, left: 10, right: 10, bottom: 0 } }, 
             plugins: { legend: { display: false }, tooltip: sharedTooltipConfig, datalabels: { display: true, align: 'top', anchor: 'end', color: '#64748b', font: { weight: 'bold' } } },
             scales: {
                 x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 9 }, color: '#64748b' } },
-                y: { grid: { color: '#f1f5f9' }, ticks: { font: { family: 'Inter', size: 10 }, color: '#94a3b8' }, beginAtZero: true }
+                // UPDATED: Added grace: '20%' to force the chart to give headroom above the highest bar.
+                y: { grid: { color: '#f1f5f9' }, ticks: { font: { family: 'Inter', size: 10 }, color: '#94a3b8' }, beginAtZero: true, grace: '20%' } 
             }
         }
     });
@@ -712,28 +705,6 @@ function populateAllList(containerId, dataObj) {
     container.innerHTML = '';
     
     let sorted = Object.keys(dataObj).map(k => ({name: k, count: dataObj[k]})).sort((a,b) => b.count - a.count);
-    
-    if (sorted.length === 0) {
-        container.innerHTML = `<div style="color: #94a3b8; font-size: 0.7rem; padding: 10px;">No Data</div>`;
-        return;
-    }
-
-    sorted.forEach((item, index) => {
-        container.innerHTML += `
-            <div class="legend-item" style="animation-delay: ${index * 0.04}s;">
-                <div class="legend-text" title="${item.name}" style="flex: 1;">${index + 1}. ${item.name}</div>
-                <div class="legend-val">${item.count}</div>
-            </div>
-        `;
-    });
-}
-
-function populateTopList(containerId, dataObj) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    container.innerHTML = '';
-    
-    let sorted = Object.keys(dataObj).map(k => ({name: k, count: dataObj[k]})).sort((a,b) => b.count - a.count).slice(0, 5);
     
     if (sorted.length === 0) {
         container.innerHTML = `<div style="color: #94a3b8; font-size: 0.7rem; padding: 10px;">No Data</div>`;
