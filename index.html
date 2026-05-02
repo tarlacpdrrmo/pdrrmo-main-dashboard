@@ -426,7 +426,6 @@
                             <p class="big-number" id="train-kpi-count">0</p>
                         </div>
                         
-                        <!-- UPDATED: List cut in half with height: fit-content and max-height: 240px -->
                         <div class="card flex-col p-0" style="display: flex; height: fit-content;">
                             <h4 class="card-inner-title" style="border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
                                 Training/Lectures <br>
@@ -453,11 +452,19 @@
                             </div>
                         </div>
 
-                        <!-- Full Width Interactive Calendar (Replacing middle row and old line chart) -->
+                        <!-- Full Width Interactive Calendar -->
                         <div class="card doc-chart-card" style="margin-top: 16px; flex: 1; display: flex; flex-direction: column; min-height: 380px;">
                             <div class="chart-header-actions" style="margin-bottom: 0; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9;">
                                 <h4 class="chart-title">TRAININGS & SEMINARS CALENDAR</h4>
                                 <div style="display:flex; gap: 8px; align-items: center;">
+                                    
+                                    <!-- NEW: Category Dropdown -->
+                                    <select id="trainCategoryFilter" class="chart-filter" style="margin-right: 15px;">
+                                        <option value="all">All Categories</option>
+                                        <option value="TRAINING">Training Category</option>
+                                        <option value="ACTIVITY">Activity Category</option>
+                                    </select>
+
                                     <button id="calPrevBtn" class="btn-back" style="display:block; padding: 4px 10px;">&larr;</button>
                                     <span id="calCurrentLabel" style="font-weight: 800; color: #1e293b; font-size: 0.75rem; min-width: 130px; text-align: center;">...</span>
                                     <button id="calNextBtn" class="btn-back" style="display:block; padding: 4px 10px;">&rarr;</button>
