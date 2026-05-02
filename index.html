@@ -226,7 +226,8 @@
                     <div class="master-toggle-wrapper" style="display: flex; gap: 15px; align-items: center;">
                         <div style="display: flex; align-items: center; gap: 6px; border-right: 1px solid #cbd5e1; padding-right: 15px;">
                             <span style="font-size: 0.65rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Filter Year</span>
-                            <select id="globalYearSelect" class="chart-filter" style="padding: 4px 8px; font-size: 0.75rem;">
+                            <!-- Cleaned up inline styles -->
+                            <select id="globalYearSelect" class="chart-filter" style="min-width: 100px;">
                                 <option value="all">All Time</option>
                             </select>
                         </div>
@@ -279,7 +280,7 @@
                             <div class="card span-2x2">
                                 <div class="chart-header-actions" style="border-bottom: none; margin-bottom: 0;">
                                     <h4 class="chart-title" style="font-size: 0.85rem;">Overall Services Breakdown</h4>
-                                    <select id="masterServiceMonthFilter" class="chart-filter">
+                                    <select id="masterServiceMonthFilter" class="chart-filter" style="min-width: 140px;">
                                         <option value="all">All Time</option>
                                     </select>
                                 </div>
@@ -376,7 +377,7 @@
                             <div class="chart-header-actions">
                                 <h4 class="chart-title" id="pieChartTitle">NATURE OF LETTER</h4>
                                 <div style="display:flex; gap:8px; align-items:center;">
-                                    <select id="docPieMonthFilter" class="chart-filter">
+                                    <select id="docPieMonthFilter" class="chart-filter" style="min-width: 140px;">
                                         <option value="all">All Time</option>
                                     </select>
                                     <button id="pieBackButton" class="btn-back">&larr; Back to Main List</button>
@@ -390,7 +391,7 @@
                         <div class="card doc-chart-card">
                             <div class="chart-header-actions">
                                 <h4 class="chart-title">Received per Date:</h4>
-                                <select id="lineChartFilter" class="chart-filter">
+                                <select id="lineChartFilter" class="chart-filter" style="min-width: 140px;">
                                     <option value="daily">Daily View</option>
                                     <option value="monthly">Monthly View</option>
                                     <option value="yearly">Yearly View</option>
@@ -437,11 +438,11 @@
 
                     <div class="charts-wrapper" style="display: flex; flex-direction: column;">
                         
-                        <!-- NEW OVERVIEW MONTH FILTER (GREEN BOX PLACEMENT) -->
+                        <!-- NEW OVERVIEW MONTH FILTER WITH CLEANED STYLES -->
                         <div style="display: flex; justify-content: center; margin-bottom: 8px;">
-                            <div style="background: #ffffff; padding: 6px 16px; border-radius: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 8px;">
-                                <span style="font-size: 0.65rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Filter Month</span>
-                                <select id="trainTopMonthFilter" class="chart-filter" style="border: none; background: transparent; padding: 0; font-size: 0.75rem; cursor: pointer; font-weight: 700; color: #2563eb;">
+                            <div style="background: #ffffff; padding: 10px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 16px; border: 1px solid #f1f5f9;">
+                                <span style="font-size: 0.75rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Filter Month</span>
+                                <select id="trainTopMonthFilter" class="chart-filter" style="min-width: 180px;">
                                     <option value="all">All Months</option>
                                     <option value="JANUARY">January</option>
                                     <option value="FEBRUARY">February</option>
@@ -459,22 +460,19 @@
                             </div>
                         </div>
 
-                        <!-- Top Analytics Row (SWAPPED POSITIONS AS REQUESTED) -->
+                        <!-- Top Analytics Row -->
                         <div class="charts-grid">
                             
-                            <!-- Box 1 (Was Trainee Numbers) -->
                             <div class="card chart-card flex-col p-0">
                                 <h4 class="card-inner-title">Attendees no. <br><span style="font-size: 0.85em; opacity: 0.7; text-transform: none; font-weight: 600;">(Category)</span></h4>
                                 <div class="chart-render-area"><canvas id="trainNumbersChart"></canvas></div>
                             </div>
                             
-                            <!-- Box 2 (Unchanged) -->
                             <div class="card chart-card flex-col p-0">
                                 <h4 class="card-inner-title">Training Types</h4>
                                 <div class="chart-render-area"><canvas id="trainTypesChart"></canvas></div>
                             </div>
                             
-                            <!-- Box 3 (Was Training Status -> Now "Remarks") -->
                             <div class="card chart-card flex-col p-0">
                                 <h4 class="card-inner-title">Remarks</h4>
                                 <div class="chart-render-area"><canvas id="trainStatusChart"></canvas></div>
@@ -486,19 +484,19 @@
                         <div class="card doc-chart-card" style="margin-top: 16px; flex: 1; display: flex; flex-direction: column; min-height: 380px;">
                             <div class="chart-header-actions" style="margin-bottom: 0; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9;">
                                 <h4 class="chart-title">TRAININGS & SEMINARS CALENDAR</h4>
-                                <div style="display:flex; gap: 8px; align-items: center;">
+                                <div style="display:flex; gap: 12px; align-items: center;">
                                     
-                                    <select id="trainCategoryFilter" class="chart-filter" style="margin-right: 15px;">
+                                    <select id="trainCategoryFilter" class="chart-filter" style="min-width: 160px;">
                                         <option value="all">All Categories</option>
                                         <option value="TRAINING">Training Category</option>
                                         <option value="ACTIVITY">Activity Category</option>
                                     </select>
 
-                                    <button id="calPrevBtn" class="btn-back" style="display:block; padding: 4px 10px;">&larr;</button>
+                                    <button id="calPrevBtn" class="btn-back" style="display:block; padding: 6px 12px;">&larr;</button>
                                     <span id="calCurrentLabel" style="font-weight: 800; color: #1e293b; font-size: 0.75rem; min-width: 130px; text-align: center;">...</span>
-                                    <button id="calNextBtn" class="btn-back" style="display:block; padding: 4px 10px;">&rarr;</button>
+                                    <button id="calNextBtn" class="btn-back" style="display:block; padding: 6px 12px;">&rarr;</button>
                                     
-                                    <select id="trainCalendarFilter" class="chart-filter" style="margin-left: 10px;">
+                                    <select id="trainCalendarFilter" class="chart-filter" style="min-width: 160px;">
                                         <option value="monthly">Monthly View</option>
                                         <option value="quarterly">Quarterly View</option>
                                         <option value="yearly">Yearly View</option>
@@ -506,9 +504,7 @@
                                 </div>
                             </div>
                             
-                            <!-- Custom HTML Calendar Grid Container -->
                             <div id="trainingCalendarContainer" class="calendar-wrapper cal-anim-active">
-                                <!-- JS Injects the CSS Grid Calendar Here -->
                             </div>
                         </div>
                     </div>
