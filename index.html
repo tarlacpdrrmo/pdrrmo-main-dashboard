@@ -18,7 +18,7 @@
             left: 0;
             width: 100vw;
             height: 100vh;
-            background-color: rgba(255, 255, 255, 0.85); /* Cleaner white frosted glass */
+            background-color: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             display: flex;
@@ -39,31 +39,28 @@
             margin-bottom: 24px;
         }
 
-        /* Outer smooth sweeping track */
         .loader-ring-outer {
             position: absolute;
             width: 100%;
             height: 100%;
             border-radius: 50%;
-            border: 2px solid rgba(226, 232, 240, 0.6); /* Slate-200 transparent */
-            border-top-color: #2563eb; /* Primary Theme Blue */
+            border: 2px solid rgba(226, 232, 240, 0.6);
+            border-top-color: #2563eb;
             border-right-color: rgba(37, 99, 235, 0.2);
             animation: spin-smooth 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
         }
 
-        /* Inner counter-rotating subtle ring */
         .loader-ring-inner {
             position: absolute;
             width: 80%;
             height: 80%;
             border-radius: 50%;
             border: 2px solid transparent;
-            border-bottom-color: #0ea5e9; /* Sky Blue accent */
+            border-bottom-color: #0ea5e9;
             border-left-color: rgba(14, 165, 233, 0.2);
             animation: spin-smooth-reverse 2s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
         }
 
-        /* Clean centered typography */
         .loader-text-main {
             font-family: 'Inter', sans-serif;
             display: flex;
@@ -75,7 +72,7 @@
         .loader-text-main .sub {
             font-weight: 600;
             font-size: 0.65rem;
-            color: #64748b; /* Slate 500 */
+            color: #64748b;
             letter-spacing: 3px;
             margin-bottom: 2px;
         }
@@ -83,11 +80,10 @@
         .loader-text-main .main {
             font-weight: 800;
             font-size: 1rem;
-            color: #0f172a; /* Slate 900 */
+            color: #0f172a;
             letter-spacing: 1px;
         }
 
-        /* Pulsing footer text */
         .loader-text-footer {
             font-family: 'Inter', sans-serif;
             font-weight: 600;
@@ -157,6 +153,15 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     <span>Communication Letters</span>
+                </li>
+
+                <!-- NEW: Trainings Section Link -->
+                <li onclick="scrollToSection('trainings')">
+                    <svg class="menu-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                    </svg>
+                    <span>Trainings & Seminars</span>
                 </li>
                 
                 <li onclick="scrollToSection('volunteers')">
@@ -409,7 +414,82 @@
                 </div>
             </section>
 
-            <!-- Panel 3: Volunteer's Section -->
+            <!-- NEW Panel 3: Trainings Dashboard -->
+            <section id="trainings" class="panel">
+                <h3 class="panel-heading">Trainings and Seminars Dashboard</h3>
+                <div class="assets-layout">
+                    <!-- Left KPIs Stack -->
+                    <div class="kpi-column" style="width: 180px;">
+                        <div class="card kpi-card">
+                            <h4>Trainee Number</h4>
+                            <p class="big-number" id="train-kpi-count">0</p>
+                        </div>
+                        <div class="card kpi-card">
+                            <h4>Average Rating</h4>
+                            <p class="big-number" id="train-kpi-rating">0</p>
+                        </div>
+                        <div class="card kpi-card">
+                            <h4>Hours</h4>
+                            <p class="big-number" id="train-kpi-hours">0</p>
+                        </div>
+                        <div class="card kpi-card">
+                            <h4>Budget (PHP)</h4>
+                            <p class="big-number" id="train-kpi-budget">0</p>
+                        </div>
+                    </div>
+
+                    <div class="charts-wrapper">
+                        <!-- Top Analytics Row -->
+                        <div class="charts-grid">
+                            <div class="card chart-card flex-col p-0">
+                                <h4 class="card-inner-title">Training Status</h4>
+                                <div class="chart-render-area"><canvas id="trainStatusChart"></canvas></div>
+                            </div>
+                            <div class="card chart-card flex-col p-0">
+                                <h4 class="card-inner-title">Training Types</h4>
+                                <div class="chart-render-area"><canvas id="trainTypesChart"></canvas></div>
+                            </div>
+                            <div class="card chart-card flex-col p-0">
+                                <h4 class="card-inner-title">Trainee Numbers</h4>
+                                <div class="chart-render-area"><canvas id="trainNumbersChart"></canvas></div>
+                            </div>
+                        </div>
+
+                        <!-- Progress & Rankings Row -->
+                        <div class="charts-grid">
+                            <div class="card chart-card flex-col p-0">
+                                <h4 class="card-inner-title">Duration</h4>
+                                <div class="chart-render-area"><canvas id="trainDurationChart"></canvas></div>
+                            </div>
+                            <div class="card chart-card flex-col p-0">
+                                <h4 class="card-inner-title">Budget</h4>
+                                <div class="chart-render-area"><canvas id="trainBudgetChart"></canvas></div>
+                            </div>
+                            <!-- Mini-Ranking Lists Stacked -->
+                            <div class="card flex-col p-0" style="background:transparent; box-shadow:none; gap:16px;">
+                                <div class="card" style="flex:1; display:flex; flex-direction:column; padding:0;">
+                                    <h4 class="card-inner-title" style="border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">Top Departments</h4>
+                                    <div id="top-dept-list" class="scrollable-legend" style="flex:1;"></div>
+                                </div>
+                                <div class="card" style="flex:1; display:flex; flex-direction:column; padding:0;">
+                                    <h4 class="card-inner-title" style="border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">Top Titles</h4>
+                                    <div id="top-title-list" class="scrollable-legend" style="flex:1;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Full Width Trend -->
+                        <div class="card chart-card flex-col p-0">
+                            <h4 class="card-inner-title">Monthly Training Numbers</h4>
+                            <div class="chart-render-area" style="height: 200px; max-height: 200px;">
+                                <canvas id="trainMonthlyChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Panel 4: Volunteer's Section -->
             <section id="volunteers" class="panel">
                 
                 <h3 class="panel-heading">Volunteer's Section</h3>
