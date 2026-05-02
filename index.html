@@ -10,6 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     
+    <!-- SMOOTH PREMIUM LOADER STYLES -->
     <style>
         #global-loader {
             position: fixed;
@@ -17,7 +18,7 @@
             left: 0;
             width: 100vw;
             height: 100vh;
-            background-color: rgba(255, 255, 255, 0.85);
+            background-color: rgba(255, 255, 255, 0.85); /* Cleaner white frosted glass */
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             display: flex;
@@ -27,6 +28,7 @@
             z-index: 99999;
             transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.8s;
         }
+
         .loader-circle-container {
             position: relative;
             width: 140px;
@@ -36,26 +38,32 @@
             align-items: center;
             margin-bottom: 24px;
         }
+
+        /* Outer smooth sweeping track */
         .loader-ring-outer {
             position: absolute;
             width: 100%;
             height: 100%;
             border-radius: 50%;
-            border: 2px solid rgba(226, 232, 240, 0.6);
-            border-top-color: #2563eb;
+            border: 2px solid rgba(226, 232, 240, 0.6); /* Slate-200 transparent */
+            border-top-color: #2563eb; /* Primary Theme Blue */
             border-right-color: rgba(37, 99, 235, 0.2);
             animation: spin-smooth 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
         }
+
+        /* Inner counter-rotating subtle ring */
         .loader-ring-inner {
             position: absolute;
             width: 80%;
             height: 80%;
             border-radius: 50%;
             border: 2px solid transparent;
-            border-bottom-color: #0ea5e9;
+            border-bottom-color: #0ea5e9; /* Sky Blue accent */
             border-left-color: rgba(14, 165, 233, 0.2);
             animation: spin-smooth-reverse 2s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
         }
+
+        /* Clean centered typography */
         .loader-text-main {
             font-family: 'Inter', sans-serif;
             display: flex;
@@ -63,19 +71,23 @@
             align-items: center;
             justify-content: center;
         }
+
         .loader-text-main .sub {
             font-weight: 600;
             font-size: 0.65rem;
-            color: #64748b;
+            color: #64748b; /* Slate 500 */
             letter-spacing: 3px;
             margin-bottom: 2px;
         }
+
         .loader-text-main .main {
             font-weight: 800;
             font-size: 1rem;
-            color: #0f172a;
+            color: #0f172a; /* Slate 900 */
             letter-spacing: 1px;
         }
+
+        /* Pulsing footer text */
         .loader-text-footer {
             font-family: 'Inter', sans-serif;
             font-weight: 600;
@@ -85,12 +97,26 @@
             text-transform: uppercase;
             animation: gentle-pulse 2s ease-in-out infinite;
         }
-        @keyframes spin-smooth { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes spin-smooth-reverse { 0% { transform: rotate(360deg); } 100% { transform: rotate(0deg); } }
-        @keyframes gentle-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        @keyframes spin-smooth {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes spin-smooth-reverse {
+            0% { transform: rotate(360deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        @keyframes gentle-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
     </style>
 </head>
 <body>
+    
+    <!-- THE PREMIUM LOADING OVERLAY -->
     <div id="global-loader">
         <div class="loader-circle-container">
             <div class="loader-ring-outer"></div>
@@ -104,7 +130,9 @@
     </div>
 
     <div class="dashboard-container">
+        <!-- Sidebar Navigation -->
         <nav class="sidebar">
+            
             <div class="sidebar-logo-container">
                 <div class="sidebar-logo-clean">
                     <img src="tarlac_official_seal.png" alt="Tarlac Official Seal">
@@ -116,39 +144,37 @@
 
             <ul>
                 <li class="section-title">Dashboards</li>
+                
                 <li class="active" onclick="scrollToSection('assets')">
                     <svg class="menu-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
                     <span>Assets & Personnel</span>
                 </li>
+                
                 <li onclick="scrollToSection('tracking')">
                     <svg class="menu-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     <span>Communication Letters</span>
                 </li>
-                <!-- NEW TRAININGS NAV -->
-                <li onclick="scrollToSection('trainings')">
-                    <svg class="menu-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
-                    </svg>
-                    <span>Trainings & Seminars</span>
-                </li>
+                
                 <li onclick="scrollToSection('volunteers')">
                     <svg class="menu-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                     </svg>
                     <span>Volunteer's Section</span>
                 </li>
+                
                 <li class="section-title">GIS & Maps</li>
+                
                 <li onclick="scrollToSection('ews-map')">
                     <svg class="menu-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                     </svg>
                     <span>Early Warning System</span>
                 </li>
+                
                 <li onclick="scrollToSection('incident-map')">
                     <svg class="menu-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.243-4.243a8 8 0 1111.314 0z" />
@@ -156,6 +182,7 @@
                     </svg>
                     <span>Incident Heatmap</span>
                 </li>
+                
                 <li onclick="scrollToSection('evac-map')">
                     <svg class="menu-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -165,7 +192,9 @@
             </ul>
         </nav>
 
+        <!-- Main Content Area -->
         <main class="main-content" id="scroll-area">
+            
             <header class="page-header">
                 <div class="header-titles">
                     <h1>TARLAC PROVINCIAL DISASTER RISK REDUCTION & MANAGEMENT OFFICE</h1>
@@ -185,25 +214,29 @@
             
             <!-- Panel 1: Assets & Personnel -->
             <section id="assets" class="panel">
+                
                 <div class="panel-header-wrapper">
                     <h3 class="panel-heading">Assets and Personnel Dispatched</h3>
+                    
                     <div class="master-toggle-wrapper" style="display: flex; gap: 15px; align-items: center;">
                         <div style="display: flex; align-items: center; gap: 6px; border-right: 1px solid #cbd5e1; padding-right: 15px;">
                             <span style="font-size: 0.65rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Filter Year</span>
-                            <select id="globalYearSelect" class="chart-filter">
+                            <select id="globalYearSelect" class="chart-filter" style="padding: 4px 8px; font-size: 0.75rem;">
                                 <option value="all">All Time</option>
                             </select>
                         </div>
                         <div style="display: flex; align-items: center; gap: 6px;">
                             <span style="font-size: 0.65rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">View as Pie Charts</span>
-                            <label class="chart-toggle">
+                            <label class="chart-toggle" title="Toggle All Pie Charts">
                                 <input type="checkbox" id="masterChartToggle">
                                 <span class="toggle-slider"></span>
                             </label>
                         </div>
                     </div>
                 </div>
+
                 <div class="assets-layout">
+                    
                     <div class="kpi-column">
                         <div class="card kpi-card">
                             <h4>1st District (Total No.)</h4>
@@ -220,93 +253,119 @@
                             <p class="big-number" id="kpi-3rd">0</p>
                             <p class="kpi-percent" id="pct-3rd">0% of Grand Total</p>
                         </div>
+                        
                         <div class="card kpi-card outside-card">
                             <h4>Outside Tarlac Province</h4>
                             <p class="big-number red" id="kpi-outside">0</p>
                             <p class="kpi-percent red-pct" id="pct-outside">0% of Grand Total</p>
                         </div>
+                        
                         <div class="card pie-card">
                             <h4 class="pie-title">Total Services Catered</h4>
                             <div class="pie-wrapper"><canvas id="monthlyPieChart"></canvas></div>
                             <div id="pie-grand-total" class="pie-grand-total">0</div>
                         </div>
                     </div>
+                    
                     <div class="charts-wrapper">
+                        <!-- TOP MAIN CHARTS -->
                         <div class="charts-grid">
+                            
                             <div class="card span-2x2">
                                 <div class="chart-header-actions" style="border-bottom: none; margin-bottom: 0;">
-                                    <h4 class="chart-title">Overall Services Breakdown</h4>
+                                    <h4 class="chart-title" style="font-size: 0.85rem;">Overall Services Breakdown</h4>
                                     <select id="masterServiceMonthFilter" class="chart-filter">
                                         <option value="all">All Time</option>
                                     </select>
                                 </div>
                                 <div class="large-pie-container">
-                                    <div class="doc-pie-wrapper" style="flex: 1.5;"><canvas id="masterServicePieChart"></canvas></div>
+                                    <div class="doc-pie-wrapper" style="flex: 1.5;">
+                                        <canvas id="masterServicePieChart"></canvas>
+                                    </div>
                                     <div class="scrollable-legend" id="masterServiceLegend" style="flex: 1; border-left: 2px solid #f1f5f9;"></div>
                                 </div>
                             </div>
+                            
                             <div class="card chart-card flex-col p-0">
                                 <h4 class="card-inner-title">TRAUMA (ROADCRASH INCIDENT)</h4>
                                 <div class="chart-render-area"><canvas id="vehicularChart"></canvas></div>
                                 <div class="chart-trend-footer" id="trend-vehicular"></div>
                             </div>
+                            
                             <div class="card chart-card flex-col p-0">
                                 <h4 class="card-inner-title">MEDICAL EMERGENCIES</h4>
                                 <div class="chart-render-area"><canvas id="medicalChart"></canvas></div>
                                 <div class="chart-trend-footer" id="trend-medical"></div>
                             </div>
+
                             <div class="card chart-card flex-col p-0">
                                 <h4 class="card-inner-title">Standby Medic & VIP</h4>
                                 <div class="chart-render-area"><canvas id="standbyChart"></canvas></div>
                                 <div class="chart-trend-footer" id="trend-standby"></div>
                             </div>
+
                             <div class="card chart-card flex-col p-0">
                                 <h4 class="card-inner-title">Roadside Assistance</h4>
                                 <div class="chart-render-area"><canvas id="roadsideChart"></canvas></div>
                                 <div class="chart-trend-footer" id="trend-roadside"></div>
                             </div>
+
                             <div class="card chart-card flex-col p-0">
                                 <h4 class="card-inner-title">Patient Transport</h4>
                                 <div class="chart-render-area"><canvas id="patientChart"></canvas></div>
                                 <div class="chart-trend-footer" id="trend-patient"></div>
                             </div>
+
                         </div>
+
                         <h4 class="section-divider-title">ANCILLARY SERVICES</h4>
+
+                        <!-- BOTTOM 5 COMPACT CHARTS -->
                         <div class="charts-grid">
+                            
                             <div class="card chart-card flex-col p-0">
-                                <h4 class="card-inner-title">SUPPORT SERVICES</h4>
+                                <h4 class="card-inner-title">SUPPORT SERVICES <span style="color: #64748b; font-weight: 600; font-size: 0.65rem; opacity: 0.7; letter-spacing: 0.5px;">(MANPOWER, TRANSPORTATION & OTHER RESOURCES)</span></h4>
                                 <div class="chart-render-area"><canvas id="othersChart"></canvas></div>
                                 <div class="chart-trend-footer" id="trend-others"></div>
                             </div>
+                            
                             <div class="card chart-card flex-col p-0">
                                 <h4 class="card-inner-title">Clearing Operations</h4>
                                 <div class="chart-render-area"><canvas id="clearingChart"></canvas></div>
                                 <div class="chart-trend-footer" id="trend-clearing"></div>
                             </div>
+                            
                             <div class="card chart-card flex-col p-0">
                                 <h4 class="card-inner-title">Firetruck</h4>
                                 <div class="chart-render-area"><canvas id="firetruckChart"></canvas></div>
                                 <div class="chart-trend-footer" id="trend-firetruck"></div>
                             </div>
+                            
                             <div class="card chart-card flex-col p-0">
                                 <h4 class="card-inner-title">Hauling</h4>
                                 <div class="chart-render-area"><canvas id="haulingChart"></canvas></div>
                                 <div class="chart-trend-footer" id="trend-hauling"></div>
                             </div>
+                            
                             <div class="card chart-card flex-col p-0">
                                 <h4 class="card-inner-title">Ledvan Truck</h4>
                                 <div class="chart-render-area"><canvas id="ledvanChart"></canvas></div>
                                 <div class="chart-trend-footer" id="trend-ledvan"></div>
                             </div>
+                            
                         </div>
                     </div>
+                    
                 </div>
             </section>
 
             <!-- Panel 2: Document Tracking -->
             <section id="tracking" class="panel">
+                
                 <h3 class="panel-heading">COMMUNICATION LETTERS RECEIVED</h3>
+                
                 <div class="tracking-layout">
+                    
                     <div class="tracking-charts">
                         <div class="card doc-chart-card">
                             <div class="chart-header-actions">
@@ -335,6 +394,7 @@
                             <div class="line-wrapper"><canvas id="docDateLineChart"></canvas></div>
                         </div>
                     </div>
+
                     <div class="tracking-kpis">
                         <div class="card kpi-card-small"><p>Total Communication Received</p><h3 class="green" id="doc-kpi-request">0</h3></div>
                         <div class="card kpi-card-small"><p>Total Action Taken</p><h3 id="doc-kpi-action">0</h3></div>
@@ -349,74 +409,11 @@
                 </div>
             </section>
 
-            <!-- Panel 3: NEW TRAININGS (Based on image_bed106.png) -->
-            <section id="trainings" class="panel">
-                <h3 class="panel-heading">Trainings and Seminars Dashboard</h3>
-                <div class="assets-layout">
-                    <div class="kpi-column" style="width: 200px;">
-                        <div class="card kpi-card">
-                            <h4>Trainee Number</h4>
-                            <p class="big-number" id="train-kpi-num">0</p>
-                        </div>
-                        <div class="card kpi-card">
-                            <h4>Average Rating</h4>
-                            <p class="big-number" id="train-kpi-rating">0</p>
-                        </div>
-                        <div class="card kpi-card">
-                            <h4>Hours</h4>
-                            <p class="big-number" id="train-kpi-hours">0</p>
-                        </div>
-                        <div class="card kpi-card">
-                            <h4>Budget (PHP)</h4>
-                            <p class="big-number" id="train-kpi-budget">0</p>
-                        </div>
-                    </div>
-                    <div class="charts-wrapper">
-                        <div class="charts-grid">
-                            <div class="card flex-col p-0">
-                                <h4 class="card-inner-title">Training Status</h4>
-                                <div class="chart-render-area"><canvas id="trainStatusChart"></canvas></div>
-                            </div>
-                            <div class="card flex-col p-0">
-                                <h4 class="card-inner-title">Training Types</h4>
-                                <div class="chart-render-area"><canvas id="trainTypesChart"></canvas></div>
-                            </div>
-                            <div class="card flex-col p-0">
-                                <h4 class="card-inner-title">Trainee Numbers</h4>
-                                <div class="chart-render-area"><canvas id="trainNumbersChart"></canvas></div>
-                            </div>
-                        </div>
-                        <div class="charts-grid">
-                            <div class="card flex-col p-0">
-                                <h4 class="card-inner-title">Duration</h4>
-                                <div class="chart-render-area"><canvas id="trainDurationChart"></canvas></div>
-                            </div>
-                            <div class="card flex-col p-0">
-                                <h4 class="card-inner-title">Budget Utilization</h4>
-                                <div class="chart-render-area"><canvas id="trainBudgetChart"></canvas></div>
-                            </div>
-                            <div class="card flex-col p-0">
-                                <div class="card" style="height: 50%; box-shadow: none; border-bottom: 1px solid #f1f5f9;">
-                                    <h4 class="card-inner-title" style="padding: 10px;">Top Departments</h4>
-                                    <div id="top-dept-list" class="scrollable-legend" style="width: 100%; border:none;"></div>
-                                </div>
-                                <div class="card" style="height: 50%; box-shadow: none;">
-                                    <h4 class="card-inner-title" style="padding: 10px;">Top Titles</h4>
-                                    <div id="top-title-list" class="scrollable-legend" style="width: 100%; border:none;"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card flex-col p-0" style="margin-top: 16px;">
-                            <h4 class="card-inner-title">Monthly Training Numbers</h4>
-                            <div class="chart-render-area" style="height: 250px; max-height: 250px;"><canvas id="trainMonthlyChart"></canvas></div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Panel 4: Volunteer's Section -->
+            <!-- Panel 3: Volunteer's Section -->
             <section id="volunteers" class="panel">
+                
                 <h3 class="panel-heading">Volunteer's Section</h3>
+                
                 <div class="assets-layout top-summary">
                     <div class="card summary-card"><p>Total Volunteer Organizations</p><h3 id="vol-orgs">0</h3></div>
                     <div class="card summary-card"><p>Individual Volunteers</p><h3 class="orange" id="vol-ind">0</h3></div>
@@ -434,25 +431,32 @@
                 <h3 class="panel-heading">Early Warning System Map</h3>
                 <iframe src="https://tarlacpdrrmo.github.io/tarlac-ews-map/" title="EWS Map"></iframe>
             </section>
+            
             <section id="incident-map" class="panel iframe-panel">
                 <h3 class="panel-heading">Incident Heatmap</h3>
                 <iframe src="https://tarlacpdrrmo.github.io/tarlac-incidents/" title="Incident Heatmap"></iframe>
             </section>
+            
             <section id="evac-map" class="panel iframe-panel">
                 <h3 class="panel-heading">Critical Facilities</h3>
                 <iframe src="https://tarlacpdrrmo.github.io/tarlac-evacuation-centers/" title="Critical Facilities Map"></iframe>
             </section>
+            
         </main>
     </div>
     
+    <!-- SECURITY DETERRENTS -->
     <script>
+        // Disable Right-Click
         document.addEventListener('contextmenu', event => event.preventDefault());
+        
+        // Disable Developer Tools Keyboard Shortcuts
         document.onkeydown = function(e) {
-            if(e.keyCode == 123) return false;
-            if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) return false;
-            if(e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) return false;
-            if(e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) return false;
-            if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false;
+            if(e.keyCode == 123) { return false; } // Blocks F12
+            if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) { return false; } // Blocks Ctrl+Shift+I
+            if(e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) { return false; } // Blocks Ctrl+Shift+C
+            if(e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) { return false; } // Blocks Ctrl+Shift+J
+            if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) { return false; } // Blocks Ctrl+U (View Source)
         }
     </script>
     <script src="app.js"></script>
