@@ -27,11 +27,11 @@ let originalKPITotals = {};
 let operationsMonthlyCache = {}; 
 let toggleChartData = {};
 
-// NEW: Global tracker for Training Calendar
+// Global tracker for Training Calendar
 let globalTrainLineData = [];
 let currentCalDate = new Date();
-let currentCalView = 'monthly'; // 'monthly', 'quarterly', 'yearly'
-let calDataMap = {}; // Maps "YYYY-MM-DD" -> array of events
+let currentCalView = 'monthly'; 
+let calDataMap = {}; 
 
 // 3-Layer Interactive State Tracker
 let currentPieState = { 
@@ -273,7 +273,6 @@ async function loadAllData() {
         const volData = await volRes.json();
         if (!volData.error) rawVolunteersData = volData;
 
-        // FETCH TRAININGS DATA FROM LIVE SHEET
         try {
             const trainRes = await fetch(`${webAppUrl}?type=trainings`);
             const trainData = await trainRes.json();
@@ -314,7 +313,6 @@ async function loadAllData() {
         
         if (rawVolunteersData.length > 0) processVolunteersData(rawVolunteersData);
         
-        // Render Live Trainings Data
         processTrainingsData(rawTrainingsData);
         
         hideLoader();
@@ -352,7 +350,7 @@ function applyGlobalYearFilter(targetYear) {
 }
 
 // ----------------------------------------------------------------------
-// TRAININGS DASHBOARD LOGIC (NEW CUSTOM CALENDAR INTEGRATION)
+// TRAININGS DASHBOARD LOGIC (UPDATED WITH LINES INSTEAD OF DOTS)
 // ----------------------------------------------------------------------
 function processTrainingsData(data) {
     let workingData = Array.isArray(data) ? data : [];
@@ -441,7 +439,6 @@ function initCalendarControls() {
     const btnNext = document.getElementById('calNextBtn');
     
     if(filter) {
-        // Prevent duplicate listeners
         let newFilter = filter.cloneNode(true);
         filter.parentNode.replaceChild(newFilter, filter);
         newFilter.value = currentCalView;
@@ -511,7 +508,6 @@ function renderCalendar() {
         
         container.innerHTML = html;
         
-        // Force Reflow
         void container.offsetWidth;
         container.classList.remove('cal-anim-enter');
         container.classList.add('cal-anim-active');
@@ -528,7 +524,6 @@ function buildMonthHTML(year, month, isSmallScale) {
     html += `<div class="cal-weekdays"><div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div></div>`;
     html += `<div class="cal-days">`;
     
-    // Empty slots before 1st of month
     for(let i=0; i<firstDay; i++) {
         html += `<div class="cal-day empty"></div>`;
     }
@@ -540,19 +535,20 @@ function buildMonthHTML(year, month, isSmallScale) {
         let events = calDataMap[dateKey];
         
         if (events && events.length > 0) {
-            // Build visual dots
-            let dotsHtml = '';
-            let maxDots = isSmallScale ? 2 : 4; // limit dots visually
-            for(let j=0; j<Math.min(events.length, maxDots); j++) {
-                let dotClass = events[j].category === 'ACTIVITY' ? 'cal-dot-activity' : '';
-                dotsHtml += `<div class="cal-dot ${dotClass}"></div>`;
-            }
-            if(events.length > maxDots) dotsHtml += `<span style="font-size:0.5rem; line-height:0.5rem; color:#64748b;">+</span>`;
             
-            // Build beautiful custom tooltip
+            // UPDATED: Build visual lines instead of dots
+            let linesHtml = '';
+            let maxLines = 3; 
+            for(let j=0; j<Math.min(events.length, maxLines); j++) {
+                let lineClass = events[j].category === 'ACTIVITY' ? 'cal-line-activity' : '';
+                linesHtml += `<div class="cal-line ${lineClass}"></div>`;
+            }
+            if(events.length > maxLines) linesHtml += `<span style="font-size:0.55rem; line-height:4px; color:#64748b; font-weight: 800; margin-left: 2px;">+</span>`;
+            
+            // UPDATED: Tooltip uses rectangular indicators matching the lines
             let tooltipListHtml = events.map(e => `
                 <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
-                    <div class="cal-dot ${e.category === 'ACTIVITY' ? 'cal-dot-activity' : ''}"></div>
+                    <div class="cal-line ${e.category === 'ACTIVITY' ? 'cal-line-activity' : ''}" style="width: 12px; height: 4px; flex: none;"></div>
                     <span style="font-size:0.65rem; font-weight:700;">${e.title}</span>
                 </div>
             `).join('');
@@ -567,7 +563,7 @@ function buildMonthHTML(year, month, isSmallScale) {
             html += `
                 <div class="cal-day has-event has-tooltip">
                     ${day}
-                    <div class="cal-event-indicator">${dotsHtml}</div>
+                    <div class="cal-event-indicator">${linesHtml}</div>
                     ${tooltipHtml}
                 </div>
             `;
