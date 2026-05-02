@@ -226,7 +226,6 @@
                     <div class="master-toggle-wrapper" style="display: flex; gap: 15px; align-items: center;">
                         <div style="display: flex; align-items: center; gap: 6px; border-right: 1px solid #cbd5e1; padding-right: 15px;">
                             <span style="font-size: 0.65rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Filter Year</span>
-                            <!-- Cleaned up inline styles -->
                             <select id="globalYearSelect" class="chart-filter" style="min-width: 100px;">
                                 <option value="all">All Time</option>
                             </select>
@@ -438,7 +437,7 @@
 
                     <div class="charts-wrapper" style="display: flex; flex-direction: column;">
                         
-                        <!-- NEW OVERVIEW MONTH FILTER WITH CLEANED STYLES -->
+                        <!-- OVERVIEW MONTH FILTER -->
                         <div style="display: flex; justify-content: center; margin-bottom: 8px;">
                             <div style="background: #ffffff; padding: 10px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 16px; border: 1px solid #f1f5f9;">
                                 <span style="font-size: 0.75rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Filter Month</span>
@@ -469,7 +468,8 @@
                             </div>
                             
                             <div class="card chart-card flex-col p-0">
-                                <h4 class="card-inner-title">Training Types</h4>
+                                <!-- UPDATED TEXT HERE AS REQUESTED -->
+                                <h4 class="card-inner-title">Trainings Conducted <br><span style="font-size: 0.85em; opacity: 0.7; text-transform: none; font-weight: 600;">(by Category)</span></h4>
                                 <div class="chart-render-area"><canvas id="trainTypesChart"></canvas></div>
                             </div>
                             
