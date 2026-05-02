@@ -7,7 +7,7 @@ const webAppUrl = "https://script.google.com/macros/s/AKfycbwYUt0YFQClUUXRGwrNdn
 let rawOperationsData = [];
 let rawDocumentsData = [];
 let rawVolunteersData = [];
-let rawTrainingsData = []; // Vault for the live Training Sheet
+let rawTrainingsData = []; 
 
 // Global Chart & State Trackers
 let docPieChartInstance = null;
@@ -20,9 +20,6 @@ let toggleChartInstances = {};
 let trainStatusChartInst = null;
 let trainTypesChartInst = null;
 let trainNumbersChartInst = null;
-let trainDurationChartInst = null;
-let trainBudgetChartInst = null;
-let trainMonthlyChartInst = null;
 
 let globalLineData = []; 
 let globalDocRecords = []; 
@@ -30,8 +27,11 @@ let originalKPITotals = {};
 let operationsMonthlyCache = {}; 
 let toggleChartData = {};
 
-// NEW: Global tracker for Training Timeline dates
+// NEW: Global tracker for Training Calendar
 let globalTrainLineData = [];
+let currentCalDate = new Date();
+let currentCalView = 'monthly'; // 'monthly', 'quarterly', 'yearly'
+let calDataMap = {}; // Maps "YYYY-MM-DD" -> array of events
 
 // 3-Layer Interactive State Tracker
 let currentPieState = { 
@@ -173,14 +173,6 @@ document.addEventListener("DOMContentLoaded", function() {
         renderLineChartByTimeframe(e.target.value);
     });
     
-    // Listener for the Training Timeline filter
-    const trainLineFilter = document.getElementById('trainLineChartFilter');
-    if (trainLineFilter) {
-        trainLineFilter.addEventListener('change', function(e) {
-            renderTrainLineChartByTimeframe(e.target.value);
-        });
-    }
-
     const masterToggle = document.getElementById('masterChartToggle');
     if (masterToggle) {
         masterToggle.addEventListener('change', function(e) {
@@ -212,7 +204,6 @@ function parseCustomDate(dateStr) {
     return null;
 }
 
-// Advanced Parser to handle complex training dates like "January 12-14, 2026"
 function parseTrainingDate(dateStr) {
     if (!dateStr) return null;
     let str = String(dateStr).trim();
@@ -361,34 +352,33 @@ function applyGlobalYearFilter(targetYear) {
 }
 
 // ----------------------------------------------------------------------
-// TRAININGS DASHBOARD LOGIC
+// TRAININGS DASHBOARD LOGIC (NEW CUSTOM CALENDAR INTEGRATION)
 // ----------------------------------------------------------------------
 function processTrainingsData(data) {
     let workingData = Array.isArray(data) ? data : [];
-    globalTrainLineData = []; // Reset global dates array
+    
+    globalTrainLineData = []; 
+    calDataMap = {}; // Reset
 
     let totalPax = 0;
     let categoryCounts = {};
     let statusCounts = {};
     let paxByCategory = {};
-    let agencyCounts = {};
-    let explicitTitleCounts = {}; // Used specifically for Columns I and J
+    let explicitTitleCounts = {}; 
+    let latestEventDateObj = null;
 
     workingData.forEach(row => {
         let cat = row['CATEGORY'] || row['Category'] || row['Column B'];
         let pax = parseInt(row['NO. PAX'] || row['No. Pax'] || row['Column E']) || 0;
         let status = row['REMARKS'] || row['Remarks'] || row['Column F'];
-        let agency = row['AGENCY/OFFICE'] || row['Agency/Office'] || row['Column D'];
         let title = row['TRAINING/LECTURE'] || row['Training/Lecture'] || row['Column C'];
         let dates = row['INCLUSIVE DATES'] || row['Inclusive Dates'] || row['Column A'];
 
-        // Extraction for Columns I and J specifically
         let colI_Title = row['TRAINING/LECTURES'] || row['Training/Lectures'] || row['Column I'];
         let colJ_Freq = row['FREQ'] || row['Freq'] || row['Column J'];
 
         if (cat && String(cat).trim() !== "") {
             totalPax += pax;
-
             let c = String(cat).trim().toUpperCase();
             categoryCounts[c] = (categoryCounts[c] || 0) + 1;
             paxByCategory[c] = (paxByCategory[c] || 0) + pax;
@@ -400,29 +390,27 @@ function processTrainingsData(data) {
                 statusCounts['UNKNOWN'] = (statusCounts['UNKNOWN'] || 0) + 1;
             }
 
-            if (agency) {
-                let a = String(agency).trim();
-                agencyCounts[a] = (agencyCounts[a] || 0) + 1;
-            }
-
-            // Parse complex dates into actual timestamps and grab the title
+            // Timeline Parse
             if (dates) {
                 let parsedDate = parseTrainingDate(dates);
                 if (parsedDate) {
-                    globalTrainLineData.push({
-                        dateObj: parsedDate,
-                        title: title || 'Unspecified Event',
-                        count: 1,
-                        timestamp: parsedDate.getTime()
-                    });
+                    if (!latestEventDateObj || parsedDate > latestEventDateObj) {
+                        latestEventDateObj = parsedDate;
+                    }
+                    
+                    let yyyy = parsedDate.getFullYear();
+                    let mm = String(parsedDate.getMonth() + 1).padStart(2, '0');
+                    let dd = String(parsedDate.getDate()).padStart(2, '0');
+                    let dateKey = `${yyyy}-${mm}-${dd}`;
+                    
+                    if(!calDataMap[dateKey]) calDataMap[dateKey] = [];
+                    calDataMap[dateKey].push({ title: title || 'Unspecified Event', category: c });
                 }
             }
         }
 
-        // Process ALL data from Column I and J independently
         if (colI_Title && String(colI_Title).trim() !== "") {
             let tName = String(colI_Title).trim();
-            // Safety check to avoid accidentally adding the header text
             if (tName.toUpperCase() !== 'TRAINING/LECTURES') {
                 let tFreq = parseInt(colJ_Freq) || 0;
                 explicitTitleCounts[tName] = tFreq;
@@ -430,123 +418,166 @@ function processTrainingsData(data) {
         }
     });
 
-    // KPI Updates
     const paxBox = document.getElementById('train-kpi-count');
     if (paxBox) {
         paxBox.innerText = totalPax.toLocaleString();
     }
 
-    // Render Charts
     drawTrainBarChart('trainTypesChart', Object.keys(categoryCounts), Object.values(categoryCounts));
     drawTrainBarChart('trainStatusChart', Object.keys(statusCounts), Object.values(statusCounts));
     drawTrainBarChart('trainNumbersChart', Object.keys(paxByCategory), Object.values(paxByCategory));
 
-    // Render Dummy Donuts for empty modules
-    drawTrainDonutPlaceholder('trainDurationChart', 'No Data');
-    drawTrainDonutPlaceholder('trainBudgetChart', 'No Data');
-
-    // Populate Ranking Lists
-    populateTopList('top-dept-list', agencyCounts);
-    
-    // NEW: Populates the left column block with ALL entries from Column I & J
     populateAllList('top-title-list', explicitTitleCounts);
 
-    // Initial Timeline Render
-    const trainLineFilter = document.getElementById('trainLineChartFilter');
-    let initTimeframe = trainLineFilter ? trainLineFilter.value : 'monthly';
-    renderTrainLineChartByTimeframe(initTimeframe);
+    // Initialize Calendar Logic
+    currentCalDate = latestEventDateObj ? new Date(latestEventDateObj) : new Date();
+    initCalendarControls();
+    renderCalendar();
 }
 
-// Dynamically aggregate Training dates based on dropdown selection
-function renderTrainLineChartByTimeframe(timeframe) {
-    let groupedObj = {};
-    let groupedTitles = {};
+function initCalendarControls() {
+    const filter = document.getElementById('trainCalendarFilter');
+    const btnPrev = document.getElementById('calPrevBtn');
+    const btnNext = document.getElementById('calNextBtn');
     
-    // Sort chronologically
-    let sortedData = [...globalTrainLineData].sort((a, b) => a.timestamp - b.timestamp);
+    if(filter) {
+        // Prevent duplicate listeners
+        let newFilter = filter.cloneNode(true);
+        filter.parentNode.replaceChild(newFilter, filter);
+        newFilter.value = currentCalView;
+        newFilter.addEventListener('change', function(e) {
+            currentCalView = e.target.value;
+            renderCalendar();
+        });
+    }
 
-    sortedData.forEach(item => {
-        let key = "";
-        if (timeframe === 'monthly') {
-            key = item.dateObj.toLocaleString('en-US', { month: 'short', year: 'numeric' });
-        } else if (timeframe === 'yearly') {
-            key = item.dateObj.getFullYear().toString();
-        } else { 
-            key = item.dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        }
-        
-        groupedObj[key] = (groupedObj[key] || 0) + item.count;
-        
-        // Group the specific titles so the tooltip can display them
-        if(!groupedTitles[key]) groupedTitles[key] = [];
-        if(!groupedTitles[key].includes(item.title)) {
-            groupedTitles[key].push(item.title);
-        }
-    });
+    if(btnPrev) {
+        let newPrev = btnPrev.cloneNode(true);
+        btnPrev.parentNode.replaceChild(newPrev, btnPrev);
+        newPrev.addEventListener('click', function() {
+            if(currentCalView === 'monthly') currentCalDate.setMonth(currentCalDate.getMonth() - 1);
+            else if(currentCalView === 'quarterly') currentCalDate.setMonth(currentCalDate.getMonth() - 3);
+            else if(currentCalView === 'yearly') currentCalDate.setFullYear(currentCalDate.getFullYear() - 1);
+            renderCalendar();
+        });
+    }
 
-    const labels = Object.keys(groupedObj);
-    const dataValues = Object.values(groupedObj);
-    const titlesArr = Object.values(groupedTitles); 
-    
-    if(labels.length === 0) {
-        drawTrainLineChart('trainMonthlyChart', ['No Data Found'], [0], [['N/A']]);
-    } else {
-        drawTrainLineChart('trainMonthlyChart', labels, dataValues, titlesArr);
+    if(btnNext) {
+        let newNext = btnNext.cloneNode(true);
+        btnNext.parentNode.replaceChild(newNext, btnNext);
+        newNext.addEventListener('click', function() {
+            if(currentCalView === 'monthly') currentCalDate.setMonth(currentCalDate.getMonth() + 1);
+            else if(currentCalView === 'quarterly') currentCalDate.setMonth(currentCalDate.getMonth() + 3);
+            else if(currentCalView === 'yearly') currentCalDate.setFullYear(currentCalDate.getFullYear() + 1);
+            renderCalendar();
+        });
     }
 }
 
-function drawTrainLineChart(canvasId, labels, dataArr, titlesArr) {
-    const ctx = document.getElementById(canvasId).getContext('2d');
-    if (window[canvasId + 'Inst']) window[canvasId + 'Inst'].destroy();
-
-    let gradient = ctx.createLinearGradient(0, 0, 0, 300);
-    gradient.addColorStop(0, 'rgba(37, 99, 235, 0.3)');
-    gradient.addColorStop(1, 'rgba(37, 99, 235, 0.0)'); 
-
-    window[canvasId + 'Inst'] = new Chart(ctx, {
-        type: 'line',
-        data: { 
-            labels: labels, 
-            datasets: [{ 
-                data: dataArr, 
-                borderColor: '#2563eb', 
-                backgroundColor: gradient, 
-                borderWidth: 2, 
-                pointBackgroundColor: '#ffffff', 
-                pointBorderColor: '#2563eb', 
-                pointBorderWidth: 2, 
-                pointHoverRadius: 5, 
-                fill: true, 
-                tension: 0.4 
-            }] 
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false, animation: { duration: 1000, easing: 'easeOutQuart' },
-            plugins: { 
-                legend: { display: false }, 
-                datalabels: { display: false },
-                tooltip: {
-                    ...sharedTooltipConfig,
-                    callbacks: {
-                        label: function(context) {
-                            let val = context.raw;
-                            let titles = (titlesArr && titlesArr[context.dataIndex]) ? titlesArr[context.dataIndex] : [];
-                            let labelArr = [`Total Events: ${val}`];
-                            if (titles.length > 0 && titles[0] !== 'N/A') {
-                                labelArr.push('------------------------');
-                                titles.forEach(t => labelArr.push(`• ${t}`));
-                            }
-                            return labelArr;
-                        }
-                    }
-                }
-            },
-            scales: {
-                x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 9 }, color: '#64748b' } },
-                y: { grid: { color: '#f1f5f9' }, beginAtZero: true, ticks: { font: { family: 'Inter', size: 10 }, color: '#64748b' } }
+function renderCalendar() {
+    const container = document.getElementById('trainingCalendarContainer');
+    const label = document.getElementById('calCurrentLabel');
+    if(!container || !label) return;
+    
+    container.classList.remove('cal-anim-active');
+    container.classList.add('cal-anim-enter');
+    
+    setTimeout(() => {
+        let html = '';
+        let viewClass = `cal-view-${currentCalView}`;
+        
+        let targetYear = currentCalDate.getFullYear();
+        let targetMonth = currentCalDate.getMonth();
+        
+        if (currentCalView === 'monthly') {
+            label.innerText = `${monthOrder[targetMonth]} ${targetYear}`;
+            html = `<div class="cal-grid-container ${viewClass}">${buildMonthHTML(targetYear, targetMonth, false)}</div>`;
+        } else if (currentCalView === 'quarterly') {
+            let q = Math.floor(targetMonth / 3);
+            let qStartMonth = q * 3;
+            label.innerText = `Q${q + 1} ${targetYear}`;
+            let m1 = buildMonthHTML(targetYear, qStartMonth, true);
+            let m2 = buildMonthHTML(targetYear, qStartMonth + 1, true);
+            let m3 = buildMonthHTML(targetYear, qStartMonth + 2, true);
+            html = `<div class="cal-grid-container ${viewClass}">${m1}${m2}${m3}</div>`;
+        } else if (currentCalView === 'yearly') {
+            label.innerText = `${targetYear}`;
+            let monthsHtml = '';
+            for(let i = 0; i < 12; i++) {
+                monthsHtml += buildMonthHTML(targetYear, i, true);
             }
+            html = `<div class="cal-grid-container ${viewClass}">${monthsHtml}</div>`;
         }
-    });
+        
+        container.innerHTML = html;
+        
+        // Force Reflow
+        void container.offsetWidth;
+        container.classList.remove('cal-anim-enter');
+        container.classList.add('cal-anim-active');
+        
+    }, 300);
+}
+
+function buildMonthHTML(year, month, isSmallScale) {
+    let daysInMonth = new Date(year, month + 1, 0).getDate();
+    let firstDay = new Date(year, month, 1).getDay(); // 0 = Sun
+    
+    let html = `<div class="cal-month">`;
+    html += `<div class="cal-month-title">${monthOrder[month]}</div>`;
+    html += `<div class="cal-weekdays"><div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div></div>`;
+    html += `<div class="cal-days">`;
+    
+    // Empty slots before 1st of month
+    for(let i=0; i<firstDay; i++) {
+        html += `<div class="cal-day empty"></div>`;
+    }
+    
+    for(let day=1; day<=daysInMonth; day++) {
+        let padMonth = String(month + 1).padStart(2, '0');
+        let padDay = String(day).padStart(2, '0');
+        let dateKey = `${year}-${padMonth}-${padDay}`;
+        let events = calDataMap[dateKey];
+        
+        if (events && events.length > 0) {
+            // Build visual dots
+            let dotsHtml = '';
+            let maxDots = isSmallScale ? 2 : 4; // limit dots visually
+            for(let j=0; j<Math.min(events.length, maxDots); j++) {
+                let dotClass = events[j].category === 'ACTIVITY' ? 'cal-dot-activity' : '';
+                dotsHtml += `<div class="cal-dot ${dotClass}"></div>`;
+            }
+            if(events.length > maxDots) dotsHtml += `<span style="font-size:0.5rem; line-height:0.5rem; color:#64748b;">+</span>`;
+            
+            // Build beautiful custom tooltip
+            let tooltipListHtml = events.map(e => `
+                <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                    <div class="cal-dot ${e.category === 'ACTIVITY' ? 'cal-dot-activity' : ''}"></div>
+                    <span style="font-size:0.65rem; font-weight:700;">${e.title}</span>
+                </div>
+            `).join('');
+
+            let tooltipHtml = `
+                <div class="custom-tooltip" style="z-index: 999; pointer-events: none; bottom: 120%; min-width: 140px; white-space: normal;">
+                    <div style="color:#94a3b8; font-size:0.55rem; text-transform:uppercase; margin-bottom:8px; letter-spacing:0.5px; border-bottom:1px solid #334155; padding-bottom:4px;">${monthOrder[month]} ${day}, ${year}</div>
+                    ${tooltipListHtml}
+                </div>
+            `;
+            
+            html += `
+                <div class="cal-day has-event has-tooltip">
+                    ${day}
+                    <div class="cal-event-indicator">${dotsHtml}</div>
+                    ${tooltipHtml}
+                </div>
+            `;
+        } else {
+            html += `<div class="cal-day">${day}</div>`;
+        }
+    }
+    
+    html += `</div></div>`;
+    return html;
 }
 
 function drawTrainBarChart(canvasId, labels, dataArr) {
@@ -574,42 +605,6 @@ function drawTrainBarChart(canvasId, labels, dataArr) {
     });
 }
 
-function drawTrainDonutPlaceholder(canvasId, text) {
-    const ctx = document.getElementById(canvasId).getContext('2d');
-    if (window[canvasId + 'Inst']) window[canvasId + 'Inst'].destroy();
-    window[canvasId + 'Inst'] = new Chart(ctx, {
-        type: 'doughnut',
-        data: { labels: [text], datasets: [{ data: [1], backgroundColor: ['#e2e8f0'], borderWidth: 0 }] },
-        options: {
-            responsive: true, maintainAspectRatio: false, cutout: '70%',
-            plugins: { legend: { display: false }, tooltip: { enabled: false }, datalabels: { display: true, formatter: () => text, color: '#94a3b8', font: { weight: 'bold' } } }
-        }
-    });
-}
-
-function populateTopList(containerId, dataObj) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    container.innerHTML = '';
-    
-    let sorted = Object.keys(dataObj).map(k => ({name: k, count: dataObj[k]})).sort((a,b) => b.count - a.count).slice(0, 5); // Show Top 5
-    
-    if (sorted.length === 0) {
-        container.innerHTML = `<div style="color: #94a3b8; font-size: 0.7rem; padding: 10px;">No Data</div>`;
-        return;
-    }
-
-    sorted.forEach((item, index) => {
-        container.innerHTML += `
-            <div class="legend-item" style="animation-delay: ${index * 0.04}s;">
-                <div class="legend-text" title="${item.name}" style="flex: 1;">${index + 1}. ${item.name}</div>
-                <div class="legend-val">${item.count}</div>
-            </div>
-        `;
-    });
-}
-
-// NEW: Renders ALL data points dynamically without a slice limit
 function populateAllList(containerId, dataObj) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -631,8 +626,10 @@ function populateAllList(containerId, dataObj) {
         `;
     });
 }
-// ----------------------------------------------------------------------
 
+// ----------------------------------------------------------------------
+// REMAINDER: VOLUNTEERS AND DOCS
+// ----------------------------------------------------------------------
 
 function processVolunteersData(data) {
     let totalOrgs = 0;
