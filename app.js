@@ -174,6 +174,21 @@ document.addEventListener("DOMContentLoaded", function() {
         renderLineChartByTimeframe(e.target.value);
     });
     
+    const trainLineFilter = document.getElementById('trainLineChartFilter');
+    if (trainLineFilter) {
+        trainLineFilter.addEventListener('change', function(e) {
+            renderTrainLineChartByTimeframe(e.target.value);
+        });
+    }
+
+    // NEW: Listener for the Top 3 Charts Month Filter
+    const trainTopMonthFilter = document.getElementById('trainTopMonthFilter');
+    if (trainTopMonthFilter) {
+        trainTopMonthFilter.addEventListener('change', function(e) {
+            renderTrainingOverview(e.target.value);
+        });
+    }
+
     const masterToggle = document.getElementById('masterChartToggle');
     if (masterToggle) {
         masterToggle.addEventListener('change', function(e) {
@@ -351,41 +366,35 @@ function applyGlobalYearFilter(targetYear) {
 }
 
 // ----------------------------------------------------------------------
-// TRAININGS DASHBOARD LOGIC (WITH ULTRA-ROBUST KEY FINDER)
+// TRAININGS DASHBOARD LOGIC 
 // ----------------------------------------------------------------------
+
+// Helper for ultra-robust column checking
+const getRobustValue = (row, searchTerms, fallbackKeys) => {
+    let keys = Object.keys(row);
+    for (let term of searchTerms) {
+        let exactKey = keys.find(k => k.trim().toUpperCase() === term.toUpperCase());
+        if (exactKey && row[exactKey] !== undefined) return row[exactKey];
+    }
+    for (let term of searchTerms) {
+        let partialKey = keys.find(k => k.toUpperCase().includes(term.toUpperCase()));
+        if (partialKey && row[partialKey] !== undefined) return row[partialKey];
+    }
+    for (let fb of fallbackKeys) {
+        if (row[fb] !== undefined) return row[fb];
+    }
+    return '';
+};
+
 function processTrainingsData(data) {
     let workingData = Array.isArray(data) ? data : [];
     
     globalTrainLineData = []; 
     calDataMap = {}; 
-
-    let totalPax = 0;
-    let categoryCounts = {};
-    let statusCounts = {};
-    let paxByCategory = {};
-    let agencyCounts = {};
-    let explicitTitleCounts = {}; 
     let latestEventDateObj = null;
-
-    // ULTRA-ROBUST KEY MATCHER: Prevents any sheet spacing typos from breaking the app
-    const getRobustValue = (row, searchTerms, fallbackKeys) => {
-        let keys = Object.keys(row);
-        for (let term of searchTerms) {
-            let exactKey = keys.find(k => k.trim().toUpperCase() === term.toUpperCase());
-            if (exactKey && row[exactKey] !== undefined) return row[exactKey];
-        }
-        for (let term of searchTerms) {
-            let partialKey = keys.find(k => k.toUpperCase().includes(term.toUpperCase()));
-            if (partialKey && row[partialKey] !== undefined) return row[partialKey];
-        }
-        for (let fb of fallbackKeys) {
-            if (row[fb] !== undefined) return row[fb];
-        }
-        return '';
-    };
+    let explicitTitleCounts = {};
 
     workingData.forEach(row => {
-        // Extract dynamically ignoring spaces
         let dates = getRobustValue(row, ['INCLUSIVE DATES', 'DATES', 'DATE'], ['Column A']);
         let cat = getRobustValue(row, ['CATEGORY'], ['Column B']);
         let title = getRobustValue(row, ['TRAINING/LECTURE'], ['Column C']); 
@@ -398,35 +407,20 @@ function processTrainingsData(data) {
         let colI_Title = getRobustValue(row, ['TRAINING/LECTURES'], ['Column I']); 
         let colJ_Freq = getRobustValue(row, ['FREQ', 'FREQUENCY'], ['Column J']);
 
-        // Clean & format text properly for display
         let agencySafe = agency ? String(agency).trim() : 'N/A';
         let titleSafe = title ? String(title).trim() : 'Unspecified Event';
         let facSafe = colG_Facilitator ? String(colG_Facilitator).trim() : 'N/A';
 
         if (cat && String(cat).trim() !== "") {
-            totalPax += pax;
             let c = String(cat).trim().toUpperCase();
-            categoryCounts[c] = (categoryCounts[c] || 0) + 1;
-            paxByCategory[c] = (paxByCategory[c] || 0) + pax;
-
-            if (status) {
-                let s = String(status).trim().toUpperCase();
-                statusCounts[s] = (statusCounts[s] || 0) + 1;
-            } else {
-                statusCounts['UNKNOWN'] = (statusCounts['UNKNOWN'] || 0) + 1;
-            }
-
-            // Populate the "Top Departments" array if we actually found agency data
-            if (agencySafe !== 'N/A' && agencySafe !== '') {
-                agencyCounts[agencySafe] = (agencyCounts[agencySafe] || 0) + 1;
-            }
-
+            
             if (dates) {
                 let parsedDate = parseTrainingDate(dates);
                 if (parsedDate) {
                     if (!latestEventDateObj || parsedDate > latestEventDateObj) {
                         latestEventDateObj = parsedDate;
                     }
+                    // Load global array for the Calendar Engine
                     globalTrainLineData.push({
                         dateObj: parsedDate,
                         rawDates: dates, 
@@ -442,6 +436,7 @@ function processTrainingsData(data) {
             }
         }
 
+        // Process explicit summary lists (Col I and J) once globally
         if (colI_Title && String(colI_Title).trim() !== "") {
             let tName = String(colI_Title).trim();
             if (tName.toUpperCase() !== 'TRAINING/LECTURES') {
@@ -451,22 +446,67 @@ function processTrainingsData(data) {
         }
     });
 
+    // Populate Side List once
+    populateAllList('top-title-list', explicitTitleCounts);
+
+    // Initialize Calendar 
+    currentCalDate = latestEventDateObj ? new Date(latestEventDateObj) : new Date();
+    initCalendarControls();
+    renderCalendar();
+
+    // Trigger Initial Render for the Top 3 Charts & KPI
+    const trainTopMonthFilter = document.getElementById('trainTopMonthFilter');
+    let initMonth = trainTopMonthFilter ? trainTopMonthFilter.value : 'all';
+    renderTrainingOverview(initMonth);
+}
+
+// NEW FUNCTION: Dynamically renders the top charts & KPI based on Month Dropdown
+function renderTrainingOverview(monthFilter) {
+    let totalPax = 0;
+    let categoryCounts = {};
+    let statusCounts = {};
+    let paxByCategory = {};
+
+    rawTrainingsData.forEach(row => {
+        let dates = getRobustValue(row, ['INCLUSIVE DATES', 'DATES', 'DATE'], ['Column A']);
+        
+        // Month Filter Logic
+        if (monthFilter !== 'all') {
+            let parsedDate = parseTrainingDate(dates);
+            if (!parsedDate || monthOrder[parsedDate.getMonth()] !== monthFilter.toUpperCase()) {
+                return; // Skip if it doesn't match the selected month
+            }
+        }
+
+        let cat = getRobustValue(row, ['CATEGORY'], ['Column B']);
+        let paxRaw = getRobustValue(row, ['NO. PAX', 'PAX', 'NO PAX'], ['Column E']);
+        let pax = parseInt(paxRaw) || 0;
+        let status = getRobustValue(row, ['REMARKS', 'REMARK'], ['Column F']);
+
+        if (cat && String(cat).trim() !== "") {
+            totalPax += pax;
+            let c = String(cat).trim().toUpperCase();
+            categoryCounts[c] = (categoryCounts[c] || 0) + 1;
+            paxByCategory[c] = (paxByCategory[c] || 0) + pax;
+
+            if (status) {
+                let s = String(status).trim().toUpperCase();
+                statusCounts[s] = (statusCounts[s] || 0) + 1;
+            } else {
+                statusCounts['UNKNOWN'] = (statusCounts['UNKNOWN'] || 0) + 1;
+            }
+        }
+    });
+
     const paxBox = document.getElementById('train-kpi-count');
     if (paxBox) {
         paxBox.innerText = totalPax.toLocaleString();
     }
 
+    // Notice we mapped canvas IDs to their specific data appropriately based on your position swap
     drawTrainBarChart('trainTypesChart', Object.keys(categoryCounts), Object.values(categoryCounts));
-    drawTrainBarChart('trainStatusChart', Object.keys(statusCounts), Object.values(statusCounts));
-    drawTrainBarChart('trainNumbersChart', Object.keys(paxByCategory), Object.values(paxByCategory));
-
-    // Notice: agencyCounts will now properly populate the Top Departments card
-    populateTopList('top-dept-list', agencyCounts);
-    populateAllList('top-title-list', explicitTitleCounts);
-
-    currentCalDate = latestEventDateObj ? new Date(latestEventDateObj) : new Date();
-    initCalendarControls();
-    renderCalendar();
+    drawTrainBarChart('trainStatusChart', Object.keys(statusCounts), Object.values(statusCounts)); // Status is now "Remarks" on the right
+    drawTrainBarChart('trainNumbersChart', Object.keys(paxByCategory), Object.values(paxByCategory)); // Numbers is now "Attendees" on the left
 }
 
 function initCalendarControls() {
