@@ -1,7 +1,8 @@
 Chart.register(ChartDataLabels);
 
 // 1. YOUR SECURE GOOGLE APPS SCRIPT WEB APP URL
-const webAppUrl = "https://script.google.com/macros/s/AKfycbwdl6df9uXUtM0-ufyh10tNz1X_4WZi03fqXrRwtdysOjsblDwSOkeAlBriw3txXe2lXQ/exec";
+// STEP 3 UPDATE: Paste your newly deployed Apps Script URL right here inside the quotes.
+const webAppUrl = "https://script.google.com/macros/s/AKfycbxM3ri29FbMRilWUnnn26Bxc33tCxx26bv_M3KBNeI0bms2eEKlo6XrSg2GYFo5-fgRYw/exec";
 
 // Global Raw Data Vault
 let rawOperationsData = [];
@@ -16,7 +17,7 @@ let masterServicePieInstance = null;
 let monthlyTotalPieInstance = null; 
 let toggleChartInstances = {};
 
-// Training Charts State Trackers (NEW)
+// Training Charts State Trackers
 let trainStatusChartInst = null;
 let trainTypesChartInst = null;
 let trainNumbersChartInst = null;
@@ -233,7 +234,7 @@ function hideLoader() {
 }
 
 async function loadAllData() {
-    if (!webAppUrl || webAppUrl === "PASTE_YOUR_NEW_WEB_APP_URL_HERE") {
+    if (!webAppUrl || webAppUrl === "YOUR_NEW_WEB_APP_URL_HERE") {
         console.error("Please add your Web App URL to app.js");
         hideLoader();
         return;
@@ -331,30 +332,11 @@ function applyGlobalYearFilter(targetYear) {
 }
 
 // ----------------------------------------------------------------------
-// NEW: TRAININGS DASHBOARD LOGIC (Mapping to Screenshot columns)
+// STEP 4 UPDATE: TRAININGS DASHBOARD LOGIC (Live Sheet Integration)
 // ----------------------------------------------------------------------
 function processTrainingsData(data) {
-    // If the database isn't connected yet, use mock data based strictly on the provided screenshot
-    let workingData = data.length > 0 ? data : [
-        { "CATEGORY": "TRAINING", "NO. PAX": 19, "REMARKS": "WITH AAR", "AGENCY/OFFICE": "NSTP - Tarlac State University", "TRAINING/LECTURE": "Introduction and Splinting", "INCLUSIVE DATES": "January 12-14, 2026" },
-        { "CATEGORY": "TRAINING", "NO. PAX": 36, "REMARKS": "NO AAR", "AGENCY/OFFICE": "Municipality of Concepcion", "TRAINING/LECTURE": "Integrated Planning...", "INCLUSIVE DATES": "January 19-23, 2026" },
-        { "CATEGORY": "TRAINING", "NO. PAX": 31, "REMARKS": "NO AAR", "AGENCY/OFFICE": "MDRRMO San Simon, Pampanga", "TRAINING/LECTURE": "Integrated Planning...", "INCLUSIVE DATES": "March 23-27, 2026" },
-        { "CATEGORY": "TRAINING", "NO. PAX": 108, "REMARKS": "WITH AAR", "AGENCY/OFFICE": "Armenia-Aquino High School", "TRAINING/LECTURE": "First Aid/Basic Life Support", "INCLUSIVE DATES": "February 2-3, 2026" },
-        { "CATEGORY": "TRAINING", "NO. PAX": 260, "REMARKS": "NO AAR", "AGENCY/OFFICE": "OCD R3 (Governors, Provincial Admin)", "TRAINING/LECTURE": "Disaster Risk Reduction...", "INCLUSIVE DATES": "February 4-5, 2026" },
-        { "CATEGORY": "TRAINING", "NO. PAX": 36, "REMARKS": "WITH AAR", "AGENCY/OFFICE": "OCD R3 (Municipality of Gerona)", "TRAINING/LECTURE": "Emergency Operations Center...", "INCLUSIVE DATES": "February 10-12, 2026" },
-        { "CATEGORY": "TRAINING", "NO. PAX": 21, "REMARKS": "NO AAR", "AGENCY/OFFICE": "Office of Civil Defense Region III", "TRAINING/LECTURE": "Emergency Operations Center...", "INCLUSIVE DATES": "March 4-5, 2026" },
-        { "CATEGORY": "TRAINING", "NO. PAX": 50, "REMARKS": "NO AAR", "AGENCY/OFFICE": "OCD R3 (Special Regiment Forces)", "TRAINING/LECTURE": "Basic Incident Command System", "INCLUSIVE DATES": "March 4-6, 2026" },
-        { "CATEGORY": "TRAINING", "NO. PAX": 31, "REMARKS": "WITH AAR", "AGENCY/OFFICE": "MDRRMO", "TRAINING/LECTURE": "Chainsaw Operation", "INCLUSIVE DATES": "February 19-20, 2026" },
-        { "CATEGORY": "TRAINING", "NO. PAX": 38, "REMARKS": "NO AAR", "AGENCY/OFFICE": "Office of Civil Defense Region III", "TRAINING/LECTURE": "All Hazards Incident Management...", "INCLUSIVE DATES": "March 16-20, 2026" },
-        { "CATEGORY": "TRAINING", "NO. PAX": 23, "REMARKS": "WITH AAR", "AGENCY/OFFICE": "St. Augustine Colleges Foundation", "TRAINING/LECTURE": "Basic Water Safety Training", "INCLUSIVE DATES": "March 20, 2026" },
-        { "CATEGORY": "ACTIVITY", "NO. PAX": 300, "REMARKS": "WITH AAR", "AGENCY/OFFICE": "New Christian Academy", "TRAINING/LECTURE": "Emergency Preparedness...", "INCLUSIVE DATES": "January 23, 2026" },
-        { "CATEGORY": "ACTIVITY", "NO. PAX": 1000, "REMARKS": "WITH AAR", "AGENCY/OFFICE": "Girl Scouts of the Philippines", "TRAINING/LECTURE": "Emergency Preparedness...", "INCLUSIVE DATES": "February 20, 2026" },
-        { "CATEGORY": "ACTIVITY", "NO. PAX": 400, "REMARKS": "WITH AAR", "AGENCY/OFFICE": "Central Luzon Doctor's Hospital", "TRAINING/LECTURE": "Emergency Preparedness...", "INCLUSIVE DATES": "February 19, 2026" },
-        { "CATEGORY": "ACTIVITY", "NO. PAX": 84, "REMARKS": "WITH AAR", "AGENCY/OFFICE": "Cebuana Lhuillier Foundation", "TRAINING/LECTURE": "Emergency Preparedness...", "INCLUSIVE DATES": "March 11, 2026" },
-        { "CATEGORY": "ACTIVITY", "NO. PAX": 67, "REMARKS": "WITH AAR", "AGENCY/OFFICE": "522nd Engineer Construction Battalion", "TRAINING/LECTURE": "Emergency Preparedness...", "INCLUSIVE DATES": "March 11, 2026" },
-        { "CATEGORY": "ACTIVITY", "NO. PAX": 87, "REMARKS": "WITH AAR", "AGENCY/OFFICE": "Health Service School", "TRAINING/LECTURE": "Basic Water Safety Lecture", "INCLUSIVE DATES": "March 23-24, 2026" },
-        { "CATEGORY": "ACTIVITY", "NO. PAX": 60, "REMARKS": "NO AAR", "AGENCY/OFFICE": "Diocese of Tarlac Clergy", "TRAINING/LECTURE": "DRRM Orientation for the Diocese...", "INCLUSIVE DATES": "February 23-24, 2026" }
-    ];
+    // This strictly relies on your live Google Sheet data now.
+    let workingData = Array.isArray(data) ? data : [];
 
     let totalPax = 0;
     let categoryCounts = {};
