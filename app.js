@@ -31,7 +31,7 @@ let toggleChartData = {};
 let globalTrainLineData = [];
 let currentCalDate = new Date();
 let currentCalView = 'monthly'; 
-let currentCalCategory = 'all'; // NEW: Tracks selected category filter
+let currentCalCategory = 'all'; 
 let calDataMap = {}; 
 
 // 3-Layer Interactive State Tracker
@@ -351,7 +351,7 @@ function applyGlobalYearFilter(targetYear) {
 }
 
 // ----------------------------------------------------------------------
-// TRAININGS DASHBOARD LOGIC (UPDATED WITH DROPDOWN AND EXPANDED DATA)
+// TRAININGS DASHBOARD LOGIC (WITH ULTRA-ROBUST KEY FINDER)
 // ----------------------------------------------------------------------
 function processTrainingsData(data) {
     let workingData = Array.isArray(data) ? data : [];
@@ -363,21 +363,45 @@ function processTrainingsData(data) {
     let categoryCounts = {};
     let statusCounts = {};
     let paxByCategory = {};
+    let agencyCounts = {};
     let explicitTitleCounts = {}; 
     let latestEventDateObj = null;
 
-    workingData.forEach(row => {
-        let dates = row['INCLUSIVE DATES'] || row['Inclusive Dates'] || row['Column A'] || '';
-        let cat = row['CATEGORY'] || row['Category'] || row['Column B'];
-        let title = row['TRAINING/LECTURE'] || row['Training/Lecture'] || row['Column C'];
-        let agency = row['AGENCY/OFFICE'] || row['Agency/Office'] || row['Column D'];
-        let pax = parseInt(row['NO. PAX'] || row['No. Pax'] || row['Column E']) || 0;
-        let status = row['REMARKS'] || row['Remarks'] || row['Column F'];
-        // NEW: Pull facilitator from Column G
-        let colG_Facilitator = row['FACILITATOR'] || row['Facilitator'] || row['Column G'] || '';
+    // ULTRA-ROBUST KEY MATCHER: Prevents any sheet spacing typos from breaking the app
+    const getRobustValue = (row, searchTerms, fallbackKeys) => {
+        let keys = Object.keys(row);
+        for (let term of searchTerms) {
+            let exactKey = keys.find(k => k.trim().toUpperCase() === term.toUpperCase());
+            if (exactKey && row[exactKey] !== undefined) return row[exactKey];
+        }
+        for (let term of searchTerms) {
+            let partialKey = keys.find(k => k.toUpperCase().includes(term.toUpperCase()));
+            if (partialKey && row[partialKey] !== undefined) return row[partialKey];
+        }
+        for (let fb of fallbackKeys) {
+            if (row[fb] !== undefined) return row[fb];
+        }
+        return '';
+    };
 
-        let colI_Title = row['TRAINING/LECTURES'] || row['Training/Lectures'] || row['Column I'];
-        let colJ_Freq = row['FREQ'] || row['Freq'] || row['Column J'];
+    workingData.forEach(row => {
+        // Extract dynamically ignoring spaces
+        let dates = getRobustValue(row, ['INCLUSIVE DATES', 'DATES', 'DATE'], ['Column A']);
+        let cat = getRobustValue(row, ['CATEGORY'], ['Column B']);
+        let title = getRobustValue(row, ['TRAINING/LECTURE'], ['Column C']); 
+        let agency = getRobustValue(row, ['AGENCY/OFFICE', 'AGENCY', 'OFFICE'], ['Column D']);
+        let paxRaw = getRobustValue(row, ['NO. PAX', 'PAX', 'NO PAX'], ['Column E']);
+        let pax = parseInt(paxRaw) || 0;
+        let status = getRobustValue(row, ['REMARKS', 'REMARK'], ['Column F']);
+        let colG_Facilitator = getRobustValue(row, ['FACILITATOR'], ['Column G']);
+
+        let colI_Title = getRobustValue(row, ['TRAINING/LECTURES'], ['Column I']); 
+        let colJ_Freq = getRobustValue(row, ['FREQ', 'FREQUENCY'], ['Column J']);
+
+        // Clean & format text properly for display
+        let agencySafe = agency ? String(agency).trim() : 'N/A';
+        let titleSafe = title ? String(title).trim() : 'Unspecified Event';
+        let facSafe = colG_Facilitator ? String(colG_Facilitator).trim() : 'N/A';
 
         if (cat && String(cat).trim() !== "") {
             totalPax += pax;
@@ -392,20 +416,24 @@ function processTrainingsData(data) {
                 statusCounts['UNKNOWN'] = (statusCounts['UNKNOWN'] || 0) + 1;
             }
 
+            // Populate the "Top Departments" array if we actually found agency data
+            if (agencySafe !== 'N/A' && agencySafe !== '') {
+                agencyCounts[agencySafe] = (agencyCounts[agencySafe] || 0) + 1;
+            }
+
             if (dates) {
                 let parsedDate = parseTrainingDate(dates);
                 if (parsedDate) {
                     if (!latestEventDateObj || parsedDate > latestEventDateObj) {
                         latestEventDateObj = parsedDate;
                     }
-                    // NEW: Store all the expanded info into the global object
                     globalTrainLineData.push({
                         dateObj: parsedDate,
                         rawDates: dates, 
-                        title: title || 'Unspecified Event',
-                        agency: agency || 'N/A',
+                        title: titleSafe,
+                        agency: agencySafe,
                         pax: pax,
-                        facilitator: colG_Facilitator || 'N/A',
+                        facilitator: facSafe,
                         category: c,
                         count: 1,
                         timestamp: parsedDate.getTime()
@@ -432,6 +460,8 @@ function processTrainingsData(data) {
     drawTrainBarChart('trainStatusChart', Object.keys(statusCounts), Object.values(statusCounts));
     drawTrainBarChart('trainNumbersChart', Object.keys(paxByCategory), Object.values(paxByCategory));
 
+    // Notice: agencyCounts will now properly populate the Top Departments card
+    populateTopList('top-dept-list', agencyCounts);
     populateAllList('top-title-list', explicitTitleCounts);
 
     currentCalDate = latestEventDateObj ? new Date(latestEventDateObj) : new Date();
@@ -441,7 +471,7 @@ function processTrainingsData(data) {
 
 function initCalendarControls() {
     const timeFilter = document.getElementById('trainCalendarFilter');
-    const catFilter = document.getElementById('trainCategoryFilter'); // NEW
+    const catFilter = document.getElementById('trainCategoryFilter'); 
     const btnPrev = document.getElementById('calPrevBtn');
     const btnNext = document.getElementById('calNextBtn');
     
@@ -455,14 +485,13 @@ function initCalendarControls() {
         });
     }
 
-    // NEW: Listener for Category Filter
     if(catFilter) {
         let newCatFilter = catFilter.cloneNode(true);
         catFilter.parentNode.replaceChild(newCatFilter, catFilter);
         newCatFilter.value = currentCalCategory;
         newCatFilter.addEventListener('change', function(e) {
             currentCalCategory = e.target.value;
-            renderCalendar(); // Re-render to show only filtered events
+            renderCalendar(); 
         });
     }
 
@@ -494,10 +523,9 @@ function renderCalendar() {
     const label = document.getElementById('calCurrentLabel');
     if(!container || !label) return;
     
-    // Dynamically rebuild the data map based on the category filter
     calDataMap = {};
     globalTrainLineData.forEach(item => {
-        if (currentCalCategory !== 'all' && item.category !== currentCalCategory) return; // Skip if filtered out
+        if (currentCalCategory !== 'all' && item.category !== currentCalCategory) return; 
         
         let yyyy = item.dateObj.getFullYear();
         let mm = String(item.dateObj.getMonth() + 1).padStart(2, '0');
@@ -544,7 +572,7 @@ function renderCalendar() {
         container.classList.remove('cal-anim-enter');
         container.classList.add('cal-anim-active');
         
-    }, 250); // Smoother, slightly faster transition
+    }, 250); 
 }
 
 function buildMonthHTML(year, month, isSmallScale) {
@@ -575,7 +603,6 @@ function buildMonthHTML(year, month, isSmallScale) {
             }
             if(events.length > maxLines) linesHtml += `<span style="font-size:0.55rem; line-height:4px; color:#64748b; font-weight: 800; margin-left: 2px;">+</span>`;
             
-            // UPDATED: Expanded Tooltip to include specific requested columns
             let tooltipListHtml = events.map((e, idx) => `
                 <div style="margin-bottom:${idx === events.length-1 ? '0' : '8px'}; text-align:left;">
                     <div style="display:flex; align-items:flex-start; gap:6px; margin-bottom:4px;">
@@ -645,6 +672,28 @@ function populateAllList(containerId, dataObj) {
     container.innerHTML = '';
     
     let sorted = Object.keys(dataObj).map(k => ({name: k, count: dataObj[k]})).sort((a,b) => b.count - a.count);
+    
+    if (sorted.length === 0) {
+        container.innerHTML = `<div style="color: #94a3b8; font-size: 0.7rem; padding: 10px;">No Data</div>`;
+        return;
+    }
+
+    sorted.forEach((item, index) => {
+        container.innerHTML += `
+            <div class="legend-item" style="animation-delay: ${index * 0.04}s;">
+                <div class="legend-text" title="${item.name}" style="flex: 1;">${index + 1}. ${item.name}</div>
+                <div class="legend-val">${item.count}</div>
+            </div>
+        `;
+    });
+}
+
+function populateTopList(containerId, dataObj) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    
+    let sorted = Object.keys(dataObj).map(k => ({name: k, count: dataObj[k]})).sort((a,b) => b.count - a.count).slice(0, 5);
     
     if (sorted.length === 0) {
         container.innerHTML = `<div style="color: #94a3b8; font-size: 0.7rem; padding: 10px;">No Data</div>`;
