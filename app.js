@@ -31,6 +31,7 @@ let toggleChartData = {};
 let globalTrainLineData = [];
 let currentCalDate = new Date();
 let currentCalView = 'monthly'; 
+let currentCalCategory = 'all'; // NEW: Tracks selected category filter
 let calDataMap = {}; 
 
 // 3-Layer Interactive State Tracker
@@ -350,13 +351,13 @@ function applyGlobalYearFilter(targetYear) {
 }
 
 // ----------------------------------------------------------------------
-// TRAININGS DASHBOARD LOGIC (UPDATED WITH LINES INSTEAD OF DOTS)
+// TRAININGS DASHBOARD LOGIC (UPDATED WITH DROPDOWN AND EXPANDED DATA)
 // ----------------------------------------------------------------------
 function processTrainingsData(data) {
     let workingData = Array.isArray(data) ? data : [];
     
     globalTrainLineData = []; 
-    calDataMap = {}; // Reset
+    calDataMap = {}; 
 
     let totalPax = 0;
     let categoryCounts = {};
@@ -366,11 +367,14 @@ function processTrainingsData(data) {
     let latestEventDateObj = null;
 
     workingData.forEach(row => {
+        let dates = row['INCLUSIVE DATES'] || row['Inclusive Dates'] || row['Column A'] || '';
         let cat = row['CATEGORY'] || row['Category'] || row['Column B'];
+        let title = row['TRAINING/LECTURE'] || row['Training/Lecture'] || row['Column C'];
+        let agency = row['AGENCY/OFFICE'] || row['Agency/Office'] || row['Column D'];
         let pax = parseInt(row['NO. PAX'] || row['No. Pax'] || row['Column E']) || 0;
         let status = row['REMARKS'] || row['Remarks'] || row['Column F'];
-        let title = row['TRAINING/LECTURE'] || row['Training/Lecture'] || row['Column C'];
-        let dates = row['INCLUSIVE DATES'] || row['Inclusive Dates'] || row['Column A'];
+        // NEW: Pull facilitator from Column G
+        let colG_Facilitator = row['FACILITATOR'] || row['Facilitator'] || row['Column G'] || '';
 
         let colI_Title = row['TRAINING/LECTURES'] || row['Training/Lectures'] || row['Column I'];
         let colJ_Freq = row['FREQ'] || row['Freq'] || row['Column J'];
@@ -388,21 +392,24 @@ function processTrainingsData(data) {
                 statusCounts['UNKNOWN'] = (statusCounts['UNKNOWN'] || 0) + 1;
             }
 
-            // Timeline Parse
             if (dates) {
                 let parsedDate = parseTrainingDate(dates);
                 if (parsedDate) {
                     if (!latestEventDateObj || parsedDate > latestEventDateObj) {
                         latestEventDateObj = parsedDate;
                     }
-                    
-                    let yyyy = parsedDate.getFullYear();
-                    let mm = String(parsedDate.getMonth() + 1).padStart(2, '0');
-                    let dd = String(parsedDate.getDate()).padStart(2, '0');
-                    let dateKey = `${yyyy}-${mm}-${dd}`;
-                    
-                    if(!calDataMap[dateKey]) calDataMap[dateKey] = [];
-                    calDataMap[dateKey].push({ title: title || 'Unspecified Event', category: c });
+                    // NEW: Store all the expanded info into the global object
+                    globalTrainLineData.push({
+                        dateObj: parsedDate,
+                        rawDates: dates, 
+                        title: title || 'Unspecified Event',
+                        agency: agency || 'N/A',
+                        pax: pax,
+                        facilitator: colG_Facilitator || 'N/A',
+                        category: c,
+                        count: 1,
+                        timestamp: parsedDate.getTime()
+                    });
                 }
             }
         }
@@ -427,24 +434,35 @@ function processTrainingsData(data) {
 
     populateAllList('top-title-list', explicitTitleCounts);
 
-    // Initialize Calendar Logic
     currentCalDate = latestEventDateObj ? new Date(latestEventDateObj) : new Date();
     initCalendarControls();
     renderCalendar();
 }
 
 function initCalendarControls() {
-    const filter = document.getElementById('trainCalendarFilter');
+    const timeFilter = document.getElementById('trainCalendarFilter');
+    const catFilter = document.getElementById('trainCategoryFilter'); // NEW
     const btnPrev = document.getElementById('calPrevBtn');
     const btnNext = document.getElementById('calNextBtn');
     
-    if(filter) {
-        let newFilter = filter.cloneNode(true);
-        filter.parentNode.replaceChild(newFilter, filter);
-        newFilter.value = currentCalView;
-        newFilter.addEventListener('change', function(e) {
+    if(timeFilter) {
+        let newTimeFilter = timeFilter.cloneNode(true);
+        timeFilter.parentNode.replaceChild(newTimeFilter, timeFilter);
+        newTimeFilter.value = currentCalView;
+        newTimeFilter.addEventListener('change', function(e) {
             currentCalView = e.target.value;
             renderCalendar();
+        });
+    }
+
+    // NEW: Listener for Category Filter
+    if(catFilter) {
+        let newCatFilter = catFilter.cloneNode(true);
+        catFilter.parentNode.replaceChild(newCatFilter, catFilter);
+        newCatFilter.value = currentCalCategory;
+        newCatFilter.addEventListener('change', function(e) {
+            currentCalCategory = e.target.value;
+            renderCalendar(); // Re-render to show only filtered events
         });
     }
 
@@ -476,6 +494,20 @@ function renderCalendar() {
     const label = document.getElementById('calCurrentLabel');
     if(!container || !label) return;
     
+    // Dynamically rebuild the data map based on the category filter
+    calDataMap = {};
+    globalTrainLineData.forEach(item => {
+        if (currentCalCategory !== 'all' && item.category !== currentCalCategory) return; // Skip if filtered out
+        
+        let yyyy = item.dateObj.getFullYear();
+        let mm = String(item.dateObj.getMonth() + 1).padStart(2, '0');
+        let dd = String(item.dateObj.getDate()).padStart(2, '0');
+        let dateKey = `${yyyy}-${mm}-${dd}`;
+        
+        if(!calDataMap[dateKey]) calDataMap[dateKey] = [];
+        calDataMap[dateKey].push(item);
+    });
+
     container.classList.remove('cal-anim-active');
     container.classList.add('cal-anim-enter');
     
@@ -512,12 +544,12 @@ function renderCalendar() {
         container.classList.remove('cal-anim-enter');
         container.classList.add('cal-anim-active');
         
-    }, 300);
+    }, 250); // Smoother, slightly faster transition
 }
 
 function buildMonthHTML(year, month, isSmallScale) {
     let daysInMonth = new Date(year, month + 1, 0).getDate();
-    let firstDay = new Date(year, month, 1).getDay(); // 0 = Sun
+    let firstDay = new Date(year, month, 1).getDay(); 
     
     let html = `<div class="cal-month">`;
     html += `<div class="cal-month-title">${monthOrder[month]}</div>`;
@@ -535,8 +567,6 @@ function buildMonthHTML(year, month, isSmallScale) {
         let events = calDataMap[dateKey];
         
         if (events && events.length > 0) {
-            
-            // UPDATED: Build visual lines instead of dots
             let linesHtml = '';
             let maxLines = 3; 
             for(let j=0; j<Math.min(events.length, maxLines); j++) {
@@ -545,17 +575,25 @@ function buildMonthHTML(year, month, isSmallScale) {
             }
             if(events.length > maxLines) linesHtml += `<span style="font-size:0.55rem; line-height:4px; color:#64748b; font-weight: 800; margin-left: 2px;">+</span>`;
             
-            // UPDATED: Tooltip uses rectangular indicators matching the lines
-            let tooltipListHtml = events.map(e => `
-                <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
-                    <div class="cal-line ${e.category === 'ACTIVITY' ? 'cal-line-activity' : ''}" style="width: 12px; height: 4px; flex: none;"></div>
-                    <span style="font-size:0.65rem; font-weight:700;">${e.title}</span>
+            // UPDATED: Expanded Tooltip to include specific requested columns
+            let tooltipListHtml = events.map((e, idx) => `
+                <div style="margin-bottom:${idx === events.length-1 ? '0' : '8px'}; text-align:left;">
+                    <div style="display:flex; align-items:flex-start; gap:6px; margin-bottom:4px;">
+                        <div class="cal-line ${e.category === 'ACTIVITY' ? 'cal-line-activity' : ''}" style="width: 12px; height: 4px; flex: none; margin-top: 4px;"></div>
+                        <span style="font-size:0.7rem; font-weight:800; color:#ffffff; line-height: 1.2;">${e.title}</span>
+                    </div>
+                    <div style="padding-left: 18px; font-size: 0.6rem; color: #cbd5e1; line-height: 1.5;">
+                        <div style="margin-bottom: 2px;"><span style="font-weight:700; color:#94a3b8;">Date:</span> ${e.rawDates}</div>
+                        <div style="margin-bottom: 2px;"><span style="font-weight:700; color:#94a3b8;">Office/Agency:</span> ${e.agency}</div>
+                        <div style="margin-bottom: 2px;"><span style="font-weight:700; color:#94a3b8;">Total Pax:</span> ${e.pax}</div>
+                        <div style="margin-bottom: 2px;"><span style="font-weight:700; color:#94a3b8;">Facilitator:</span> ${e.facilitator}</div>
+                    </div>
                 </div>
             `).join('');
 
             let tooltipHtml = `
-                <div class="custom-tooltip" style="z-index: 999; pointer-events: none; bottom: 120%; min-width: 140px; white-space: normal;">
-                    <div style="color:#94a3b8; font-size:0.55rem; text-transform:uppercase; margin-bottom:8px; letter-spacing:0.5px; border-bottom:1px solid #334155; padding-bottom:4px;">${monthOrder[month]} ${day}, ${year}</div>
+                <div class="custom-tooltip cal-tooltip" style="z-index: 999; pointer-events: none; bottom: 110%; min-width: 220px; white-space: normal; padding: 12px;">
+                    <div style="color:#94a3b8; font-size:0.55rem; text-transform:uppercase; margin-bottom:10px; letter-spacing:0.5px; border-bottom:1px solid #334155; padding-bottom:6px;">${monthOrder[month]} ${day}, ${year}</div>
                     ${tooltipListHtml}
                 </div>
             `;
