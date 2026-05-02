@@ -374,6 +374,17 @@ body {
     transform: translateY(-4px); 
 }
 
+/* UPDATED CUSTOM CALENDAR TOOLTIP TO HANDLE MORE TEXT SMOOTHLY */
+.cal-tooltip {
+    transition: opacity 0.25s ease, visibility 0.25s ease, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none; /* ensures tooltip doesn't block hover events */
+}
+.has-tooltip:hover .cal-tooltip {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(-6px); 
+}
+
 .kpi-card h4 { 
     font-size: 0.55rem; 
     color: rgba(71, 85, 105, 0.7); 
@@ -645,13 +656,13 @@ td {
     transform: scale(0.95) !important; 
 }
 
-/* --- CUSTOM CALENDAR STYLES (NEW & UPDATED) --- */
+/* --- CUSTOM CALENDAR STYLES --- */
 .calendar-wrapper { 
     flex: 1; 
     display: flex; 
     flex-direction: column; 
     position: relative; 
-    overflow: visible; /* FIXED: allows tooltips to escape boundaries */
+    overflow: visible; 
     min-height: 400px; 
     padding: 10px 16px 16px 16px; 
 }
@@ -663,8 +674,8 @@ td {
     transition: opacity 0.4s ease, transform 0.4s ease; 
 }
 .cal-view-monthly { grid-template-columns: 1fr; }
-.cal-view-quarterly { grid-template-columns: repeat(3, minmax(0, 1fr)); } /* FIXED: Prevents grid blowout */
-.cal-view-yearly { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; } /* FIXED: Prevents grid blowout */
+.cal-view-quarterly { grid-template-columns: repeat(3, minmax(0, 1fr)); } 
+.cal-view-yearly { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; } 
 
 .cal-month { 
     background: #ffffff; 
@@ -674,7 +685,7 @@ td {
     display: flex; 
     flex-direction: column; 
     box-shadow: 0 4px 10px rgba(0,0,0,0.03); 
-    min-width: 0; /* FIXED: Prevents grid from expanding past limits */
+    min-width: 0; 
 }
 .cal-month-title { 
     font-weight: 800; 
@@ -702,7 +713,7 @@ td {
     flex: 1; 
 }
 .cal-day { 
-    min-height: 45px; /* Replaced problematic aspect-ratio */
+    min-height: 45px; 
     border-radius: 6px; 
     background: #f8fafc; 
     border: 1px solid #f1f5f9; 
@@ -719,7 +730,7 @@ td {
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); 
     min-width: 0; 
 }
-/* LIVELY ANIMATIONS AND COLORS */
+
 .cal-day:hover { 
     transform: scale(1.15); 
     box-shadow: 0 8px 16px rgba(37, 99, 235, 0.15); 
@@ -744,7 +755,6 @@ td {
     font-weight: 800; 
 }
 
-/* NEW EVENT INDICATORS (LINES INSTEAD OF DOTS) */
 .cal-event-indicator { 
     position: absolute; 
     bottom: 4px; 
@@ -770,7 +780,6 @@ td {
 .cal-anim-enter { opacity: 0; transform: translateY(10px); }
 .cal-anim-active { opacity: 1; transform: translateY(0); }
 
-/* Responsive adjustments for yearly view */
 .cal-view-yearly .cal-day {
     min-height: 32px;
     padding-top: 4px;
