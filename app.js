@@ -1,7 +1,6 @@
 Chart.register(ChartDataLabels);
 
 // 1. YOUR SECURE GOOGLE APPS SCRIPT WEB APP URL
-// PASTE YOUR NEW URL INSIDE THESE QUOTES:
 const webAppUrl = "https://script.google.com/macros/s/AKfycbwYUt0YFQClUUXRGwrNdnC5INPXWzWyGUeN3J8E5tRKsO2ME-Y6zu5Fv0a56fCtxhwzTg/exec";
 
 // Global Raw Data Vault
@@ -30,6 +29,9 @@ let globalDocRecords = [];
 let originalKPITotals = {};
 let operationsMonthlyCache = {}; 
 let toggleChartData = {};
+
+// NEW: Global tracker for Training Timeline dates
+let globalTrainLineData = [];
 
 // 3-Layer Interactive State Tracker
 let currentPieState = { 
@@ -171,6 +173,14 @@ document.addEventListener("DOMContentLoaded", function() {
         renderLineChartByTimeframe(e.target.value);
     });
     
+    // NEW: Listener for the Training Timeline filter
+    const trainLineFilter = document.getElementById('trainLineChartFilter');
+    if (trainLineFilter) {
+        trainLineFilter.addEventListener('change', function(e) {
+            renderTrainLineChartByTimeframe(e.target.value);
+        });
+    }
+
     const masterToggle = document.getElementById('masterChartToggle');
     if (masterToggle) {
         masterToggle.addEventListener('change', function(e) {
@@ -199,6 +209,25 @@ function parseCustomDate(dateStr) {
         let fallbackDate = new Date(`${parts[1]}/${parts[0]}/${parts[2]}`);
         if (!isNaN(fallbackDate.getTime())) return fallbackDate;
     }
+    return null;
+}
+
+// NEW: Advanced Parser to handle complex training dates like "January 12-14, 2026"
+function parseTrainingDate(dateStr) {
+    if (!dateStr) return null;
+    let str = String(dateStr).trim();
+    let dashIndex = str.indexOf('-');
+    if (dashIndex > -1) {
+        let commaIndex = str.indexOf(',');
+        if (commaIndex > dashIndex) {
+            let beforeDash = str.substring(0, dashIndex);
+            let afterComma = str.substring(commaIndex);
+            let d = new Date(beforeDash + afterComma);
+            if (!isNaN(d.getTime())) return d;
+        }
+    }
+    let d2 = new Date(str);
+    if (!isNaN(d2.getTime())) return d2;
     return null;
 }
 
@@ -332,11 +361,11 @@ function applyGlobalYearFilter(targetYear) {
 }
 
 // ----------------------------------------------------------------------
-// NEW: LIVE TRAININGS DASHBOARD LOGIC 
+// TRAININGS DASHBOARD LOGIC
 // ----------------------------------------------------------------------
 function processTrainingsData(data) {
-    // Strictly uses live data from your web app url
     let workingData = Array.isArray(data) ? data : [];
+    globalTrainLineData = []; // Reset global dates array
 
     let totalPax = 0;
     let categoryCounts = {};
@@ -344,7 +373,6 @@ function processTrainingsData(data) {
     let paxByCategory = {};
     let agencyCounts = {};
     let titleCounts = {};
-    let monthlyCounts = {};
 
     workingData.forEach(row => {
         let cat = row['CATEGORY'] || row['Category'] || row['Column B'];
@@ -378,10 +406,16 @@ function processTrainingsData(data) {
                 titleCounts[t] = (titleCounts[t] || 0) + 1;
             }
 
+            // NEW: Parse complex dates into actual timestamps and grab the title
             if (dates) {
-                let monthStr = String(dates).split(' ')[0].trim().toUpperCase();
-                if (monthOrder.includes(monthStr)) {
-                    monthlyCounts[monthStr] = (monthlyCounts[monthStr] || 0) + 1;
+                let parsedDate = parseTrainingDate(dates);
+                if (parsedDate) {
+                    globalTrainLineData.push({
+                        dateObj: parsedDate,
+                        title: title || 'Unspecified Event',
+                        count: 1,
+                        timestamp: parsedDate.getTime()
+                    });
                 }
             }
         }
@@ -406,20 +440,103 @@ function processTrainingsData(data) {
     populateTopList('top-dept-list', agencyCounts);
     populateTopList('top-title-list', titleCounts);
 
-    // Monthly Trend Line
-    let mLabels = [];
-    let mData = [];
-    monthOrder.forEach(m => {
-        if (monthlyCounts[m]) {
-            mLabels.push(m);
-            mData.push(monthlyCounts[m]);
+    // Initial Timeline Render (Default to Monthly)
+    const trainLineFilter = document.getElementById('trainLineChartFilter');
+    let initTimeframe = trainLineFilter ? trainLineFilter.value : 'monthly';
+    renderTrainLineChartByTimeframe(initTimeframe);
+}
+
+// NEW: Dynamically aggregate Training dates based on dropdown selection
+function renderTrainLineChartByTimeframe(timeframe) {
+    let groupedObj = {};
+    let groupedTitles = {};
+    
+    // Sort chronologically
+    let sortedData = [...globalTrainLineData].sort((a, b) => a.timestamp - b.timestamp);
+
+    sortedData.forEach(item => {
+        let key = "";
+        if (timeframe === 'monthly') {
+            key = item.dateObj.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+        } else if (timeframe === 'yearly') {
+            key = item.dateObj.getFullYear().toString();
+        } else { 
+            key = item.dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+        
+        groupedObj[key] = (groupedObj[key] || 0) + item.count;
+        
+        // Group the specific titles so the tooltip can display them
+        if(!groupedTitles[key]) groupedTitles[key] = [];
+        if(!groupedTitles[key].includes(item.title)) {
+            groupedTitles[key].push(item.title);
         }
     });
-    if (mLabels.length > 0) {
-        drawTrainLineChart('trainMonthlyChart', mLabels, mData);
+
+    const labels = Object.keys(groupedObj);
+    const dataValues = Object.values(groupedObj);
+    const titlesArr = Object.values(groupedTitles); 
+    
+    if(labels.length === 0) {
+        drawTrainLineChart('trainMonthlyChart', ['No Data Found'], [0], [['N/A']]);
     } else {
-        drawTrainLineChart('trainMonthlyChart', ['No Data'], [0]);
+        drawTrainLineChart('trainMonthlyChart', labels, dataValues, titlesArr);
     }
+}
+
+function drawTrainLineChart(canvasId, labels, dataArr, titlesArr) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    if (window[canvasId + 'Inst']) window[canvasId + 'Inst'].destroy();
+
+    let gradient = ctx.createLinearGradient(0, 0, 0, 300);
+    gradient.addColorStop(0, 'rgba(37, 99, 235, 0.3)');
+    gradient.addColorStop(1, 'rgba(37, 99, 235, 0.0)'); 
+
+    window[canvasId + 'Inst'] = new Chart(ctx, {
+        type: 'line',
+        data: { 
+            labels: labels, 
+            datasets: [{ 
+                data: dataArr, 
+                borderColor: '#2563eb', 
+                backgroundColor: gradient, 
+                borderWidth: 2, 
+                pointBackgroundColor: '#ffffff', 
+                pointBorderColor: '#2563eb', 
+                pointBorderWidth: 2, 
+                pointHoverRadius: 5, 
+                fill: true, 
+                tension: 0.4 
+            }] 
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false, animation: { duration: 1000, easing: 'easeOutQuart' },
+            plugins: { 
+                legend: { display: false }, 
+                datalabels: { display: false },
+                // NEW: Custom tooltip that reads the Titles array we mapped
+                tooltip: {
+                    ...sharedTooltipConfig,
+                    callbacks: {
+                        label: function(context) {
+                            let val = context.raw;
+                            let titles = (titlesArr && titlesArr[context.dataIndex]) ? titlesArr[context.dataIndex] : [];
+                            let labelArr = [`Total Events: ${val}`];
+                            if (titles.length > 0 && titles[0] !== 'N/A') {
+                                labelArr.push('------------------------');
+                                titles.forEach(t => labelArr.push(`• ${t}`));
+                            }
+                            return labelArr;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 9 }, color: '#64748b' } },
+                y: { grid: { color: '#f1f5f9' }, beginAtZero: true, ticks: { font: { family: 'Inter', size: 10 }, color: '#64748b' } }
+            }
+        }
+    });
 }
 
 function drawTrainBarChart(canvasId, labels, dataArr) {
@@ -456,28 +573,6 @@ function drawTrainDonutPlaceholder(canvasId, text) {
         options: {
             responsive: true, maintainAspectRatio: false, cutout: '70%',
             plugins: { legend: { display: false }, tooltip: { enabled: false }, datalabels: { display: true, formatter: () => text, color: '#94a3b8', font: { weight: 'bold' } } }
-        }
-    });
-}
-
-function drawTrainLineChart(canvasId, labels, dataArr) {
-    const ctx = document.getElementById(canvasId).getContext('2d');
-    if (window[canvasId + 'Inst']) window[canvasId + 'Inst'].destroy();
-
-    let gradient = ctx.createLinearGradient(0, 0, 0, 300);
-    gradient.addColorStop(0, 'rgba(37, 99, 235, 0.3)');
-    gradient.addColorStop(1, 'rgba(37, 99, 235, 0.0)'); 
-
-    window[canvasId + 'Inst'] = new Chart(ctx, {
-        type: 'line',
-        data: { labels: labels, datasets: [{ data: dataArr, borderColor: '#2563eb', backgroundColor: gradient, borderWidth: 2, pointBackgroundColor: '#ffffff', pointBorderColor: '#2563eb', pointBorderWidth: 2, pointHoverRadius: 5, fill: true, tension: 0.4 }] },
-        options: {
-            responsive: true, maintainAspectRatio: false, animation: { duration: 1000, easing: 'easeOutQuart' },
-            plugins: { legend: { display: false }, tooltip: sharedTooltipConfig, datalabels: { display: false } },
-            scales: {
-                x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 9 }, color: '#64748b' } },
-                y: { grid: { color: '#f1f5f9' }, beginAtZero: true, ticks: { font: { family: 'Inter', size: 10 }, color: '#64748b' } }
-            }
         }
     });
 }
