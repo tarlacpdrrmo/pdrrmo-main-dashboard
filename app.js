@@ -1,13 +1,14 @@
 Chart.register(ChartDataLabels);
 
-// Restored your original working Web App URL so the main dashboard loads properly
-const webAppUrl = "https://script.google.com/macros/s/AKfycbwdl6df9uXUtM0-ufyh10tNz1X_4WZi03fqXrRwtdysOjsblDwSOkeAlBriw3txXe2lXQ/exec";
+// 1. YOUR SECURE GOOGLE APPS SCRIPT WEB APP URL
+// PASTE YOUR NEW URL INSIDE THESE QUOTES:
+const webAppUrl = "https://script.google.com/macros/s/AKfycbwYUt0YFQClUUXRGwrNdnC5INPXWzWyGUeN3J8E5tRKsO2ME-Y6zu5Fv0a56fCtxhwzTg/exec";
 
 // Global Raw Data Vault
 let rawOperationsData = [];
 let rawDocumentsData = [];
 let rawVolunteersData = [];
-let rawTrainingsData = []; // Vault for the new Training Sheet
+let rawTrainingsData = []; // Vault for the live Training Sheet
 
 // Global Chart & State Trackers
 let docPieChartInstance = null;
@@ -252,13 +253,13 @@ async function loadAllData() {
         const volData = await volRes.json();
         if (!volData.error) rawVolunteersData = volData;
 
-        // FETCH TRAININGS DATA 
+        // FETCH TRAININGS DATA FROM LIVE SHEET
         try {
             const trainRes = await fetch(`${webAppUrl}?type=trainings`);
             const trainData = await trainRes.json();
             if (!trainData.error) rawTrainingsData = trainData;
         } catch(e) {
-            console.warn("Trainings endpoint not available or returned error.", e);
+            console.warn("Trainings endpoint returned an error.", e);
         }
 
         let yearsSet = new Set();
@@ -293,7 +294,7 @@ async function loadAllData() {
         
         if (rawVolunteersData.length > 0) processVolunteersData(rawVolunteersData);
         
-        // Render Trainings Data
+        // Render Live Trainings Data
         processTrainingsData(rawTrainingsData);
         
         hideLoader();
@@ -331,9 +332,10 @@ function applyGlobalYearFilter(targetYear) {
 }
 
 // ----------------------------------------------------------------------
-// TRAININGS DASHBOARD LOGIC
+// NEW: LIVE TRAININGS DASHBOARD LOGIC 
 // ----------------------------------------------------------------------
 function processTrainingsData(data) {
+    // Strictly uses live data from your web app url
     let workingData = Array.isArray(data) ? data : [];
 
     let totalPax = 0;
@@ -387,11 +389,11 @@ function processTrainingsData(data) {
 
     // KPI Updates
     document.getElementById('train-kpi-count').innerText = totalPax.toLocaleString();
-    document.getElementById('train-kpi-rating').innerText = 'N/A'; // No Rating Data
-    document.getElementById('train-kpi-hours').innerText = 'N/A';  // No Hours Data
-    document.getElementById('train-kpi-budget').innerText = 'N/A'; // No Budget Data
+    document.getElementById('train-kpi-rating').innerText = 'N/A'; // No Rating Data in Sheet
+    document.getElementById('train-kpi-hours').innerText = 'N/A';  // No Hours Data in Sheet
+    document.getElementById('train-kpi-budget').innerText = 'N/A'; // No Budget Data in Sheet
 
-    // Render Charts using helper function
+    // Render Charts
     drawTrainBarChart('trainTypesChart', Object.keys(categoryCounts), Object.values(categoryCounts));
     drawTrainBarChart('trainStatusChart', Object.keys(statusCounts), Object.values(statusCounts));
     drawTrainBarChart('trainNumbersChart', Object.keys(paxByCategory), Object.values(paxByCategory));
@@ -423,6 +425,11 @@ function processTrainingsData(data) {
 function drawTrainBarChart(canvasId, labels, dataArr) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     if (window[canvasId + 'Inst']) window[canvasId + 'Inst'].destroy();
+
+    if (labels.length === 0) {
+        labels = ["No Data"];
+        dataArr = [0];
+    }
 
     let colors = labels.map((_, i) => pieColorPalette[(i + 2) % pieColorPalette.length]);
 
