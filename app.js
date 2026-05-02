@@ -173,7 +173,7 @@ document.addEventListener("DOMContentLoaded", function() {
         renderLineChartByTimeframe(e.target.value);
     });
     
-    // NEW: Listener for the Training Timeline filter
+    // Listener for the Training Timeline filter
     const trainLineFilter = document.getElementById('trainLineChartFilter');
     if (trainLineFilter) {
         trainLineFilter.addEventListener('change', function(e) {
@@ -212,7 +212,7 @@ function parseCustomDate(dateStr) {
     return null;
 }
 
-// NEW: Advanced Parser to handle complex training dates like "January 12-14, 2026"
+// Advanced Parser to handle complex training dates like "January 12-14, 2026"
 function parseTrainingDate(dateStr) {
     if (!dateStr) return null;
     let str = String(dateStr).trim();
@@ -372,7 +372,7 @@ function processTrainingsData(data) {
     let statusCounts = {};
     let paxByCategory = {};
     let agencyCounts = {};
-    let titleCounts = {};
+    let explicitTitleCounts = {}; // Used specifically for Columns I and J
 
     workingData.forEach(row => {
         let cat = row['CATEGORY'] || row['Category'] || row['Column B'];
@@ -381,6 +381,10 @@ function processTrainingsData(data) {
         let agency = row['AGENCY/OFFICE'] || row['Agency/Office'] || row['Column D'];
         let title = row['TRAINING/LECTURE'] || row['Training/Lecture'] || row['Column C'];
         let dates = row['INCLUSIVE DATES'] || row['Inclusive Dates'] || row['Column A'];
+
+        // Extraction for Columns I and J specifically
+        let colI_Title = row['TRAINING/LECTURES'] || row['Training/Lectures'] || row['Column I'];
+        let colJ_Freq = row['FREQ'] || row['Freq'] || row['Column J'];
 
         if (cat && String(cat).trim() !== "") {
             totalPax += pax;
@@ -401,12 +405,7 @@ function processTrainingsData(data) {
                 agencyCounts[a] = (agencyCounts[a] || 0) + 1;
             }
 
-            if (title) {
-                let t = String(title).trim();
-                titleCounts[t] = (titleCounts[t] || 0) + 1;
-            }
-
-            // NEW: Parse complex dates into actual timestamps and grab the title
+            // Parse complex dates into actual timestamps and grab the title
             if (dates) {
                 let parsedDate = parseTrainingDate(dates);
                 if (parsedDate) {
@@ -419,9 +418,19 @@ function processTrainingsData(data) {
                 }
             }
         }
+
+        // Process ALL data from Column I and J independently
+        if (colI_Title && String(colI_Title).trim() !== "") {
+            let tName = String(colI_Title).trim();
+            // Safety check to avoid accidentally adding the header text
+            if (tName.toUpperCase() !== 'TRAINING/LECTURES') {
+                let tFreq = parseInt(colJ_Freq) || 0;
+                explicitTitleCounts[tName] = tFreq;
+            }
+        }
     });
 
-    // KPI Updates (Removed N/A boxes from HTML, so only updating PAX)
+    // KPI Updates
     const paxBox = document.getElementById('train-kpi-count');
     if (paxBox) {
         paxBox.innerText = totalPax.toLocaleString();
@@ -438,15 +447,17 @@ function processTrainingsData(data) {
 
     // Populate Ranking Lists
     populateTopList('top-dept-list', agencyCounts);
-    populateTopList('top-title-list', titleCounts);
+    
+    // NEW: Populates the left column block with ALL entries from Column I & J
+    populateAllList('top-title-list', explicitTitleCounts);
 
-    // Initial Timeline Render (Default to Monthly)
+    // Initial Timeline Render
     const trainLineFilter = document.getElementById('trainLineChartFilter');
     let initTimeframe = trainLineFilter ? trainLineFilter.value : 'monthly';
     renderTrainLineChartByTimeframe(initTimeframe);
 }
 
-// NEW: Dynamically aggregate Training dates based on dropdown selection
+// Dynamically aggregate Training dates based on dropdown selection
 function renderTrainLineChartByTimeframe(timeframe) {
     let groupedObj = {};
     let groupedTitles = {};
@@ -514,7 +525,6 @@ function drawTrainLineChart(canvasId, labels, dataArr, titlesArr) {
             plugins: { 
                 legend: { display: false }, 
                 datalabels: { display: false },
-                // NEW: Custom tooltip that reads the Titles array we mapped
                 tooltip: {
                     ...sharedTooltipConfig,
                     callbacks: {
@@ -583,6 +593,29 @@ function populateTopList(containerId, dataObj) {
     container.innerHTML = '';
     
     let sorted = Object.keys(dataObj).map(k => ({name: k, count: dataObj[k]})).sort((a,b) => b.count - a.count).slice(0, 5); // Show Top 5
+    
+    if (sorted.length === 0) {
+        container.innerHTML = `<div style="color: #94a3b8; font-size: 0.7rem; padding: 10px;">No Data</div>`;
+        return;
+    }
+
+    sorted.forEach((item, index) => {
+        container.innerHTML += `
+            <div class="legend-item" style="animation-delay: ${index * 0.04}s;">
+                <div class="legend-text" title="${item.name}" style="flex: 1;">${index + 1}. ${item.name}</div>
+                <div class="legend-val">${item.count}</div>
+            </div>
+        `;
+    });
+}
+
+// NEW: Renders ALL data points dynamically without a slice limit
+function populateAllList(containerId, dataObj) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    
+    let sorted = Object.keys(dataObj).map(k => ({name: k, count: dataObj[k]})).sort((a,b) => b.count - a.count);
     
     if (sorted.length === 0) {
         container.innerHTML = `<div style="color: #94a3b8; font-size: 0.7rem; padding: 10px;">No Data</div>`;
