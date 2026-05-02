@@ -478,10 +478,17 @@
                             </div>
                         </div>
 
-                        <!-- Full Width Trend -->
-                        <div class="card chart-card flex-col p-0">
-                            <h4 class="card-inner-title">Monthly Training Numbers</h4>
-                            <div class="chart-render-area" style="height: 200px; max-height: 200px;">
+                        <!-- UPDATED Full Width Trend with Dropdown Filter -->
+                        <div class="card doc-chart-card" style="margin-top: 16px;">
+                            <div class="chart-header-actions">
+                                <h4 class="chart-title">Monthly Training Numbers</h4>
+                                <select id="trainLineChartFilter" class="chart-filter">
+                                    <option value="monthly">Monthly View</option>
+                                    <option value="daily">Daily View</option>
+                                    <option value="yearly">Yearly View</option>
+                                </select>
+                            </div>
+                            <div class="line-wrapper" style="height: 250px;">
                                 <canvas id="trainMonthlyChart"></canvas>
                             </div>
                         </div>
