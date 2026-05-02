@@ -34,6 +34,9 @@ let currentCalView = 'monthly';
 let currentCalCategory = 'all'; 
 let calDataMap = {}; 
 
+// NEW: Global Title Tracker for Modal
+let globalTitleCounts = {};
+
 // 3-Layer Interactive State Tracker
 let currentPieState = { 
     level: 1, 
@@ -204,6 +207,25 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById('masterServiceMonthFilter').addEventListener('change', function(e) {
         renderMasterServicePie(e.target.value);
     });
+
+    // NEW: MODAL EVENT LISTENERS
+    const expandBtn = document.getElementById('expandTitlesBtn');
+    const closeBtn = document.getElementById('closeModalBtn');
+    const modal = document.getElementById('titlesModal');
+
+    if(expandBtn && modal && closeBtn) {
+        expandBtn.addEventListener('click', () => {
+            populateModalList(globalTitleCounts);
+            modal.classList.add('active');
+        });
+        closeBtn.addEventListener('click', () => {
+            modal.classList.remove('active');
+        });
+        modal.addEventListener('click', (e) => {
+            if(e.target === modal) modal.classList.remove('active'); 
+        });
+    }
+
 });
 
 function parseCustomDate(dateStr) {
@@ -365,7 +387,7 @@ function applyGlobalYearFilter(targetYear) {
 }
 
 // ----------------------------------------------------------------------
-// TRAININGS DASHBOARD LOGIC (WITH GRACE FIX FOR CHART CLIP)
+// TRAININGS DASHBOARD LOGIC
 // ----------------------------------------------------------------------
 
 const getRobustValue = (row, searchTerms, fallbackKeys) => {
@@ -442,6 +464,7 @@ function processTrainingsData(data) {
         }
     });
 
+    globalTitleCounts = explicitTitleCounts; // STORE GLOBALLY FOR MODAL
     populateAllList('top-title-list', explicitTitleCounts);
 
     currentCalDate = latestEventDateObj ? new Date(latestEventDateObj) : new Date();
@@ -687,12 +710,10 @@ function drawTrainBarChart(canvasId, labels, dataArr) {
         data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: colors, borderRadius: 4, maxBarThickness: 30 }] },
         options: {
             responsive: true, maintainAspectRatio: false,
-            // UPDATED: Added top padding to layout to ensure numbers NEVER clip the canvas border.
             layout: { padding: { top: 25, left: 10, right: 10, bottom: 0 } }, 
             plugins: { legend: { display: false }, tooltip: sharedTooltipConfig, datalabels: { display: true, align: 'top', anchor: 'end', color: '#64748b', font: { weight: 'bold' } } },
             scales: {
                 x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 9 }, color: '#64748b' } },
-                // UPDATED: Added grace: '20%' to force the chart to give headroom above the highest bar.
                 y: { grid: { color: '#f1f5f9' }, ticks: { font: { family: 'Inter', size: 10 }, color: '#94a3b8' }, beginAtZero: true, grace: '20%' } 
             }
         }
@@ -715,6 +736,32 @@ function populateAllList(containerId, dataObj) {
         container.innerHTML += `
             <div class="legend-item" style="animation-delay: ${index * 0.04}s;">
                 <div class="legend-text" title="${item.name}" style="flex: 1;">${index + 1}. ${item.name}</div>
+                <div class="legend-val">${item.count}</div>
+            </div>
+        `;
+    });
+}
+
+// NEW FUNCTION: Populates the modal with full un-truncated text
+function populateModalList(dataObj) {
+    const container = document.getElementById('modal-title-list');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    let sorted = Object.keys(dataObj).map(k => ({name: k, count: dataObj[k]})).sort((a,b) => b.count - a.count);
+    
+    if (sorted.length === 0) {
+        container.innerHTML = `<div style="color: #94a3b8; font-size: 0.9rem; padding: 20px; text-align:center;">No Data Available</div>`;
+        return;
+    }
+
+    sorted.forEach((item, index) => {
+        container.innerHTML += `
+            <div class="legend-item" style="animation-delay: ${index * 0.02}s;">
+                <div class="legend-text" style="font-size: 0.85rem; padding-right: 15px;">
+                    <span style="color:#64748b; font-weight:800; margin-right:8px;">${index + 1}.</span> 
+                    ${item.name}
+                </div>
                 <div class="legend-val">${item.count}</div>
             </div>
         `;
