@@ -7,6 +7,7 @@ const webAppUrl = "https://script.google.com/macros/s/AKfycbwdl6df9uXUtM0-ufyh10
 let rawOperationsData = [];
 let rawDocumentsData = [];
 let rawVolunteersData = [];
+let rawTrainingsData = []; // Vault for the new Training Sheet
 
 // Global Chart & State Trackers
 let docPieChartInstance = null;
@@ -15,13 +16,13 @@ let masterServicePieInstance = null;
 let monthlyTotalPieInstance = null; 
 let toggleChartInstances = {};
 
-// Training Charts Placeholders
-let trainStatusChart = null;
-let trainTypesChart = null;
-let trainNumbersChart = null;
-let trainDurationChart = null;
-let trainBudgetChart = null;
-let trainMonthlyChart = null;
+// Training Charts State Trackers (NEW)
+let trainStatusChartInst = null;
+let trainTypesChartInst = null;
+let trainNumbersChartInst = null;
+let trainDurationChartInst = null;
+let trainBudgetChartInst = null;
+let trainMonthlyChartInst = null;
 
 let globalLineData = []; 
 let globalDocRecords = []; 
@@ -42,6 +43,9 @@ const serviceCategoryLabels = [
     'Medical Emergencies', 'Standby Medic & VIP', 'SUPPORT SERVICES (MANPOWER, TRANSPORTATION & OTHER RESOURCES)',
     'Clearing Operations', 'Firetruck', 'Hauling', 'Ledvan Truck'
 ];
+
+// Reusable Month Order
+const monthOrder = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
 
 const pieColorPalette = ['#e11d48', '#06b6d4', '#2563eb', '#ea580c', '#16a34a', '#9333ea', '#f43f5e', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#d946ef', '#f97316', '#14b8a6', '#6366f1'];
 
@@ -248,6 +252,15 @@ async function loadAllData() {
         const volData = await volRes.json();
         if (!volData.error) rawVolunteersData = volData;
 
+        // FETCH TRAININGS DATA 
+        try {
+            const trainRes = await fetch(`${webAppUrl}?type=trainings`);
+            const trainData = await trainRes.json();
+            if (!trainData.error) rawTrainingsData = trainData;
+        } catch(e) {
+            console.warn("Trainings endpoint not available or returned error.", e);
+        }
+
         let yearsSet = new Set();
         
         rawOperationsData.forEach(r => {
@@ -279,6 +292,9 @@ async function loadAllData() {
         applyGlobalYearFilter(yearSelect ? yearSelect.value : 'all');
         
         if (rawVolunteersData.length > 0) processVolunteersData(rawVolunteersData);
+        
+        // Render Trainings Data
+        processTrainingsData(rawTrainingsData);
         
         hideLoader();
 
@@ -313,6 +329,188 @@ function applyGlobalYearFilter(targetYear) {
     processOperationsData(filteredOps);
     processDocumentsData(filteredDocs);
 }
+
+// ----------------------------------------------------------------------
+// NEW: TRAININGS DASHBOARD LOGIC (Mapping to Screenshot columns)
+// ----------------------------------------------------------------------
+function processTrainingsData(data) {
+    // If the database isn't connected yet, use mock data based strictly on the provided screenshot
+    let workingData = data.length > 0 ? data : [
+        { "CATEGORY": "TRAINING", "NO. PAX": 19, "REMARKS": "WITH AAR", "AGENCY/OFFICE": "NSTP - Tarlac State University", "TRAINING/LECTURE": "Introduction and Splinting", "INCLUSIVE DATES": "January 12-14, 2026" },
+        { "CATEGORY": "TRAINING", "NO. PAX": 36, "REMARKS": "NO AAR", "AGENCY/OFFICE": "Municipality of Concepcion", "TRAINING/LECTURE": "Integrated Planning...", "INCLUSIVE DATES": "January 19-23, 2026" },
+        { "CATEGORY": "TRAINING", "NO. PAX": 31, "REMARKS": "NO AAR", "AGENCY/OFFICE": "MDRRMO San Simon, Pampanga", "TRAINING/LECTURE": "Integrated Planning...", "INCLUSIVE DATES": "March 23-27, 2026" },
+        { "CATEGORY": "TRAINING", "NO. PAX": 108, "REMARKS": "WITH AAR", "AGENCY/OFFICE": "Armenia-Aquino High School", "TRAINING/LECTURE": "First Aid/Basic Life Support", "INCLUSIVE DATES": "February 2-3, 2026" },
+        { "CATEGORY": "TRAINING", "NO. PAX": 260, "REMARKS": "NO AAR", "AGENCY/OFFICE": "OCD R3 (Governors, Provincial Admin)", "TRAINING/LECTURE": "Disaster Risk Reduction...", "INCLUSIVE DATES": "February 4-5, 2026" },
+        { "CATEGORY": "TRAINING", "NO. PAX": 36, "REMARKS": "WITH AAR", "AGENCY/OFFICE": "OCD R3 (Municipality of Gerona)", "TRAINING/LECTURE": "Emergency Operations Center...", "INCLUSIVE DATES": "February 10-12, 2026" },
+        { "CATEGORY": "TRAINING", "NO. PAX": 21, "REMARKS": "NO AAR", "AGENCY/OFFICE": "Office of Civil Defense Region III", "TRAINING/LECTURE": "Emergency Operations Center...", "INCLUSIVE DATES": "March 4-5, 2026" },
+        { "CATEGORY": "TRAINING", "NO. PAX": 50, "REMARKS": "NO AAR", "AGENCY/OFFICE": "OCD R3 (Special Regiment Forces)", "TRAINING/LECTURE": "Basic Incident Command System", "INCLUSIVE DATES": "March 4-6, 2026" },
+        { "CATEGORY": "TRAINING", "NO. PAX": 31, "REMARKS": "WITH AAR", "AGENCY/OFFICE": "MDRRMO", "TRAINING/LECTURE": "Chainsaw Operation", "INCLUSIVE DATES": "February 19-20, 2026" },
+        { "CATEGORY": "TRAINING", "NO. PAX": 38, "REMARKS": "NO AAR", "AGENCY/OFFICE": "Office of Civil Defense Region III", "TRAINING/LECTURE": "All Hazards Incident Management...", "INCLUSIVE DATES": "March 16-20, 2026" },
+        { "CATEGORY": "TRAINING", "NO. PAX": 23, "REMARKS": "WITH AAR", "AGENCY/OFFICE": "St. Augustine Colleges Foundation", "TRAINING/LECTURE": "Basic Water Safety Training", "INCLUSIVE DATES": "March 20, 2026" },
+        { "CATEGORY": "ACTIVITY", "NO. PAX": 300, "REMARKS": "WITH AAR", "AGENCY/OFFICE": "New Christian Academy", "TRAINING/LECTURE": "Emergency Preparedness...", "INCLUSIVE DATES": "January 23, 2026" },
+        { "CATEGORY": "ACTIVITY", "NO. PAX": 1000, "REMARKS": "WITH AAR", "AGENCY/OFFICE": "Girl Scouts of the Philippines", "TRAINING/LECTURE": "Emergency Preparedness...", "INCLUSIVE DATES": "February 20, 2026" },
+        { "CATEGORY": "ACTIVITY", "NO. PAX": 400, "REMARKS": "WITH AAR", "AGENCY/OFFICE": "Central Luzon Doctor's Hospital", "TRAINING/LECTURE": "Emergency Preparedness...", "INCLUSIVE DATES": "February 19, 2026" },
+        { "CATEGORY": "ACTIVITY", "NO. PAX": 84, "REMARKS": "WITH AAR", "AGENCY/OFFICE": "Cebuana Lhuillier Foundation", "TRAINING/LECTURE": "Emergency Preparedness...", "INCLUSIVE DATES": "March 11, 2026" },
+        { "CATEGORY": "ACTIVITY", "NO. PAX": 67, "REMARKS": "WITH AAR", "AGENCY/OFFICE": "522nd Engineer Construction Battalion", "TRAINING/LECTURE": "Emergency Preparedness...", "INCLUSIVE DATES": "March 11, 2026" },
+        { "CATEGORY": "ACTIVITY", "NO. PAX": 87, "REMARKS": "WITH AAR", "AGENCY/OFFICE": "Health Service School", "TRAINING/LECTURE": "Basic Water Safety Lecture", "INCLUSIVE DATES": "March 23-24, 2026" },
+        { "CATEGORY": "ACTIVITY", "NO. PAX": 60, "REMARKS": "NO AAR", "AGENCY/OFFICE": "Diocese of Tarlac Clergy", "TRAINING/LECTURE": "DRRM Orientation for the Diocese...", "INCLUSIVE DATES": "February 23-24, 2026" }
+    ];
+
+    let totalPax = 0;
+    let categoryCounts = {};
+    let statusCounts = {};
+    let paxByCategory = {};
+    let agencyCounts = {};
+    let titleCounts = {};
+    let monthlyCounts = {};
+
+    workingData.forEach(row => {
+        let cat = row['CATEGORY'] || row['Category'] || row['Column B'];
+        let pax = parseInt(row['NO. PAX'] || row['No. Pax'] || row['Column E']) || 0;
+        let status = row['REMARKS'] || row['Remarks'] || row['Column F'];
+        let agency = row['AGENCY/OFFICE'] || row['Agency/Office'] || row['Column D'];
+        let title = row['TRAINING/LECTURE'] || row['Training/Lecture'] || row['Column C'];
+        let dates = row['INCLUSIVE DATES'] || row['Inclusive Dates'] || row['Column A'];
+
+        if (cat && String(cat).trim() !== "") {
+            totalPax += pax;
+
+            let c = String(cat).trim().toUpperCase();
+            categoryCounts[c] = (categoryCounts[c] || 0) + 1;
+            paxByCategory[c] = (paxByCategory[c] || 0) + pax;
+
+            if (status) {
+                let s = String(status).trim().toUpperCase();
+                statusCounts[s] = (statusCounts[s] || 0) + 1;
+            } else {
+                statusCounts['UNKNOWN'] = (statusCounts['UNKNOWN'] || 0) + 1;
+            }
+
+            if (agency) {
+                let a = String(agency).trim();
+                agencyCounts[a] = (agencyCounts[a] || 0) + 1;
+            }
+
+            if (title) {
+                let t = String(title).trim();
+                titleCounts[t] = (titleCounts[t] || 0) + 1;
+            }
+
+            if (dates) {
+                let monthStr = String(dates).split(' ')[0].trim().toUpperCase();
+                if (monthOrder.includes(monthStr)) {
+                    monthlyCounts[monthStr] = (monthlyCounts[monthStr] || 0) + 1;
+                }
+            }
+        }
+    });
+
+    // KPI Updates
+    document.getElementById('train-kpi-count').innerText = totalPax.toLocaleString();
+    document.getElementById('train-kpi-rating').innerText = 'N/A'; // No Rating Data
+    document.getElementById('train-kpi-hours').innerText = 'N/A';  // No Hours Data
+    document.getElementById('train-kpi-budget').innerText = 'N/A'; // No Budget Data
+
+    // Render Charts using helper function
+    drawTrainBarChart('trainTypesChart', Object.keys(categoryCounts), Object.values(categoryCounts));
+    drawTrainBarChart('trainStatusChart', Object.keys(statusCounts), Object.values(statusCounts));
+    drawTrainBarChart('trainNumbersChart', Object.keys(paxByCategory), Object.values(paxByCategory));
+
+    // Render Dummy Donuts for empty modules
+    drawTrainDonutPlaceholder('trainDurationChart', 'No Data');
+    drawTrainDonutPlaceholder('trainBudgetChart', 'No Data');
+
+    // Populate Ranking Lists
+    populateTopList('top-dept-list', agencyCounts);
+    populateTopList('top-title-list', titleCounts);
+
+    // Monthly Trend Line
+    let mLabels = [];
+    let mData = [];
+    monthOrder.forEach(m => {
+        if (monthlyCounts[m]) {
+            mLabels.push(m);
+            mData.push(monthlyCounts[m]);
+        }
+    });
+    if (mLabels.length > 0) {
+        drawTrainLineChart('trainMonthlyChart', mLabels, mData);
+    }
+}
+
+function drawTrainBarChart(canvasId, labels, dataArr) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    if (window[canvasId + 'Inst']) window[canvasId + 'Inst'].destroy();
+
+    let colors = labels.map((_, i) => pieColorPalette[(i + 2) % pieColorPalette.length]);
+
+    window[canvasId + 'Inst'] = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: colors, borderRadius: 4, maxBarThickness: 30 }] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: sharedTooltipConfig, datalabels: { display: true, align: 'top', anchor: 'end', color: '#64748b', font: { weight: 'bold' } } },
+            scales: {
+                x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 9 }, color: '#64748b' } },
+                y: { grid: { color: '#f1f5f9' }, ticks: { font: { family: 'Inter', size: 10 }, color: '#94a3b8' }, beginAtZero: true }
+            }
+        }
+    });
+}
+
+function drawTrainDonutPlaceholder(canvasId, text) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    if (window[canvasId + 'Inst']) window[canvasId + 'Inst'].destroy();
+    window[canvasId + 'Inst'] = new Chart(ctx, {
+        type: 'doughnut',
+        data: { labels: [text], datasets: [{ data: [1], backgroundColor: ['#e2e8f0'], borderWidth: 0 }] },
+        options: {
+            responsive: true, maintainAspectRatio: false, cutout: '70%',
+            plugins: { legend: { display: false }, tooltip: { enabled: false }, datalabels: { display: true, formatter: () => text, color: '#94a3b8', font: { weight: 'bold' } } }
+        }
+    });
+}
+
+function drawTrainLineChart(canvasId, labels, dataArr) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    if (window[canvasId + 'Inst']) window[canvasId + 'Inst'].destroy();
+
+    let gradient = ctx.createLinearGradient(0, 0, 0, 300);
+    gradient.addColorStop(0, 'rgba(37, 99, 235, 0.3)');
+    gradient.addColorStop(1, 'rgba(37, 99, 235, 0.0)'); 
+
+    window[canvasId + 'Inst'] = new Chart(ctx, {
+        type: 'line',
+        data: { labels: labels, datasets: [{ data: dataArr, borderColor: '#2563eb', backgroundColor: gradient, borderWidth: 2, pointBackgroundColor: '#ffffff', pointBorderColor: '#2563eb', pointBorderWidth: 2, pointHoverRadius: 5, fill: true, tension: 0.4 }] },
+        options: {
+            responsive: true, maintainAspectRatio: false, animation: { duration: 1000, easing: 'easeOutQuart' },
+            plugins: { legend: { display: false }, tooltip: sharedTooltipConfig, datalabels: { display: false } },
+            scales: {
+                x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 9 }, color: '#64748b' } },
+                y: { grid: { color: '#f1f5f9' }, beginAtZero: true, ticks: { font: { family: 'Inter', size: 10 }, color: '#64748b' } }
+            }
+        }
+    });
+}
+
+function populateTopList(containerId, dataObj) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    
+    let sorted = Object.keys(dataObj).map(k => ({name: k, count: dataObj[k]})).sort((a,b) => b.count - a.count).slice(0, 5); // Show Top 5
+    
+    sorted.forEach((item, index) => {
+        container.innerHTML += `
+            <div class="legend-item" style="animation-delay: ${index * 0.04}s;">
+                <div class="legend-text" title="${item.name}" style="flex: 1;">${index + 1}. ${item.name}</div>
+                <div class="legend-val">${item.count}</div>
+            </div>
+        `;
+    });
+}
+// ----------------------------------------------------------------------
+
 
 function processVolunteersData(data) {
     let totalOrgs = 0;
