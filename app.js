@@ -7,7 +7,7 @@ const webAppUrl = "https://script.google.com/macros/s/AKfycbwdl6df9uXUtM0-ufyh10
 let rawOperationsData = [];
 let rawDocumentsData = [];
 let rawVolunteersData = [];
-let rawTrainingsData = []; // New for Calendar
+let rawTrainingsData = []; // Data for Calendar
 
 // Global Chart & State Trackers
 let docPieChartInstance = null;
@@ -36,7 +36,7 @@ let calendarState = {
     filterCategory: 'all', 
     startDate: null, 
     endDate: null,   
-    currentMonthEvents: [] 
+    parsedEvents: [] // Holds formatted training data
 };
 
 const serviceCategoryLabels = [
@@ -186,7 +186,7 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 
     // Initialize Calendar if HTML elements are present
-    if (document.getElementById('calendarMonthSelect')) {
+    if (document.getElementById('trainMonth')) {
         initializeTrainingsCalendar();
     }
 });
@@ -204,29 +204,53 @@ function parseCustomDate(dateStr) {
     return null;
 }
 
-function parseTrainingsDateRange(dateStr) {
-    if (!dateStr || String(dateStr).trim() === "") return null;
-    let parts = String(dateStr).trim().match(/([a-zA-Z]+)\s*(\d{1,2})\s*-\s*(\d{1,2}),\s*(\d{4})/);
-    if (parts) {
-        let month = parts[1];
-        let startDay = parts[2];
-        let endDay = parts[3];
-        let year = parts[4];
-        let startDate = new Date(`${month} ${startDay}, ${year}`);
-        let endDate = new Date(`${month} ${endDay}, ${year}`);
-        if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
-            return { startDate, endDate };
-        }
-    } else {
-        // Fallback for single date e.g. "January 28, 2026"
-        let dPart = String(dateStr).match(/([a-zA-Z]+)\s*(\d{1,2}),\s*(\d{4})/);
-        if(dPart) {
-            let singleDate = new Date(`${dPart[1]} ${dPart[2]}, ${dPart[3]}`);
-            if(!isNaN(singleDate.getTime())) {
-                return { startDate: singleDate, endDate: singleDate };
-            }
+// BULLETPROOF COLUMN MATCHER
+function getSheetValue(row, possibleKeys) {
+    let keys = Object.keys(row);
+    for (let k of keys) {
+        if (possibleKeys.includes(k.trim().toUpperCase())) {
+            return row[k];
         }
     }
+    return "";
+}
+
+// BULLETPROOF DATE RANGE PARSER
+function parseTrainingsDateRange(dateVal) {
+    if (!dateVal) return null;
+    
+    let dateStr = String(dateVal).trim();
+    if (dateStr === "") return null;
+
+    // Check standard object parse first
+    let standardDate = new Date(dateVal);
+    if (!isNaN(standardDate.getTime()) && typeof dateVal !== 'string') {
+         return { startDate: standardDate, endDate: standardDate };
+    }
+
+    // Match "January 12-14, 2026"
+    let rangeMatch = dateStr.match(/([a-zA-Z]+)\s*(\d{1,2})\s*-\s*(\d{1,2}),\s*(\d{4})/);
+    if (rangeMatch) {
+        let month = rangeMatch[1];
+        let start = new Date(`${month} ${rangeMatch[2]}, ${rangeMatch[4]}`);
+        let end = new Date(`${month} ${rangeMatch[3]}, ${rangeMatch[4]}`);
+        return { startDate: start, endDate: end };
+    }
+
+    // Match "January 12, 2026 - January 15, 2026"
+    let explicitMatch = dateStr.match(/([a-zA-Z]+\s*\d{1,2},\s*\d{4})\s*-\s*([a-zA-Z]+\s*\d{1,2},\s*\d{4})/);
+    if (explicitMatch) {
+        let start = new Date(explicitMatch[1]);
+        let end = new Date(explicitMatch[2]);
+        if (!isNaN(start.getTime()) && !isNaN(end.getTime())) return { startDate: start, endDate: end };
+    }
+
+    // Fallback standard parse
+    let fallback = new Date(dateStr);
+    if(!isNaN(fallback.getTime())) {
+        return { startDate: fallback, endDate: fallback };
+    }
+
     return null;
 }
 
@@ -281,9 +305,16 @@ async function loadAllData() {
         const volData = await volRes.json();
         if (!volData.error) rawVolunteersData = volData;
 
+        // FETCH TRAININGS DATA
         const trainRes = await fetch(`${webAppUrl}?type=trainings`);
         const trainData = await trainRes.json();
-        if (!trainData.error) rawTrainingsData = trainData;
+        
+        if (!trainData.error) {
+            rawTrainingsData = trainData;
+            console.log("SUCCESS: Trainings Data loaded.", rawTrainingsData); // Debug log
+        } else {
+            console.error("ERROR loading Trainings:", trainData.error);
+        }
 
         let yearsSet = new Set();
         
@@ -328,15 +359,10 @@ async function loadAllData() {
 function applyGlobalYearFilter(targetYear) {
     let filteredOps = rawOperationsData;
     let filteredDocs = rawDocumentsData;
-    let filteredTrainings = rawTrainingsData;
 
     if (targetYear !== 'all') {
         filteredOps = rawOperationsData.filter(r => extractYear(r, 'op') === targetYear);
         filteredDocs = rawDocumentsData.filter(r => extractYear(r, 'doc') === targetYear);
-        filteredTrainings = rawTrainingsData.filter(r => {
-            let parsed = parseTrainingsDateRange(r['INCLUSIVE DATES']);
-            return parsed && parsed.startDate.getFullYear().toString() === targetYear;
-        });
     }
 
     operationsMonthlyCache = {};
@@ -354,205 +380,227 @@ function applyGlobalYearFilter(targetYear) {
 
     processOperationsData(filteredOps);
     processDocumentsData(filteredDocs);
-    if (document.getElementById('modernCalendar')) {
-        processTrainingsData(filteredTrainings);
+    
+    // Pass raw data, calendar filter handles years internally
+    if (document.getElementById('calGridBody')) {
+        processTrainingsData(rawTrainingsData);
     }
 }
 
+// ----------------------------------------------------
+// MODERN TRAININGS CALENDAR FUNCTIONS (SPLIT VIEW)
+// ----------------------------------------------------
 function initializeTrainingsCalendar() {
-    const calendarMonthSelect = document.getElementById('calendarMonthSelect');
-    const calendarYearSelect = document.getElementById('calendarYearSelect');
-    const calendarCategorySelect = document.getElementById('calendarCategorySelect');
-    const calendarStartDatePicker = document.getElementById('calendarStartDatePicker');
-    const calendarEndDatePicker = document.getElementById('calendarEndDatePicker');
-    const closeDetailsButton = document.getElementById('closeDetailsButton');
+    const trainMonth = document.getElementById('trainMonth');
+    const trainYear = document.getElementById('trainYear');
+    const trainCategory = document.getElementById('trainCategory');
+    const trainStartDate = document.getElementById('trainStartDate');
+    const trainEndDate = document.getElementById('trainEndDate');
+    const btnClear = document.getElementById('trainClearFilters');
 
-    let targetYear = new Date().getFullYear().toString();
-    if(targetYear === "2026") {
-         calendarState.viewDate = new Date(2026, 0, 1);
-         calendarYearSelect.value = "2026";
-    }
+    let currentYr = new Date().getFullYear().toString();
+    trainYear.value = (currentYr === "2026") ? "2026" : "2025";
+    trainMonth.value = new Date().getMonth();
 
-    calendarMonthSelect.value = new Date().getMonth();
-
-    closeDetailsButton.addEventListener('click', closeDetailsPanel);
-
-    const triggers = [calendarMonthSelect, calendarYearSelect, calendarCategorySelect];
+    const triggers = [trainMonth, trainYear, trainCategory, trainStartDate, trainEndDate];
     triggers.forEach(el => {
-        el.addEventListener('change', function(e) {
+        el.addEventListener('change', function() {
             smoothRenderCalendar();
         });
     });
 
-    const pickers = [calendarStartDatePicker, calendarEndDatePicker];
-    pickers.forEach(el => {
-        el.addEventListener('change', function(e) {
-            smoothRenderCalendar();
-        });
+    btnClear.addEventListener('click', function() {
+        trainStartDate.value = "";
+        trainEndDate.value = "";
+        smoothRenderCalendar();
     });
 }
 
 function smoothRenderCalendar() {
-    const container = document.getElementById('modernCalendar').parentElement;
-    container.classList.add('chart-fade-out'); // Reuse fade out style
+    const gridBody = document.getElementById('calGridBody');
+    const listArea = document.getElementById('trainingsListArea');
+    if(!gridBody || !listArea) return;
+
+    gridBody.style.opacity = 0;
+    listArea.style.opacity = 0;
 
     setTimeout(() => {
-        const month = parseInt(document.getElementById('calendarMonthSelect').value);
-        const year = parseInt(document.getElementById('calendarYearSelect').value);
+        const month = parseInt(document.getElementById('trainMonth').value);
+        const year = parseInt(document.getElementById('trainYear').value);
         calendarState.viewDate = new Date(year, month, 1);
-        calendarState.filterCategory = document.getElementById('calendarCategorySelect').value;
-        calendarState.startDate = document.getElementById('calendarStartDatePicker').value ? new Date(document.getElementById('calendarStartDatePicker').value) : null;
-        calendarState.endDate = document.getElementById('calendarEndDatePicker').value ? new Date(document.getElementById('calendarEndDatePicker').value) : null;
+        calendarState.filterCategory = document.getElementById('trainCategory').value;
+        calendarState.startDate = document.getElementById('trainStartDate').value ? new Date(document.getElementById('trainStartDate').value) : null;
+        calendarState.endDate = document.getElementById('trainEndDate').value ? new Date(document.getElementById('trainEndDate').value) : null;
         
-        renderModernCalendar(rawTrainingsData);
+        renderSplitCalendar();
         
         setTimeout(() => {
-            container.classList.remove('chart-fade-out');
+            gridBody.style.opacity = 1;
+            listArea.style.opacity = 1;
         }, 50);
     }, 200); 
 }
 
 function processTrainingsData(data) {
-    const calendarCategorySelect = document.getElementById('calendarCategorySelect');
+    const catSelect = document.getElementById('trainCategory');
     const categoriesSet = new Set();
     categoriesSet.add("all"); 
 
+    calendarState.parsedEvents = [];
+
     data.forEach(row => {
-        let cat = row['CATEGORY'] || row['Category'];
+        let dateStr = getSheetValue(row, ['INCLUSIVE DATES', 'DATE', 'DATES']);
+        let cat = getSheetValue(row, ['CATEGORY']);
+        let title = getSheetValue(row, ['TRAINING/LECTURE', 'TRAINING/LECTURES', 'ACTIVITY', 'TITLE']);
+        let pax = getSheetValue(row, ['NO. PAX', 'PAX', 'NO PAX']);
+        let fac = getSheetValue(row, ['FACILITATOR', 'SPEAKER']);
+        let remarks = getSheetValue(row, ['REMARKS', 'REMARK']);
+
         if (cat) categoriesSet.add(cat.trim().toUpperCase());
+
+        let range = parseTrainingsDateRange(dateStr);
+        if(range && title.trim() !== "") {
+             calendarState.parsedEvents.push({
+                 title: title.trim(),
+                 category: cat ? cat.trim() : '',
+                 pax: pax,
+                 fac: fac,
+                 remarks: remarks,
+                 dateStr: dateStr, // Keep original string for display
+                 start: range.startDate, 
+                 end: range.endDate
+             });
+        }
     });
 
-    calendarCategorySelect.innerHTML = '<option value="all">All Categories</option>';
-    Array.from(categoriesSet).forEach(cat => {
-        if(cat === "all") return;
+    // Populate category dropdown
+    catSelect.innerHTML = '<option value="all">All Categories</option>';
+    Array.from(categoriesSet).forEach(c => {
+        if(c === "all") return;
         let opt = document.createElement('option');
-        opt.value = cat; opt.innerText = cat.charAt(0) + cat.slice(1).toLowerCase();
-        calendarCategorySelect.appendChild(opt);
+        opt.value = c; opt.innerText = c.charAt(0) + c.slice(1).toLowerCase();
+        catSelect.appendChild(opt);
     });
     
     smoothRenderCalendar();
 }
 
-function renderModernCalendar(data) {
-    const container = document.getElementById('modernCalendar');
-    container.innerHTML = '';
+function renderSplitCalendar() {
+    const gridBody = document.getElementById('calGridBody');
+    const widgetHeader = document.getElementById('calWidgetHeader');
     
-    const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    dayHeaders.forEach(day => {
-        let div = document.createElement('div');
-        div.className = 'calendar-day-header';
-        div.innerText = day;
-        container.appendChild(div);
-    });
-
     const viewedYear = calendarState.viewDate.getFullYear();
     const viewedMonth = calendarState.viewDate.getMonth();
+    
+    // Update Widget Title
+    widgetHeader.innerText = calendarState.viewDate.toLocaleString('default', { month: 'long', year: 'numeric' });
 
     const firstDay = new Date(viewedYear, viewedMonth, 1).getDay();
     const daysInMonth = new Date(viewedYear, viewedMonth + 1, 0).getDate(); 
 
-    const parsedEvents = [];
-    const trainingSummaryFreq = {};
-
-    data.forEach(row => {
-        let range = parseTrainingsDateRange(row['INCLUSIVE DATES']);
-        if(range) {
-             parsedEvents.push({...row, start: range.startDate, end: range.endDate});
-             
-             let training = (row['TRAINING/LECTURE'] || row['Training/Lecture'] || "").trim();
-             if(training !== "") {
-                 trainingSummaryFreq[training] = (trainingSummaryFreq[training] || 0) + 1;
-             }
-        }
-    });
-
-    calendarState.currentMonthEvents = parsedEvents; 
+    gridBody.innerHTML = '';
+    let eventsToDisplayInList = [];
 
     const gridDayCount = daysInMonth + firstDay;
     for (let i = 0; i < gridDayCount; i++) {
         let cell = document.createElement('div');
-        cell.className = 'calendar-day-cell';
+        cell.className = 'cal-day';
         
         if (i < firstDay) {
-            cell.classList.add('empty-cell');
+            cell.classList.add('cal-empty');
         } else {
             const dayNum = i - firstDay + 1;
-            cell.innerHTML = `<div class="day-number">${dayNum}</div>`;
+            cell.innerText = dayNum;
             
-            const cellDate = new Date(viewedYear, viewedMonth, dayNum);
+            // Normalize cell time to midnight
+            const cellTime = new Date(viewedYear, viewedMonth, dayNum, 0,0,0).getTime();
             
-            const dayEvents = parsedEvents.filter(event => {
-                const cellTime = cellDate.getTime();
-                const inGridRange = (cellTime >= event.start.getTime() && cellTime <= event.end.getTime());
-                const matchesCat = (calendarState.filterCategory === 'all' || (event['CATEGORY'] || event['Category'] || '').trim().toUpperCase() === calendarState.filterCategory);
+            const dayEvents = calendarState.parsedEvents.filter(ev => {
+                // Normalize event start/end to midnight for safe comparison
+                const sTime = new Date(ev.start.getFullYear(), ev.start.getMonth(), ev.start.getDate(), 0,0,0).getTime();
+                const eTime = new Date(ev.end.getFullYear(), ev.end.getMonth(), ev.end.getDate(), 0,0,0).getTime();
                 
-                const pickerStart = calendarState.startDate ? calendarState.startDate.getTime() : 0;
-                const pickerEnd = calendarState.endDate ? calendarState.endDate.getTime() : Infinity;
-                const inPickerRange = (cellTime >= pickerStart && cellTime <= pickerEnd);
+                const inGridRange = (cellTime >= sTime && cellTime <= eTime);
+                const matchesCat = (calendarState.filterCategory === 'all' || ev.category.toUpperCase() === calendarState.filterCategory);
+                
+                let inPickerRange = true;
+                if (calendarState.startDate && calendarState.endDate) {
+                     const pStart = new Date(calendarState.startDate.getFullYear(), calendarState.startDate.getMonth(), calendarState.startDate.getDate(), 0,0,0).getTime();
+                     const pEnd = new Date(calendarState.endDate.getFullYear(), calendarState.endDate.getMonth(), calendarState.endDate.getDate(), 0,0,0).getTime();
+                     inPickerRange = (cellTime >= pStart && cellTime <= pEnd);
+                }
                 
                 return inGridRange && matchesCat && inPickerRange;
             });
 
             if(dayEvents.length > 0) {
-                if(dayEvents.length >= 5) {
-                    cell.classList.add('freq-5-plus');
-                } else if(dayEvents.length >= 3) {
-                    cell.classList.add('freq-3-4');
+                if(dayEvents.length >= 3) {
+                    cell.classList.add('cal-has-events-3');
+                } else if(dayEvents.length === 2) {
+                    cell.classList.add('cal-has-events-2');
                 } else {
-                    cell.classList.add('freq-1-2');
+                    cell.classList.add('cal-has-events-1');
                 }
                 
-                dayEvents.forEach((_, idx) => {
-                    let dot = document.createElement('div');
-                    dot.className = 'event-dot';
-                    dot.style.backgroundColor = idx < 3 ? singleBarOptions.backgroundColor : '#cbd5e1';
-                    cell.appendChild(dot);
+                // Add unique events to list for this month
+                dayEvents.forEach(ev => {
+                    if(!eventsToDisplayInList.includes(ev)) {
+                        eventsToDisplayInList.push(ev);
+                    }
                 });
-
-                cell.onclick = () => showEventDetails(cellDate, dayEvents, trainingSummaryFreq);
             }
         }
-        container.appendChild(cell);
+        gridBody.appendChild(cell);
     }
+
+    renderTrainingsList(eventsToDisplayInList);
 }
 
-function showEventDetails(date, events, freqSummary) {
-    const detailsPanel = document.getElementById('eventDetailsPanel');
-    const title = document.getElementById('detailsDateTitle');
-    const content = document.getElementById('detailsContentList');
-    
-    title.innerText = `Event(s) on ${date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
-    content.innerHTML = ''; 
+function renderTrainingsList(events) {
+    const listArea = document.getElementById('trainingsListArea');
+    const countBadge = document.getElementById('listEventCount');
+    const headerTitle = document.getElementById('listHeaderTitle');
 
-    events.forEach(event => {
-        let training = (event['TRAINING/LECTURE'] || event['Training/Lecture'] || "").trim();
-        let freq = freqSummary[training] || 0;
-        let remarks = (event['REMARKS'] || event['Remarks'] || '---').trim();
+    if(!listArea) return;
 
-        let block = document.createElement('div');
-        block.className = 'details-event-block';
-        block.innerHTML = `
-            <div class="event-title">${training}</div>
-            <div class="details-meta">
-                CATEGORY: <span style="font-weight:600; color: #64748b;">${event['CATEGORY'] || event['Category']}</span><br>
-                INCLUSIVE DATES: <span style="font-weight:600; color: #64748b;">${event['INCLUSIVE DATES']}</span><br>
-                NO. PAX: <span class="details-pax">${event['NO. PAX'] || event['No. PAX'] || 'N/A'}</span><br>
-                FACILITATOR: <span class="details-fac">${event['FACILITATOR'] || event['Facilitator'] || 'N/A'}</span><br>
-                FREQ: <span style="color: #64748b; font-weight: 700;">${freq}</span><br>
-                REMARKS: <span style="color: #64748b; font-weight: 600;">${remarks}</span>
+    // Sort events by start date
+    events.sort((a,b) => a.start.getTime() - b.start.getTime());
+
+    let rangeTxt = calendarState.viewDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+    if(calendarState.startDate && calendarState.endDate) {
+        rangeTxt = "Custom Date Range";
+    }
+    headerTitle.innerText = `All Trainings for ${rangeTxt}`;
+
+    listArea.innerHTML = '';
+    countBadge.innerText = `${events.length} found`;
+
+    if(events.length === 0) {
+        listArea.innerHTML = '<div style="padding: 30px; color: #64748b; text-align: center; font-weight: 600;">No events found for this selection.</div>';
+        return;
+    }
+
+    events.forEach((ev, index) => {
+        let card = document.createElement('div');
+        card.className = 'list-event-card';
+        card.style.animationDelay = `${index * 0.05}s`;
+        
+        card.innerHTML = `
+            <div class="lec-title">${ev.title}</div>
+            <div class="lec-grid">
+                <div class="lec-item"><span>Category:</span> ${ev.category || 'N/A'}</div>
+                <div class="lec-item"><span>Dates:</span> ${ev.dateStr || 'N/A'}</div>
+                <div class="lec-item"><span>No. PAX:</span> ${ev.pax || '0'}</div>
+                <div class="lec-item"><span>Facilitator:</span> ${ev.fac || 'N/A'}</div>
             </div>
+            <div class="lec-remarks"><span>Remarks:</span> ${ev.remarks || '---'}</div>
         `;
-        content.appendChild(block);
+        listArea.appendChild(card);
     });
-
-    detailsPanel.classList.add('panel-details-open'); 
 }
 
-function closeDetailsPanel() {
-    const detailsPanel = document.getElementById('eventDetailsPanel');
-    detailsPanel.classList.remove('panel-details-open'); 
-}
 
+// ... (Previous processVolunteersData remains below)
 function processVolunteersData(data) {
     let totalOrgs = 0;
     let totalIndividualsInOrgs = 0;
