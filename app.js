@@ -1,8 +1,7 @@
 Chart.register(ChartDataLabels);
 
-// 1. YOUR SECURE GOOGLE APPS SCRIPT WEB APP URL
-// STEP 3 UPDATE: Paste your newly deployed Apps Script URL right here inside the quotes.
-const webAppUrl = "https://script.google.com/macros/s/AKfycbxM3ri29FbMRilWUnnn26Bxc33tCxx26bv_M3KBNeI0bms2eEKlo6XrSg2GYFo5-fgRYw/exec";
+// Restored your original working Web App URL so the main dashboard loads properly
+const webAppUrl = "https://script.google.com/macros/s/AKfycbwdl6df9uXUtM0-ufyh10tNz1X_4WZi03fqXrRwtdysOjsblDwSOkeAlBriw3txXe2lXQ/exec";
 
 // Global Raw Data Vault
 let rawOperationsData = [];
@@ -332,10 +331,9 @@ function applyGlobalYearFilter(targetYear) {
 }
 
 // ----------------------------------------------------------------------
-// STEP 4 UPDATE: TRAININGS DASHBOARD LOGIC (Live Sheet Integration)
+// TRAININGS DASHBOARD LOGIC
 // ----------------------------------------------------------------------
 function processTrainingsData(data) {
-    // This strictly relies on your live Google Sheet data now.
     let workingData = Array.isArray(data) ? data : [];
 
     let totalPax = 0;
@@ -417,6 +415,8 @@ function processTrainingsData(data) {
     });
     if (mLabels.length > 0) {
         drawTrainLineChart('trainMonthlyChart', mLabels, mData);
+    } else {
+        drawTrainLineChart('trainMonthlyChart', ['No Data'], [0]);
     }
 }
 
@@ -482,6 +482,11 @@ function populateTopList(containerId, dataObj) {
     
     let sorted = Object.keys(dataObj).map(k => ({name: k, count: dataObj[k]})).sort((a,b) => b.count - a.count).slice(0, 5); // Show Top 5
     
+    if (sorted.length === 0) {
+        container.innerHTML = `<div style="color: #94a3b8; font-size: 0.7rem; padding: 10px;">No Data</div>`;
+        return;
+    }
+
     sorted.forEach((item, index) => {
         container.innerHTML += `
             <div class="legend-item" style="animation-delay: ${index * 0.04}s;">
