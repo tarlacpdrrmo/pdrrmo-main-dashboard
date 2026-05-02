@@ -501,6 +501,9 @@ function processDocumentsData(data) {
     renderLineChartByTimeframe('daily');
 }
 
+// ----------------------------------------------------
+// SMOOTH KPI ANIMATION FUNCTION
+// ----------------------------------------------------
 function updateTrackingKPIDisplays() {
     const cardReqCount = document.getElementById('doc-kpi-request').parentElement; 
     const cardAction = document.getElementById('doc-kpi-action').parentElement; 
@@ -512,20 +515,19 @@ function updateTrackingKPIDisplays() {
     const cardCancelled = document.getElementById('doc-kpi-cancelled').parentElement; 
     const cardNoAction = document.getElementById('doc-kpi-no-action').parentElement; 
 
-    cardReqCount.style.display = '';
+    // The Anchor must always remain visible
+    cardReqCount.classList.remove('kpi-hidden');
 
     if (currentPieState.level === 1) {
-        [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => card.style.display = '');
-        
+        // Reset anchor numbers
         document.getElementById('doc-kpi-request').innerText = originalKPITotals.req;
         document.getElementById('doc-kpi-action').innerText = originalKPITotals.action;
-        document.getElementById('doc-kpi-catered').innerText = originalKPITotals.catered;
-        document.getElementById('doc-kpi-inv-att').innerText = originalKPITotals.invAttended;
-        document.getElementById('doc-kpi-not-catered').innerText = originalKPITotals.notCatered;
-        document.getElementById('doc-kpi-others').innerText = originalKPITotals.others;
-        document.getElementById('doc-kpi-inv-not').innerText = originalKPITotals.invNotAttended;
-        document.getElementById('doc-kpi-cancelled').innerText = originalKPITotals.cancelled;
-        document.getElementById('doc-kpi-no-action').innerText = originalKPITotals.noAction;
+        
+        // Smoothly reveal all specific cards back to the grid
+        [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => {
+            card.classList.remove('kpi-hidden');
+        });
+
     } else {
         let dynTotalRequestsMatched = 0;
         let dynActionsActuallyTakenMatched = 0;
@@ -542,22 +544,27 @@ function updateTrackingKPIDisplays() {
             }
         });
 
+        // Set the dynamic anchor numbers
         document.getElementById('doc-kpi-request').innerText = dynTotalRequestsMatched;
         document.getElementById('doc-kpi-action').innerText = dynActionsActuallyTakenMatched;
 
-        [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => card.style.display = 'none');
+        // Smoothly collapse ALL unmentioned cards out of the grid
+        [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => {
+            card.classList.add('kpi-hidden');
+        });
         
+        // Instantly bring back ONLY the relevant ones based on category
         if (targetCategory === 'Request') {
-            cardCatered.style.display = '';
-            cardNotCatered.style.display = '';
-            cardCancelled.style.display = ''; 
+            cardCatered.classList.remove('kpi-hidden');
+            cardNotCatered.classList.remove('kpi-hidden');
+            cardCancelled.classList.remove('kpi-hidden'); 
         } else if (targetCategory === 'Invitation') {
-            cardInvAtt.style.display = '';
-            cardInvNot.style.display = '';
+            cardInvAtt.classList.remove('kpi-hidden');
+            cardInvNot.classList.remove('kpi-hidden');
         } else if (targetCategory === 'Offer/Proposal' || targetCategory === 'For Information') {
-            cardAction.style.display = ''; 
+            cardAction.classList.remove('kpi-hidden'); 
         } else {
-            cardAction.style.display = '';
+            cardAction.classList.remove('kpi-hidden');
         }
     }
 }
