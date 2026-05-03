@@ -1,7 +1,7 @@
 Chart.register(ChartDataLabels);
 
 // 1. YOUR SECURE GOOGLE APPS SCRIPT WEB APP URL
-const webAppUrl = "https://script.google.com/macros/s/AKfycbwYUt0YFQClUUXRGwrNdnC5INPXWzWyGUeN3J8E5tRKsO2ME-Y6zu5Fv0a56fCtxhwzTg/exec";
+const webAppUrl = "YOUR_NEW_WEB_APP_URL_HERE";
 
 // Global Raw Data Vault
 let rawOperationsData = [];
@@ -209,7 +209,6 @@ document.addEventListener("DOMContentLoaded", function() {
         renderMasterServicePie(e.target.value);
     });
 
-    // MODAL EVENT LISTENERS
     const expandBtn = document.getElementById('expandTitlesBtn');
     const closeBtn = document.getElementById('closeModalBtn');
     const modal = document.getElementById('titlesModal');
@@ -227,7 +226,6 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    // NEW MODAL EVENT LISTENER FOR REMARKS DETAILS
     const expandRemarksBtn = document.getElementById('expandRemarksBtn');
     const closeRemarksModalBtn = document.getElementById('closeRemarksModalBtn');
     const remarksModal = document.getElementById('remarksModal');
@@ -244,7 +242,6 @@ document.addEventListener("DOMContentLoaded", function() {
             if(e.target === remarksModal) remarksModal.classList.remove('active'); 
         });
     }
-
 });
 
 function parseCustomDate(dateStr) {
@@ -406,9 +403,8 @@ function applyGlobalYearFilter(targetYear) {
 }
 
 // ----------------------------------------------------------------------
-// TRAININGS DASHBOARD LOGIC
+// HELPER: ROBUST KEY MATCHER
 // ----------------------------------------------------------------------
-
 const getRobustValue = (row, searchTerms, fallbackKeys) => {
     let keys = Object.keys(row);
     for (let term of searchTerms) {
@@ -425,6 +421,9 @@ const getRobustValue = (row, searchTerms, fallbackKeys) => {
     return '';
 };
 
+// ----------------------------------------------------------------------
+// TRAININGS DASHBOARD LOGIC
+// ----------------------------------------------------------------------
 function processTrainingsData(data) {
     let workingData = Array.isArray(data) ? data : [];
     
@@ -440,6 +439,7 @@ function processTrainingsData(data) {
         let agency = getRobustValue(row, ['AGENCY/OFFICE', 'AGENCY', 'OFFICE'], ['Column D']);
         let paxRaw = getRobustValue(row, ['NO. PAX', 'PAX', 'NO PAX'], ['Column E']);
         let pax = parseInt(paxRaw) || 0;
+        let status = getRobustValue(row, ['REMARKS', 'REMARK'], ['Column F']);
         let colG_Facilitator = getRobustValue(row, ['FACILITATOR'], ['Column G']);
 
         let colI_Title = getRobustValue(row, ['TRAINING/LECTURES'], ['Column I']); 
@@ -500,7 +500,6 @@ function renderTrainingOverview(monthFilter) {
     let statusCounts = {};
     let paxByCategory = {};
     
-    // Reset global remarks details array based on filtered month
     globalRemarksDetails = {}; 
 
     rawTrainingsData.forEach(row => {
@@ -528,7 +527,6 @@ function renderTrainingOverview(monthFilter) {
                 let s = String(status).trim().toUpperCase();
                 statusCounts[s] = (statusCounts[s] || 0) + 1;
 
-                // Compile data for the Remarks expand Modal
                 if (!globalRemarksDetails[s]) globalRemarksDetails[s] = [];
                 globalRemarksDetails[s].push({
                     title: getRobustValue(row, ['TRAINING/LECTURE'], ['Column C']) || 'Unspecified Event',
@@ -549,13 +547,12 @@ function renderTrainingOverview(monthFilter) {
     drawTrainBarChart('trainTypesChart', Object.keys(categoryCounts), Object.values(categoryCounts));
     drawTrainBarChart('trainNumbersChart', Object.keys(paxByCategory), Object.values(paxByCategory)); 
     
-    // Render Remarks Chart with Custom Distinct Colors
     let statusLabels = Object.keys(statusCounts);
     let statusData = Object.values(statusCounts);
     let statusColors = statusLabels.map(label => {
-        if (label === 'WITH AAR') return '#10b981'; // Emerald Green
-        if (label === 'NO AAR') return '#f43f5e'; // Rose Red
-        return '#94a3b8'; // Slate Default
+        if (label === 'WITH AAR') return '#10b981'; 
+        if (label === 'NO AAR') return '#f43f5e'; 
+        return '#94a3b8'; 
     });
     drawTrainBarChart('trainStatusChart', statusLabels, statusData, statusColors); 
 }
@@ -805,7 +802,6 @@ function populateModalList(dataObj) {
     });
 }
 
-// NEW FUNCTION: Populates the Remarks modal
 function populateRemarksModal(detailsObj) {
     const container = document.getElementById('modal-remarks-list');
     if (!container) return;
@@ -816,7 +812,6 @@ function populateRemarksModal(detailsObj) {
         return;
     }
 
-    // Process keys (WITH AAR, NO AAR, etc.)
     for (let status in detailsObj) {
         let items = detailsObj[status];
         if(items.length === 0) continue;
@@ -921,9 +916,21 @@ function processDocumentsData(data) {
         invAttended: 0, invNotAttended: 0, others: 0, noAction: 0
     };
 
+    // FIX: Parse Column I specifically as requested
+    let explicitNoAction = null;
+
     data.forEach(row => {
         let keys = Object.keys(row);
         
+        // Grab the explicit "No Action" column total from the sheet directly
+        let noActionKey = keys.find(k => k.trim().toUpperCase() === 'TOTAL NO ACTION') || 'Column I';
+        if (row[noActionKey] !== undefined && String(row[noActionKey]).trim() !== '' && explicitNoAction === null) {
+            let parsedVal = parseInt(String(row[noActionKey]).replace(/,/g, '').trim());
+            if (!isNaN(parsedVal)) {
+                explicitNoAction = parsedVal;
+            }
+        }
+
         let rawNature = row['Nature of Letter'] || row['NATURE OF LETTER'] || row['Column P'] || row['COLUMN P'] || '';
         let rawCategory = row['Category of Writing Party'] || row['CATEGORY OF WRITING PARTY'] || row['Column O'] || row['COLUMN O'] || '';
         let rawOffice = row['Received From (OFFICE)'] || row['RECEIVED FROM (OFFICE)'] || row['Received From Office'] || row['Column N'] || row['COLUMN N'] || '';
@@ -1005,6 +1012,11 @@ function processDocumentsData(data) {
             });
         }
     });
+
+    // Replace the manual count with the exact number from Column I in the sheet
+    if (explicitNoAction !== null) {
+        dynamicKPIs.noAction = explicitNoAction;
+    }
 
     originalKPITotals = {
         req: dynamicKPIs.req, 
