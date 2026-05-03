@@ -916,20 +916,27 @@ function processDocumentsData(data) {
         invAttended: 0, invNotAttended: 0, others: 0, noAction: 0
     };
 
-    // FIX: Parse Column I specifically as requested
-    let explicitNoAction = null;
+    // RAW UNFILTERED EXTRACTION FIX
+    let explicitNoAction = 0;
+    if (rawDocumentsData && rawDocumentsData.length > 0) {
+        for (let i = 0; i < Math.min(5, rawDocumentsData.length); i++) {
+            let row = rawDocumentsData[i];
+            let keys = Object.keys(row);
+            let targetKey = keys.find(k => k.trim().toUpperCase() === 'TOTAL NO ACTION' || k.trim().toUpperCase() === 'COLUMN I');
+            if (targetKey && row[targetKey] !== undefined && String(row[targetKey]).trim() !== '') {
+                let parsedVal = parseInt(String(row[targetKey]).replace(/,/g, '').trim());
+                if (!isNaN(parsedVal)) {
+                    explicitNoAction = parsedVal;
+                    break;
+                }
+            }
+        }
+    }
+    
+    dynamicKPIs.noAction = explicitNoAction;
 
     data.forEach(row => {
         let keys = Object.keys(row);
-        
-        // Grab the explicit "No Action" column total from the sheet directly
-        let noActionKey = keys.find(k => k.trim().toUpperCase() === 'TOTAL NO ACTION') || 'Column I';
-        if (row[noActionKey] !== undefined && String(row[noActionKey]).trim() !== '' && explicitNoAction === null) {
-            let parsedVal = parseInt(String(row[noActionKey]).replace(/,/g, '').trim());
-            if (!isNaN(parsedVal)) {
-                explicitNoAction = parsedVal;
-            }
-        }
 
         let rawNature = row['Nature of Letter'] || row['NATURE OF LETTER'] || row['Column P'] || row['COLUMN P'] || '';
         let rawCategory = row['Category of Writing Party'] || row['CATEGORY OF WRITING PARTY'] || row['Column O'] || row['COLUMN O'] || '';
@@ -967,9 +974,8 @@ function processDocumentsData(data) {
                 } else {
                     dynamicKPIs.others++;
                 }
-            } else {
-                dynamicKPIs.noAction++;
-            }
+            } 
+            // MANUAL FALLBACK REMOVED. WE USE THE SPREADSHEET'S EXACT SUMMARY NUMBER.
 
             let mappedNature = rawNature.trim();
             let upperNature = mappedNature.toUpperCase();
@@ -1012,11 +1018,6 @@ function processDocumentsData(data) {
             });
         }
     });
-
-    // Replace the manual count with the exact number from Column I in the sheet
-    if (explicitNoAction !== null) {
-        dynamicKPIs.noAction = explicitNoAction;
-    }
 
     originalKPITotals = {
         req: dynamicKPIs.req, 
