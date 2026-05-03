@@ -916,28 +916,10 @@ function processDocumentsData(data) {
         invAttended: 0, invNotAttended: 0, others: 0, noAction: 0
     };
 
-    // RAW UNFILTERED EXTRACTION FIX
-    let explicitNoAction = 0;
-    if (rawDocumentsData && rawDocumentsData.length > 0) {
-        for (let i = 0; i < Math.min(5, rawDocumentsData.length); i++) {
-            let row = rawDocumentsData[i];
-            let keys = Object.keys(row);
-            let targetKey = keys.find(k => k.trim().toUpperCase() === 'TOTAL NO ACTION' || k.trim().toUpperCase() === 'COLUMN I');
-            if (targetKey && row[targetKey] !== undefined && String(row[targetKey]).trim() !== '') {
-                let parsedVal = parseInt(String(row[targetKey]).replace(/,/g, '').trim());
-                if (!isNaN(parsedVal)) {
-                    explicitNoAction = parsedVal;
-                    break;
-                }
-            }
-        }
-    }
-    
-    dynamicKPIs.noAction = explicitNoAction;
-
+    // STRICTLY SCAN COLUMN Q FOR "NO ACTION" EXPLICIT TEXT
     data.forEach(row => {
         let keys = Object.keys(row);
-
+        
         let rawNature = row['Nature of Letter'] || row['NATURE OF LETTER'] || row['Column P'] || row['COLUMN P'] || '';
         let rawCategory = row['Category of Writing Party'] || row['CATEGORY OF WRITING PARTY'] || row['Column O'] || row['COLUMN O'] || '';
         let rawOffice = row['Received From (OFFICE)'] || row['RECEIVED FROM (OFFICE)'] || row['Received From Office'] || row['Column N'] || row['COLUMN N'] || '';
@@ -957,7 +939,11 @@ function processDocumentsData(data) {
             let actionTxt = (rawActionTaken || '').toString().trim().toLowerCase();
             let actionActuallyTaken = false;
             
-            if (actionTxt !== '' && actionTxt !== 'null') {
+            // STRICT LOGIC: Must explicitly contain the text "no action"
+            if (actionTxt.includes('no action')) {
+                dynamicKPIs.noAction++;
+            } 
+            else if (actionTxt !== '' && actionTxt !== 'null') {
                 actionActuallyTaken = true;
                 dynamicKPIs.action++;
                 
@@ -974,8 +960,8 @@ function processDocumentsData(data) {
                 } else {
                     dynamicKPIs.others++;
                 }
-            } 
-            // MANUAL FALLBACK REMOVED. WE USE THE SPREADSHEET'S EXACT SUMMARY NUMBER.
+            }
+            // Blanks are safely ignored, they add to NO KPI.
 
             let mappedNature = rawNature.trim();
             let upperNature = mappedNature.toUpperCase();
@@ -1028,7 +1014,7 @@ function processDocumentsData(data) {
         invAttended: dynamicKPIs.invAttended, 
         invNotAttended: dynamicKPIs.invNotAttended, 
         others: dynamicKPIs.others,
-        noAction: dynamicKPIs.noAction
+        noAction: dynamicKPIs.noAction // Updated exclusively via explicit text
     };
 
     let monthSelect = document.getElementById('docPieMonthFilter');
