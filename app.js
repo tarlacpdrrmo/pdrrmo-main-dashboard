@@ -34,8 +34,9 @@ let currentCalView = 'monthly';
 let currentCalCategory = 'all'; 
 let calDataMap = {}; 
 
-// NEW: Global Title Tracker for Modal
+// Global Trackers for Modals
 let globalTitleCounts = {};
+let globalRemarksDetails = {};
 
 // 3-Layer Interactive State Tracker
 let currentPieState = { 
@@ -208,7 +209,7 @@ document.addEventListener("DOMContentLoaded", function() {
         renderMasterServicePie(e.target.value);
     });
 
-    // NEW: MODAL EVENT LISTENERS
+    // MODAL EVENT LISTENERS
     const expandBtn = document.getElementById('expandTitlesBtn');
     const closeBtn = document.getElementById('closeModalBtn');
     const modal = document.getElementById('titlesModal');
@@ -223,6 +224,24 @@ document.addEventListener("DOMContentLoaded", function() {
         });
         modal.addEventListener('click', (e) => {
             if(e.target === modal) modal.classList.remove('active'); 
+        });
+    }
+
+    // NEW MODAL EVENT LISTENER FOR REMARKS DETAILS
+    const expandRemarksBtn = document.getElementById('expandRemarksBtn');
+    const closeRemarksModalBtn = document.getElementById('closeRemarksModalBtn');
+    const remarksModal = document.getElementById('remarksModal');
+
+    if(expandRemarksBtn && remarksModal && closeRemarksModalBtn) {
+        expandRemarksBtn.addEventListener('click', () => {
+            populateRemarksModal(globalRemarksDetails);
+            remarksModal.classList.add('active');
+        });
+        closeRemarksModalBtn.addEventListener('click', () => {
+            remarksModal.classList.remove('active');
+        });
+        remarksModal.addEventListener('click', (e) => {
+            if(e.target === remarksModal) remarksModal.classList.remove('active'); 
         });
     }
 
@@ -421,7 +440,6 @@ function processTrainingsData(data) {
         let agency = getRobustValue(row, ['AGENCY/OFFICE', 'AGENCY', 'OFFICE'], ['Column D']);
         let paxRaw = getRobustValue(row, ['NO. PAX', 'PAX', 'NO PAX'], ['Column E']);
         let pax = parseInt(paxRaw) || 0;
-        let status = getRobustValue(row, ['REMARKS', 'REMARK'], ['Column F']);
         let colG_Facilitator = getRobustValue(row, ['FACILITATOR'], ['Column G']);
 
         let colI_Title = getRobustValue(row, ['TRAINING/LECTURES'], ['Column I']); 
@@ -464,7 +482,7 @@ function processTrainingsData(data) {
         }
     });
 
-    globalTitleCounts = explicitTitleCounts; // STORE GLOBALLY FOR MODAL
+    globalTitleCounts = explicitTitleCounts; 
     populateAllList('top-title-list', explicitTitleCounts);
 
     currentCalDate = latestEventDateObj ? new Date(latestEventDateObj) : new Date();
@@ -481,6 +499,9 @@ function renderTrainingOverview(monthFilter) {
     let categoryCounts = {};
     let statusCounts = {};
     let paxByCategory = {};
+    
+    // Reset global remarks details array based on filtered month
+    globalRemarksDetails = {}; 
 
     rawTrainingsData.forEach(row => {
         let dates = getRobustValue(row, ['INCLUSIVE DATES', 'DATES', 'DATE'], ['Column A']);
@@ -506,6 +527,14 @@ function renderTrainingOverview(monthFilter) {
             if (status) {
                 let s = String(status).trim().toUpperCase();
                 statusCounts[s] = (statusCounts[s] || 0) + 1;
+
+                // Compile data for the Remarks expand Modal
+                if (!globalRemarksDetails[s]) globalRemarksDetails[s] = [];
+                globalRemarksDetails[s].push({
+                    title: getRobustValue(row, ['TRAINING/LECTURE'], ['Column C']) || 'Unspecified Event',
+                    agency: getRobustValue(row, ['AGENCY/OFFICE', 'AGENCY', 'OFFICE'], ['Column D']) || 'N/A',
+                    dates: dates || 'N/A'
+                });
             } else {
                 statusCounts['UNKNOWN'] = (statusCounts['UNKNOWN'] || 0) + 1;
             }
@@ -518,8 +547,17 @@ function renderTrainingOverview(monthFilter) {
     }
 
     drawTrainBarChart('trainTypesChart', Object.keys(categoryCounts), Object.values(categoryCounts));
-    drawTrainBarChart('trainStatusChart', Object.keys(statusCounts), Object.values(statusCounts)); 
     drawTrainBarChart('trainNumbersChart', Object.keys(paxByCategory), Object.values(paxByCategory)); 
+    
+    // Render Remarks Chart with Custom Distinct Colors
+    let statusLabels = Object.keys(statusCounts);
+    let statusData = Object.values(statusCounts);
+    let statusColors = statusLabels.map(label => {
+        if (label === 'WITH AAR') return '#10b981'; // Emerald Green
+        if (label === 'NO AAR') return '#f43f5e'; // Rose Red
+        return '#94a3b8'; // Slate Default
+    });
+    drawTrainBarChart('trainStatusChart', statusLabels, statusData, statusColors); 
 }
 
 function initCalendarControls() {
@@ -694,7 +732,7 @@ function buildMonthHTML(year, month, isSmallScale) {
     return html;
 }
 
-function drawTrainBarChart(canvasId, labels, dataArr) {
+function drawTrainBarChart(canvasId, labels, dataArr, customColors = null) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     if (window[canvasId + 'Inst']) window[canvasId + 'Inst'].destroy();
 
@@ -703,7 +741,7 @@ function drawTrainBarChart(canvasId, labels, dataArr) {
         dataArr = [0];
     }
 
-    let colors = labels.map((_, i) => pieColorPalette[(i + 2) % pieColorPalette.length]);
+    let colors = customColors || labels.map((_, i) => pieColorPalette[(i + 2) % pieColorPalette.length]);
 
     window[canvasId + 'Inst'] = new Chart(ctx, {
         type: 'bar',
@@ -742,7 +780,6 @@ function populateAllList(containerId, dataObj) {
     });
 }
 
-// NEW FUNCTION: Populates the modal with full un-truncated text
 function populateModalList(dataObj) {
     const container = document.getElementById('modal-title-list');
     if (!container) return;
@@ -766,6 +803,40 @@ function populateModalList(dataObj) {
             </div>
         `;
     });
+}
+
+// NEW FUNCTION: Populates the Remarks modal
+function populateRemarksModal(detailsObj) {
+    const container = document.getElementById('modal-remarks-list');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    if (Object.keys(detailsObj).length === 0) {
+        container.innerHTML = `<div style="color: #94a3b8; font-size: 0.9rem; padding: 20px; text-align:center;">No Data Available</div>`;
+        return;
+    }
+
+    // Process keys (WITH AAR, NO AAR, etc.)
+    for (let status in detailsObj) {
+        let items = detailsObj[status];
+        if(items.length === 0) continue;
+
+        let color = status === 'WITH AAR' ? '#10b981' : (status === 'NO AAR' ? '#f43f5e' : '#64748b');
+
+        let html = `<h3 style="font-size: 0.9rem; color: ${color}; margin-top: 16px; margin-bottom: 8px; border-bottom: 2px solid #f1f5f9; padding-bottom: 6px;">${status} (${items.length})</h3>`;
+        
+        items.forEach((item, index) => {
+            html += `
+                <div class="legend-item" style="padding: 12px 0; border-bottom: 1px solid #f8fafc; align-items: flex-start; animation-delay: ${index * 0.02}s;">
+                    <div class="legend-text" style="font-size: 0.8rem; white-space: normal; line-height: 1.4;">
+                        <span style="font-weight: 800; color: #1e293b;">${item.title}</span><br>
+                        <span style="font-size: 0.7rem; color: #64748b;">${item.agency} &nbsp;|&nbsp; ${item.dates}</span>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML += html;
+    }
 }
 
 // ----------------------------------------------------------------------
