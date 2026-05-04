@@ -154,6 +154,31 @@ document.addEventListener("DOMContentLoaded", function() {
     setInterval(updateClock, 1000);
     updateClock(); 
 
+    // NEW RESET PIE CHART BUTTON EVENT
+    const resetMasterPieBtn = document.getElementById('resetMasterPieBtn');
+    if (resetMasterPieBtn) {
+        resetMasterPieBtn.addEventListener('click', function() {
+            if (masterServicePieInstance) {
+                let changed = false;
+                masterServicePieInstance.data.labels.forEach((_, index) => {
+                    if (!masterServicePieInstance.getDataVisibility(index)) {
+                        masterServicePieInstance.toggleDataVisibility(index);
+                        changed = true;
+                    }
+                });
+                
+                if (changed) {
+                    masterServicePieInstance.update();
+                }
+
+                const legendItems = document.querySelectorAll('#masterServiceLegend .legend-item');
+                legendItems.forEach(item => {
+                    item.classList.remove('hidden-slice');
+                });
+            }
+        });
+    }
+
     document.getElementById('globalYearSelect').addEventListener('change', function(e) {
         applyGlobalYearFilter(e.target.value);
     });
@@ -732,7 +757,6 @@ function buildMonthHTML(year, month, isSmallScale) {
 function drawTrainBarChart(canvasId, labels, dataArr, customColors = null) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     
-    // Ensure labels and dataArr are arrays and handle empty data properly
     if (!labels || labels.length === 0) {
         labels = ["No Data"];
         dataArr = [0];
@@ -918,7 +942,6 @@ function processDocumentsData(data) {
         invAttended: 0, invNotAttended: 0, others: 0, noAction: 0
     };
 
-    // RAW UNFILTERED EXTRACTION FIX
     let explicitNoAction = 0;
     if (rawDocumentsData && rawDocumentsData.length > 0) {
         for (let i = 0; i < Math.min(5, rawDocumentsData.length); i++) {
@@ -959,7 +982,6 @@ function processDocumentsData(data) {
             let actionTxt = (rawActionTaken || '').toString().trim().toLowerCase();
             let actionActuallyTaken = false;
             
-            // STRICT LOGIC: Must explicitly contain the text "no action"
             if (actionTxt.includes('no action')) {
                 dynamicKPIs.noAction++;
             } 
@@ -981,7 +1003,6 @@ function processDocumentsData(data) {
                     dynamicKPIs.others++;
                 }
             } 
-            // MANUAL FALLBACK REMOVED. WE USE THE SPREADSHEET'S EXACT SUMMARY NUMBER.
 
             let mappedNature = rawNature.trim();
             let upperNature = mappedNature.toUpperCase();
