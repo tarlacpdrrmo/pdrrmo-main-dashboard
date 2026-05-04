@@ -374,6 +374,7 @@ body {
     transform: translateY(-4px); 
 }
 
+/* CUSTOM CALENDAR TOOLTIP */
 .cal-tooltip {
     transition: opacity 0.25s ease, visibility 0.25s ease, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: none; 
@@ -440,7 +441,7 @@ body {
 .chart-header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
 .chart-title { font-size: 0.75rem; color: #1e293b; font-weight: 800; margin: 0; text-transform: uppercase; letter-spacing: 0.5px; }
 
-.btn-back { display: none; padding: 6px 12px; font-size: 0.7rem; cursor: pointer; border: none; border-radius: 6px; background: #e2e8f0; color: #1e293b; font-weight: 700; transition: 0.2s; }
+.btn-back { display: none; padding: 6px 12px; font-size: 0.7rem; cursor: pointer; border: none; border-radius: 4px; background: #e2e8f0; color: #1e293b; font-weight: 700; transition: 0.2s; }
 .btn-back:hover { background-color: #cbd5e1; }
 
 .chart-filter { 
@@ -498,7 +499,19 @@ body {
     animation: legendFadeIn 0.4s ease forwards;
 }
 .legend-item:hover { transform: translateX(4px); background-color: #f8fafc; border-radius: 4px; }
-.legend-color { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; transition: 0.3s ease; }
+
+/* UPDATED INTERACTIVE LEGEND CHECKMARK STYLE */
+.legend-color { 
+    width: 14px !important; 
+    height: 14px !important; 
+    border-radius: 50%; 
+    flex-shrink: 0; 
+    transition: 0.3s ease; 
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='20 6 9 17 4 12'%3e%3c/polyline%3e%3c/svg%3e");
+    background-size: 8px;
+    background-position: center;
+    background-repeat: no-repeat;
+}
 .legend-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #334155; font-weight: 600; transition: 0.3s ease; }
 .legend-val { font-weight: 800; margin-left: auto; color: #0f172a; background: #f1f5f9; padding: 2px 4px; border-radius: 4px; transition: 0.3s ease; }
 
@@ -509,12 +522,14 @@ body {
 .interactive-legend-item:active {
     transform: scale(0.98);
 }
+
+/* UPDATED HIDDEN STATE (NO STRIKETHROUGH, NO CHECKMARK) */
 .hidden-slice .legend-text {
-    text-decoration: line-through;
-    color: #94a3b8;
+    color: #94a3b8; 
 }
 .hidden-slice .legend-color {
-    background-color: #cbd5e1 !important;
+    background-color: #e2e8f0 !important;
+    background-image: none !important; 
 }
 .hidden-slice .legend-val {
     opacity: 0.4;
@@ -829,7 +844,7 @@ td {
     .cal-view-yearly { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-/* --- NEW: MODAL OVERLAY STYLES --- */
+/* --- MODAL OVERLAY STYLES --- */
 .btn-expand {
     background: transparent;
     border: none;
