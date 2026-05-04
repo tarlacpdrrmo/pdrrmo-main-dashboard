@@ -426,9 +426,6 @@ function applyGlobalYearFilter(targetYear) {
     processDocumentsData(filteredDocs);
 }
 
-// ----------------------------------------------------------------------
-// HELPER: ROBUST KEY MATCHER
-// ----------------------------------------------------------------------
 const getRobustValue = (row, searchTerms, fallbackKeys) => {
     let keys = Object.keys(row);
     for (let term of searchTerms) {
@@ -444,10 +441,8 @@ const getRobustValue = (row, searchTerms, fallbackKeys) => {
     }
     return '';
 };
+// (...Part 1 continued)
 
-// ----------------------------------------------------------------------
-// TRAININGS DASHBOARD LOGIC
-// ----------------------------------------------------------------------
 function processTrainingsData(data) {
     let workingData = Array.isArray(data) ? data : [];
     
@@ -462,16 +457,12 @@ function processTrainingsData(data) {
         let title = getRobustValue(row, ['TRAINING/LECTURE'], ['Column C']); 
         let agency = getRobustValue(row, ['AGENCY/OFFICE', 'AGENCY', 'OFFICE'], ['Column D']);
 
-        // participants data from Column E.
         let participantsRaw = getRobustValue(row, ['PARTICIPANTS', 'PARTICIPANT'], ['Column E']);
         let participantsSafe = participantsRaw ? String(participantsRaw).trim() : 'N/A';
 
-        // PAX data shifted from Column E to Column F. Correcting fallback.
         let paxRaw = getRobustValue(row, ['NO. PAX', 'PAX', 'NO PAX'], ['Column F']);
         let pax = parseInt(paxRaw) || 0;
-        // REMARKS data shifted from Column F to Column G. Correcting fallback.
         let status = getRobustValue(row, ['REMARKS', 'REMARK'], ['Column G']);
-        // FACILITATOR data shifted from Column G to Column H. Correcting fallback.
         let colG_Facilitator = getRobustValue(row, ['FACILITATOR'], ['Column H']);
 
         let colI_Title = getRobustValue(row, ['TRAINING/LECTURES'], ['Column I']); 
@@ -546,12 +537,9 @@ function renderTrainingOverview(monthFilter) {
         }
 
         let cat = getRobustValue(row, ['CATEGORY'], ['Column B']);
-        // PAX data shifted from Column E to Column F. Correcting fallback.
         let paxRaw = getRobustValue(row, ['NO. PAX', 'PAX', 'NO PAX'], ['Column F']);
         let pax = parseInt(paxRaw) || 0;
-        // REMARKS data shifted from Column F to Column G. Correcting fallback.
         let status = getRobustValue(row, ['REMARKS', 'REMARK'], ['Column G']);
-        // FACILITATOR data shifted from Column G to Column H. Correcting fallback.
         let facilitatedBy = getRobustValue(row, ['FACILITATOR'], ['Column H']);
 
         if (cat && String(cat).trim() !== "") {
@@ -594,6 +582,7 @@ function renderTrainingOverview(monthFilter) {
     drawTrainBarChart('trainStatusChart', statusLabels, statusData, statusColors); 
 }
 
+// === FIX IS HERE: Add proper quotes around 'monthly', 'quarterly', and 'yearly' ===
 function initCalendarControls() {
     const timeFilter = document.getElementById('trainCalendarFilter');
     const catFilter = document.getElementById('trainCategoryFilter'); 
@@ -635,9 +624,9 @@ function initCalendarControls() {
         let newNext = btnNext.cloneNode(true);
         btnNext.parentNode.replaceChild(newNext, btnNext);
         newNext.addEventListener('click', function() {
-            if(currentCalView === 'monthly) currentCalDate.setMonth(currentCalDate.getMonth() + 1);
-            else if(currentCalView === 'quarterly quarterly') currentCalDate.setMonth(currentCalDate.getMonth() + 3);
-            else if(currentCalView === 'yearly) currentCalDate.setFullYear(currentCalDate.getFullYear() + 1);
+            if(currentCalView === 'monthly') currentCalDate.setMonth(currentCalDate.getMonth() + 1);
+            else if(currentCalView === 'quarterly') currentCalDate.setMonth(currentCalDate.getMonth() + 3);
+            else if(currentCalView === 'yearly') currentCalDate.setFullYear(currentCalDate.getFullYear() + 1);
             renderCalendar();
         });
     }
@@ -766,6 +755,8 @@ function buildMonthHTML(year, month, isSmallScale) {
     html += `</div></div>`;
     return html;
 }
+// (Part 2 continued in Part 3...)
+// (...Part 2 continued)
 
 function drawTrainBarChart(canvasId, labels, dataArr, customColors = null) {
     const ctx = document.getElementById(canvasId).getContext('2d');
@@ -995,7 +986,11 @@ function processDocumentsData(data) {
             let actionTxt = (rawActionTaken || '').toString().trim().toLowerCase();
             let actionActuallyTaken = false;
             
-            if (actionTxt !== '' && actionTxt !== 'null') {
+            // STRICT LOGIC: Must explicitly contain the text "no action" in Column Q
+            if (actionTxt.includes('no action')) {
+                dynamicKPIs.noAction++;
+            } 
+            else if (actionTxt !== '' && actionTxt !== 'null') {
                 actionActuallyTaken = true;
                 dynamicKPIs.action++;
                 
@@ -1009,8 +1004,6 @@ function processDocumentsData(data) {
                     dynamicKPIs.invNotAttended++;
                 } else if (actionTxt.includes('attended')) {
                     dynamicKPIs.invAttended++;
-                } else if (actionTxt.includes('no action')) {
-                    // Handled explicitly from first 5 rows to get Column I totals.
                 } else {
                     dynamicKPIs.others++;
                 }
@@ -1760,6 +1753,12 @@ function drawLineChart(canvasId, labels, dataArr) {
                     ticks: { font: { family: 'Inter', size: 9 }, color: '#64748b', maxTicksLimit: 12 } 
                 }, 
                 y: { 
+                    title: {
+                        display: true,
+                        text: 'Received From (OFFICE)',
+                        font: { family: 'Inter', size: 12, weight: '600', style: 'italic' },
+                        color: '#475569'
+                    },
                     grid: { color: '#f1f5f9', drawBorder: false }, 
                     beginAtZero: true, 
                     ticks: { font: { family: 'Inter', size: 10 }, color: '#64748b' } 
