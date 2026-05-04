@@ -279,9 +279,16 @@
                             <div class="card span-2x2">
                                 <div class="chart-header-actions" style="border-bottom: none; margin-bottom: 0;">
                                     <h4 class="chart-title" style="font-size: 0.85rem;">Overall Services Breakdown</h4>
-                                    <select id="masterServiceMonthFilter" class="chart-filter" style="min-width: 140px;">
-                                        <option value="all">All Time</option>
-                                    </select>
+                                    <!-- NEW RESET BUTTON WRAPPER -->
+                                    <div style="display:flex; gap:8px; align-items:center;">
+                                        <button id="resetMasterPieBtn" class="btn-reset" title="Show all categories">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg>
+                                            Reset
+                                        </button>
+                                        <select id="masterServiceMonthFilter" class="chart-filter" style="min-width: 140px;">
+                                            <option value="all">All Time</option>
+                                        </select>
+                                    </div>
                                 </div>
                                 <div class="large-pie-container">
                                     <div class="doc-pie-wrapper" style="flex: 1.5;">
@@ -484,7 +491,6 @@
                                 <div class="chart-render-area"><canvas id="trainTypesChart"></canvas></div>
                             </div>
                             
-                            <!-- UPDATED REMARKS CARD WITH EXPAND ICON -->
                             <div class="card chart-card flex-col p-0">
                                 <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid transparent; padding-right: 12px;">
                                     <h4 class="card-inner-title" style="padding-bottom: 0;">Remarks</h4>
@@ -580,7 +586,7 @@
         </div>
     </div>
 
-    <!-- NEW MODAL 2: EXPANDED REMARKS DETAILS -->
+    <!-- MODAL 2: EXPANDED REMARKS DETAILS -->
     <div id="remarksModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
