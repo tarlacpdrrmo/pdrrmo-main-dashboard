@@ -10,6 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     
+    <!-- SMOOTH PREMIUM LOADER STYLES -->
     <style>
         #global-loader {
             position: fixed;
@@ -26,15 +27,15 @@
             overflow: hidden;
         }
 
-        /* The 30% Opacity Background Image */
+        /* The 60% Opacity Background Image */
         .loader-bg {
             position: absolute;
             top: -20px; left: -20px; right: -20px; bottom: -20px;
-            background-image: url('bg.jpg');
+            background-image: url('bg.jpg'); /* Assuming you kept the renamed version */
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            opacity: 0.3;
+            opacity: 0.6; /* Bumped up to 60% */
             filter: blur(6px);
             z-index: 1;
         }
@@ -43,7 +44,8 @@
         .loader-gloss {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.85) 100%);
+            /* Lowered the white intensity so the 60% image can shine through clearly */
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.6) 100%);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             z-index: 2;
@@ -109,7 +111,7 @@
             font-family: 'Inter', sans-serif;
             font-weight: 600;
             font-size: 0.7rem;
-            color: #64748b;
+            color: #1e293b; /* Darkened slightly to contrast better with the image */
             letter-spacing: 4px;
             text-transform: uppercase;
             animation: gentle-pulse 2s ease-in-out infinite;
@@ -135,6 +137,7 @@
 </head>
 <body>
     
+    <!-- THE PREMIUM LOADING OVERLAY WITH IMAGE -->
     <div id="global-loader">
         <div class="loader-bg"></div>
         <div class="loader-gloss"></div>
@@ -150,6 +153,7 @@
     </div>
 
     <div class="dashboard-container">
+        <!-- Sidebar Navigation -->
         <nav class="sidebar">
             
             <div class="sidebar-logo-container">
@@ -178,6 +182,7 @@
                     <span>Communication Letters</span>
                 </li>
 
+                <!-- Trainings & Seminars Sidebar Link -->
                 <li onclick="scrollToSection('trainings')">
                     <svg class="menu-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" />
@@ -219,6 +224,7 @@
             </ul>
         </nav>
 
+        <!-- Main Content Area -->
         <main class="main-content" id="scroll-area">
             
             <header class="page-header">
@@ -238,6 +244,7 @@
                 </div>
             </header>
             
+            <!-- Panel 1: Assets & Personnel -->
             <section id="assets" class="panel">
                 
                 <div class="panel-header-wrapper">
@@ -293,11 +300,13 @@
                     </div>
                     
                     <div class="charts-wrapper">
+                        <!-- TOP MAIN CHARTS -->
                         <div class="charts-grid">
                             
                             <div class="card span-2x2">
                                 <div class="chart-header-actions" style="border-bottom: none; margin-bottom: 0;">
                                     <h4 class="chart-title" style="font-size: 0.85rem;">Overall Services Breakdown</h4>
+                                    <!-- RESET BUTTON WRAPPER -->
                                     <div style="display:flex; gap:8px; align-items:center;">
                                         <button id="resetMasterPieBtn" class="btn-reset" title="Show all categories">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg>
@@ -350,6 +359,7 @@
 
                         <h4 class="section-divider-title">ANCILLARY SERVICES</h4>
 
+                        <!-- BOTTOM 5 COMPACT CHARTS -->
                         <div class="charts-grid">
                             
                             <div class="card chart-card flex-col p-0">
@@ -388,6 +398,7 @@
                 </div>
             </section>
 
+            <!-- Panel 2: Document Tracking -->
             <section id="tracking" class="panel">
                 
                 <h3 class="panel-heading">COMMUNICATION LETTERS RECEIVED</h3>
@@ -437,10 +448,12 @@
                 </div>
             </section>
 
+            <!-- Panel 3: Trainings Dashboard -->
             <section id="trainings" class="panel">
                 <h3 class="panel-heading">Trainings and Seminars Dashboard</h3>
                 <div class="assets-layout">
                     
+                    <!-- Left KPIs Column -->
                     <div class="kpi-column" style="width: 220px; display: flex; flex-direction: column;">
                         <div class="card kpi-card">
                             <h4>TOTAL PAX ATTENDEE</h4>
@@ -470,6 +483,7 @@
 
                     <div class="charts-wrapper" style="display: flex; flex-direction: column;">
                         
+                        <!-- OVERVIEW MONTH FILTER -->
                         <div style="display: flex; justify-content: center; margin-bottom: 8px;">
                             <div style="background: #ffffff; padding: 10px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 16px; border: 1px solid #f1f5f9;">
                                 <span style="font-size: 0.75rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Filter Month</span>
@@ -491,6 +505,7 @@
                             </div>
                         </div>
 
+                        <!-- Top Analytics Row -->
                         <div class="charts-grid">
                             
                             <div class="card chart-card flex-col p-0">
@@ -503,6 +518,7 @@
                                 <div class="chart-render-area"><canvas id="trainTypesChart"></canvas></div>
                             </div>
                             
+                            <!-- REMARKS CARD WITH EXPAND ICON -->
                             <div class="card chart-card flex-col p-0">
                                 <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid transparent; padding-right: 12px;">
                                     <h4 class="card-inner-title" style="padding-bottom: 0;">Remarks</h4>
@@ -520,6 +536,7 @@
                             
                         </div>
 
+                        <!-- Full Width Interactive Calendar -->
                         <div class="card doc-chart-card" style="margin-top: 16px; flex: 1; display: flex; flex-direction: column; min-height: 380px;">
                             <div class="chart-header-actions" style="margin-bottom: 0; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9;">
                                 <h4 class="chart-title">TRAININGS & SEMINARS CALENDAR</h4>
@@ -550,6 +567,7 @@
                 </div>
             </section>
 
+            <!-- Panel 4: Volunteer's Section -->
             <section id="volunteers" class="panel">
                 
                 <h3 class="panel-heading">Volunteer's Section</h3>
@@ -566,6 +584,7 @@
                 </div>
             </section>
 
+            <!-- Map Panels -->
             <section id="ews-map" class="panel iframe-panel">
                 <h3 class="panel-heading">Early Warning System Map</h3>
                 <iframe src="https://tarlacpdrrmo.github.io/tarlac-ews-map/" title="EWS Map"></iframe>
@@ -584,6 +603,7 @@
         </main>
     </div>
 
+    <!-- MODAL 1: EXPANDED TITLES -->
     <div id="titlesModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -594,6 +614,7 @@
         </div>
     </div>
 
+    <!-- MODAL 2: EXPANDED REMARKS DETAILS -->
     <div id="remarksModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -604,6 +625,7 @@
         </div>
     </div>
     
+    <!-- SECURITY DETERRENTS -->
     <script>
         // Disable Right-Click
         document.addEventListener('contextmenu', event => event.preventDefault());
