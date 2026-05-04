@@ -18,15 +18,37 @@
             left: 0;
             width: 100vw;
             height: 100vh;
-            background-color: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 99999;
             transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.8s;
+            overflow: hidden;
+        }
+
+        /* The 60% Opacity Background Image */
+        .loader-bg {
+            position: absolute;
+            top: -20px; left: -20px; right: -20px; bottom: -20px;
+            background-image: url('bg.jpg'); /* Assuming you kept the renamed version */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: 0.6; /* Bumped up to 60% */
+            filter: blur(6px);
+            z-index: 1;
+        }
+
+        /* The Glossy Frosted Glass Overlay */
+        .loader-gloss {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            /* Lowered the white intensity so the 60% image can shine through clearly */
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.6) 100%);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            z-index: 2;
         }
 
         .loader-circle-container {
@@ -37,6 +59,7 @@
             justify-content: center;
             align-items: center;
             margin-bottom: 24px;
+            z-index: 3;
         }
 
         .loader-ring-outer {
@@ -88,10 +111,12 @@
             font-family: 'Inter', sans-serif;
             font-weight: 600;
             font-size: 0.7rem;
-            color: #64748b;
+            color: #1e293b; /* Darkened slightly to contrast better with the image */
             letter-spacing: 4px;
             text-transform: uppercase;
             animation: gentle-pulse 2s ease-in-out infinite;
+            position: relative;
+            z-index: 3;
         }
 
         @keyframes spin-smooth {
@@ -112,8 +137,10 @@
 </head>
 <body>
     
-    <!-- THE PREMIUM LOADING OVERLAY -->
+    <!-- THE PREMIUM LOADING OVERLAY WITH IMAGE -->
     <div id="global-loader">
+        <div class="loader-bg"></div>
+        <div class="loader-gloss"></div>
         <div class="loader-circle-container">
             <div class="loader-ring-outer"></div>
             <div class="loader-ring-inner"></div>
@@ -279,7 +306,7 @@
                             <div class="card span-2x2">
                                 <div class="chart-header-actions" style="border-bottom: none; margin-bottom: 0;">
                                     <h4 class="chart-title" style="font-size: 0.85rem;">Overall Services Breakdown</h4>
-                                    <!-- NEW RESET BUTTON WRAPPER -->
+                                    <!-- RESET BUTTON WRAPPER -->
                                     <div style="display:flex; gap:8px; align-items:center;">
                                         <button id="resetMasterPieBtn" class="btn-reset" title="Show all categories">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg>
@@ -491,6 +518,7 @@
                                 <div class="chart-render-area"><canvas id="trainTypesChart"></canvas></div>
                             </div>
                             
+                            <!-- REMARKS CARD WITH EXPAND ICON -->
                             <div class="card chart-card flex-col p-0">
                                 <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid transparent; padding-right: 12px;">
                                     <h4 class="card-inner-title" style="padding-bottom: 0;">Remarks</h4>
