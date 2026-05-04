@@ -154,6 +154,30 @@ document.addEventListener("DOMContentLoaded", function() {
     setInterval(updateClock, 1000);
     updateClock(); 
 
+    const resetMasterPieBtn = document.getElementById('resetMasterPieBtn');
+    if (resetMasterPieBtn) {
+        resetMasterPieBtn.addEventListener('click', function() {
+            if (masterServicePieInstance) {
+                let changed = false;
+                masterServicePieInstance.data.labels.forEach((_, index) => {
+                    if (!masterServicePieInstance.getDataVisibility(index)) {
+                        masterServicePieInstance.toggleDataVisibility(index);
+                        changed = true;
+                    }
+                });
+                
+                if (changed) {
+                    masterServicePieInstance.update();
+                }
+
+                const legendItems = document.querySelectorAll('#masterServiceLegend .legend-item');
+                legendItems.forEach(item => {
+                    item.classList.remove('hidden-slice');
+                });
+            }
+        });
+    }
+
     document.getElementById('globalYearSelect').addEventListener('change', function(e) {
         applyGlobalYearFilter(e.target.value);
     });
@@ -243,8 +267,6 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 });
-// (Part 1 continued in next message...)
-// (...Part 1 continued)
 
 function parseCustomDate(dateStr) {
     if (!dateStr) return null;
@@ -344,269 +366,166 @@ async function loadAllData() {
         });
         
         rawDocumentsData.forEach(r => {
-            let y = extractYear(r,You are correct, a new column "PARTICIPANTS" was inserted into Column E of your spreadsheet, which shifted all subsequent columns. This messed up the data mapping for the dashboard.
+            let y = extractYear(r, 'doc');
+            if (y && !isNaN(y)) yearsSet.add(y);
+        });
 
-I have updated the `app.js` file to correct the mappings. Specifically:
-
-*   **NO. PAX** (The attendee count) is now mapped to **Column F** (previously Column E). This will fix the "TOTAL PAX ATTENDEES" and the attendee count chart, which were both incorrectly showing 0.
-*   **REMARKS** (Text like "Approved", "Denied", etc.) is now mapped to **Column G** (previously Column F). This will fix the remarks bar chart, which was incorrectly displaying and counting the numerical participant data.
-*   **FACILITATOR** is now pointed to **Column H**.
-
-Since this file is very large, it has been broken into parts to ensure no code is cut off. Be sure to copy and replace your current `app.js` content with *all parts* in order.
-
-*(Note: These parts combine into a single, uncut JavaScript file.)*
-
-***
-
-### **Complete corrected `app.js` (Part 1 of 3)**
-```javascript
-Chart.register(ChartDataLabels);
-
-// 1. YOUR SECURE GOOGLE APPS SCRIPT WEB APP URL
-const webAppUrl = "YOUR_NEW_WEB_APP_URL_HERE";
-
-// Global Raw Data Vault
-let rawOperationsData = [];
-let rawDocumentsData = [];
-let rawVolunteersData = [];
-let rawTrainingsData = []; 
-
-// Global Chart & State Trackers
-let docPieChartInstance = null;
-let docLineChartInstance = null;
-let masterServicePieInstance = null;
-let monthlyTotalPieInstance = null; 
-let toggleChartInstances = {};
-
-// Training Charts State Trackers
-let trainStatusChartInst = null;
-let trainTypesChartInst = null;
-let trainNumbersChartInst = null;
-
-let globalLineData = []; 
-let globalDocRecords = []; 
-let originalKPITotals = {};
-let operationsMonthlyCache = {}; 
-let toggleChartData = {};
-
-// Global tracker for Training Calendar
-let globalTrainLineData = [];
-let currentCalDate = new Date();
-let currentCalView = 'monthly'; 
-let currentCalCategory = 'all'; 
-let calDataMap = {}; 
-
-// Global Trackers for Modals
-let globalTitleCounts = {};
-let globalRemarksDetails = {};
-
-// 3-Layer Interactive State Tracker
-let currentPieState = { 
-    level: 1, 
-    filterKey: 'all', 
-    level1Target: null, 
-    level2Target: null 
-};
-
-const serviceCategoryLabels = [
-    'TRAUMA (ROADCRASH)', 'Roadside Assistance', 'Patient Transport',
-    'Medical Emergencies', 'Standby Medic & VIP', 'SUPPORT SERVICES (MANPOWER, TRANSPORTATION & OTHER RESOURCES)',
-    'Clearing Operations', 'Firetruck', 'Hauling', 'Ledvan Truck'
-];
-
-// Reusable Month Order
-const monthOrder = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
-
-const pieColorPalette = ['#e11d48', '#06b6d4', '#2563eb', '#ea580c', '#16a34a', '#9333ea', '#f43f5e', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#d946ef', '#f97316', '#14b8a6', '#6366f1'];
-
-const sharedTooltipConfig = {
-    backgroundColor: function(context) {
-        try {
-            if (context.tooltip && context.tooltip.dataPoints && context.tooltip.dataPoints.length > 0) {
-                const dp = context.tooltip.dataPoints[0];
-                let bg = dp.dataset.backgroundColor;
-                if (Array.isArray(bg)) bg = bg[dp.dataIndex]; 
-                if (typeof bg === 'string') return bg;
-                let bc = dp.dataset.borderColor;
-                if (Array.isArray(bc)) bc = bc[dp.dataIndex];
-                if (typeof bc === 'string') return bc;
+        const yearSelect = document.getElementById('globalYearSelect');
+        if (yearSelect) {
+            let sortedYears = Array.from(yearsSet).sort().reverse();
+            sortedYears.forEach(y => {
+                let opt = document.createElement('option');
+                opt.value = y;
+                opt.innerText = y;
+                yearSelect.appendChild(opt);
+            });
+            
+            const currentYear = new Date().getFullYear().toString();
+            if (yearsSet.has(currentYear)) {
+                yearSelect.value = currentYear;
             }
-        } catch (e) {
-            console.warn("Tooltip color fallback triggered.");
         }
-        return 'rgba(30, 41, 59, 0.95)';
-    },
-    titleColor: '#ffffff',
-    bodyColor: '#ffffff',
-    titleFont: { family: 'Inter', size: 11, weight: '800' },
-    bodyFont: { family: 'Inter', size: 11, weight: '600' },
-    padding: 10,
-    cornerRadius: 6,
-    displayColors: false, 
-    borderColor: 'rgba(255, 255, 255, 0.4)', 
-    borderWidth: 1,
-    caretSize: 6,
-    caretPadding: 6
-};
 
-const singleBarOptions = {
-    indexAxis: 'y', 
-    responsive: true, 
-    maintainAspectRatio: false,
-    animation: { duration: 700, easing: 'easeOutQuart' },
-    layout: { padding: { top: 15, right: 25, bottom: 10, left: 10 } }, 
-    plugins: { datalabels: { display: false }, legend: { display: false }, tooltip: sharedTooltipConfig },
-    scales: { x: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } }, y: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } } },
-    elements: { bar: { borderRadius: 3 } } 
-};
+        applyGlobalYearFilter(yearSelect ? yearSelect.value : 'all');
+        
+        if (rawVolunteersData.length > 0) processVolunteersData(rawVolunteersData);
+        
+        processTrainingsData(rawTrainingsData);
+        
+        hideLoader();
 
-function scrollToSection(panelId) {
-    const section = document.getElementById(panelId);
-    if(section) {
-        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (error) {
+        console.error("Error fetching secure data:", error);
+        hideLoader();
     }
 }
 
-document.addEventListener("DOMContentLoaded", function() {
-    const panels = document.querySelectorAll('.panel');
-    const navLinks = document.querySelectorAll('.sidebar li:not(.section-title)');
+function applyGlobalYearFilter(targetYear) {
+    let filteredOps = rawOperationsData;
+    let filteredDocs = rawDocumentsData;
+
+    if (targetYear !== 'all') {
+        filteredOps = rawOperationsData.filter(r => extractYear(r, 'op') === targetYear);
+        filteredDocs = rawDocumentsData.filter(r => extractYear(r, 'doc') === targetYear);
+    }
+
+    operationsMonthlyCache = {};
+    globalLineData = [];
+    globalDocRecords = [];
+    originalKPITotals = {};
     
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                navLinks.forEach(link => link.classList.remove('active'));
-                const id = entry.target.getAttribute('id');
-                const activeLink = document.querySelector(`.sidebar li[onclick="scrollToSection('${id}')"]`);
-                if(activeLink) activeLink.classList.add('active');
-                
-                if (entry.target.classList.contains('iframe-panel')) {
-                    entry.target.classList.add('map-in-view');
-                }
-            } else {
-                if (entry.target.classList.contains('iframe-panel')) {
-                    entry.target.classList.remove('map-in-view');
+    currentPieState = { level: 1, filterKey: 'all', level1Target: null, level2Target: null };
+    
+    let docPieMonthFilter = document.getElementById('docPieMonthFilter');
+    if(docPieMonthFilter) docPieMonthFilter.innerHTML = '<option value="all">All Time</option>';
+    
+    let masterServiceMonthFilter = document.getElementById('masterServiceMonthFilter');
+    if(masterServiceMonthFilter) masterServiceMonthFilter.innerHTML = '<option value="all">All Time</option>';
+
+    processOperationsData(filteredOps);
+    processDocumentsData(filteredDocs);
+}
+
+// ----------------------------------------------------------------------
+// HELPER: ROBUST KEY MATCHER
+// ----------------------------------------------------------------------
+const getRobustValue = (row, searchTerms, fallbackKeys) => {
+    let keys = Object.keys(row);
+    for (let term of searchTerms) {
+        let exactKey = keys.find(k => k.trim().toUpperCase() === term.toUpperCase());
+        if (exactKey && row[exactKey] !== undefined) return row[exactKey];
+    }
+    for (let term of searchTerms) {
+        let partialKey = keys.find(k => k.toUpperCase().includes(term.toUpperCase()));
+        if (partialKey && row[partialKey] !== undefined) return row[partialKey];
+    }
+    for (let fb of fallbackKeys) {
+        if (row[fb] !== undefined) return row[fb];
+    }
+    return '';
+};
+
+// ----------------------------------------------------------------------
+// TRAININGS DASHBOARD LOGIC
+// ----------------------------------------------------------------------
+function processTrainingsData(data) {
+    let workingData = Array.isArray(data) ? data : [];
+    
+    globalTrainLineData = []; 
+    calDataMap = {}; 
+    let latestEventDateObj = null;
+    let explicitTitleCounts = {};
+
+    workingData.forEach(row => {
+        let dates = getRobustValue(row, ['INCLUSIVE DATES', 'DATES', 'DATE'], ['Column A']);
+        let cat = getRobustValue(row, ['CATEGORY'], ['Column B']);
+        let title = getRobustValue(row, ['TRAINING/LECTURE'], ['Column C']); 
+        let agency = getRobustValue(row, ['AGENCY/OFFICE', 'AGENCY', 'OFFICE'], ['Column D']);
+
+        // participants data from Column E.
+        let participantsRaw = getRobustValue(row, ['PARTICIPANTS', 'PARTICIPANT'], ['Column E']);
+        let participantsSafe = participantsRaw ? String(participantsRaw).trim() : 'N/A';
+
+        // PAX data shifted from Column E to Column F. Correcting fallback.
+        let paxRaw = getRobustValue(row, ['NO. PAX', 'PAX', 'NO PAX'], ['Column F']);
+        let pax = parseInt(paxRaw) || 0;
+        // REMARKS data shifted from Column F to Column G. Correcting fallback.
+        let status = getRobustValue(row, ['REMARKS', 'REMARK'], ['Column G']);
+        // FACILITATOR data shifted from Column G to Column H. Correcting fallback.
+        let colG_Facilitator = getRobustValue(row, ['FACILITATOR'], ['Column H']);
+
+        let colI_Title = getRobustValue(row, ['TRAINING/LECTURES'], ['Column I']); 
+        let colJ_Freq = getRobustValue(row, ['FREQ', 'FREQUENCY'], ['Column J']);
+
+        let agencySafe = agency ? String(agency).trim() : 'N/A';
+        let titleSafe = title ? String(title).trim() : 'Unspecified Event';
+        let facSafe = colG_Facilitator ? String(colG_Facilitator).trim() : 'N/A';
+
+        if (cat && String(cat).trim() !== "") {
+            let c = String(cat).trim().toUpperCase();
+            
+            if (dates) {
+                let parsedDate = parseTrainingDate(dates);
+                if (parsedDate) {
+                    if (!latestEventDateObj || parsedDate > latestEventDateObj) {
+                        latestEventDateObj = parsedDate;
+                    }
+                    globalTrainLineData.push({
+                        dateObj: parsedDate,
+                        rawDates: dates, 
+                        title: titleSafe,
+                        agency: agencySafe,
+                        pax: pax,
+                        facilitator: facSafe,
+                        category: c,
+                        count: 1,
+                        timestamp: parsedDate.getTime(),
+                        participants: participantsSafe
+                    });
                 }
             }
-        });
-    }, { threshold: 0.2 }); 
-
-    panels.forEach(panel => observer.observe(panel));
-
-    function updateClock() {
-        const now = new Date();
-        let hours = now.getHours();
-        let minutes = now.getMinutes();
-        let seconds = now.getSeconds();
-        const ampm = hours >= 12 ? 'PM' : 'AM';
-        hours = hours % 12;
-        hours = hours ? hours : 12; 
-        minutes = minutes < 10 ? '0' + minutes : minutes;
-        seconds = seconds < 10 ? '0' + seconds : seconds;
-        const timeString = hours + ':' + minutes + ':' + seconds + ' ' + ampm;
-        
-        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        const dateString = now.toLocaleDateString('en-US', options);
-        
-        const timeEl = document.getElementById('live-time');
-        const dateEl = document.getElementById('live-date');
-        
-        if(timeEl) timeEl.innerText = timeString;
-        if(dateEl) dateEl.innerText = dateString;
-    }
-    setInterval(updateClock, 1000);
-    updateClock(); 
-
-    document.getElementById('globalYearSelect').addEventListener('change', function(e) {
-        applyGlobalYearFilter(e.target.value);
-    });
-
-    document.getElementById('docPieMonthFilter').addEventListener('change', function(e) {
-        currentPieState.filterKey = e.target.value;
-        renderDocPieChart();
-    });
-
-    document.getElementById('pieBackButton').addEventListener('click', function() {
-        if (currentPieState.level === 3) {
-            currentPieState.level = 2;
-            currentPieState.level2Target = null;
-        } else if (currentPieState.level === 2) {
-            currentPieState.level = 1;
-            currentPieState.level1Target = null;
         }
-        renderDocPieChart();
+
+        if (colI_Title && String(colI_Title).trim() !== "") {
+            let tName = String(colI_Title).trim();
+            if (tName.toUpperCase() !== 'TRAINING/LECTURES') {
+                let tFreq = parseInt(colJ_Freq) || 0;
+                explicitTitleCounts[tName] = tFreq;
+            }
+        }
     });
 
-    document.getElementById('lineChartFilter').addEventListener('change', function(e) {
-        renderLineChartByTimeframe(e.target.value);
-    });
-    
-    const trainLineFilter = document.getElementById('trainLineChartFilter');
-    if (trainLineFilter) {
-        trainLineFilter.addEventListener('change', function(e) {
-            renderTrainLineChartByTimeframe(e.target.value);
-        });
-    }
+    globalTitleCounts = explicitTitleCounts; 
+    populateAllList('top-title-list', explicitTitleCounts);
+
+    currentCalDate = latestEventDateObj ? new Date(latestEventDateObj) : new Date();
+    initCalendarControls();
+    renderCalendar();
 
     const trainTopMonthFilter = document.getElementById('trainTopMonthFilter');
-    if (trainTopMonthFilter) {
-        trainTopMonthFilter.addEventListener('change', function(e) {
-            renderTrainingOverview(e.target.value);
-        });
-    }
-
-    const masterToggle = document.getElementById('masterChartToggle');
-    if (masterToggle) {
-        masterToggle.addEventListener('change', function(e) {
-            const isPie = e.target.checked;
-            const type = isPie ? 'pie' : 'bar';
-            const chartIds = [
-                'vehicularChart', 'roadsideChart', 'patientChart', 'medicalChart', 'standbyChart',
-                'othersChart', 'clearingChart', 'firetruckChart', 'haulingChart', 'ledvanChart'
-            ];
-            chartIds.forEach(id => renderToggleableChart(id, type, false));
-        });
-    }
-
-    document.getElementById('masterServiceMonthFilter').addEventListener('change', function(e) {
-        renderMasterServicePie(e.target.value);
-    });
-
-    const expandBtn = document.getElementById('expandTitlesBtn');
-    const closeBtn = document.getElementById('closeModalBtn');
-    const modal = document.getElementById('titlesModal');
-
-    if(expandBtn && modal && closeBtn) {
-        expandBtn.addEventListener('click', () => {
-            populateModalList(globalTitleCounts);
-            modal.classList.add('active');
-        });
-        closeBtn.addEventListener('click', () => {
-            modal.classList.remove('active');
-        });
-        modal.addEventListener('click', (e) => {
-            if(e.target === modal) modal.classList.remove('active'); 
-        });
-    }
-
-    const expandRemarksBtn = document.getElementById('expandRemarksBtn');
-    const closeRemarksModalBtn = document.getElementById('closeRemarksModalBtn');
-    const remarksModal = document.getElementById('remarksModal');
-
-    if(expandRemarksBtn && remarksModal && closeRemarksModalBtn) {
-        expandRemarksBtn.addEventListener('click', () => {
-            populateRemarksModal(globalRemarksDetails);
-            remarksModal.classList.add('active');
-        });
-        closeRemarksModalBtn.addEventListener('click', () => {
-            remarksModal.classList.remove('active');
-        });
-        remarksModal.addEventListener('click', (e) => {
-            if(e.target === remarksModal) remarksModal.classList.remove('active'); 
-        });
-    }
-});
-// (Part 1 continued in Part 2...)
-// (...Part 2 continued)
+    let initMonth = trainTopMonthFilter ? trainTopMonthFilter.value : 'all';
+    renderTrainingOverview(initMonth);
+}
 
 function renderTrainingOverview(monthFilter) {
     let totalPax = 0;
@@ -803,7 +722,9 @@ function buildMonthHTML(year, month, isSmallScale) {
         if (events && events.length > 0) {
             let linesHtml = '';
             let maxLines = 3; 
-            for(let j=0; j<Math.min(events.length, maxLines); j++) { let lineClass="events[j].category" 'ACTIVITY' ? 'cal-line-activity' : ''; linesHtml +="`<div" class="cal-line ${lineClass}"></div>`;
+            for(let j=0; j<Math.min(events.length, maxLines); j++) {
+                let lineClass = events[j].category === 'ACTIVITY' ? 'cal-line-activity' : '';
+                linesHtml += `<div class="cal-line ${lineClass}"></div>`;
             }
             if(events.length > maxLines) linesHtml += `<span style="font-size:0.55rem; line-height:4px; color:#64748b; font-weight: 800; margin-left: 2px;">+</span>`;
             
@@ -815,7 +736,8 @@ function buildMonthHTML(year, month, isSmallScale) {
                     </div>
                     <div style="padding-left: 18px; font-size: 0.6rem; color: #cbd5e1; line-height: 1.5;">
                         <div style="margin-bottom: 2px;"><span style="font-weight:700; color:#94a3b8;">Date:</span> ${e.rawDates}</div>
-                        <div style="margin-bottom: 2px;"><span style="font-weight:700; color:#94a3b8;">Office/Agency:</span> ${e.agency}</div>
+                        <div style="margin-bottom: 2px;"><span style="font-weight:700; color:#94a3b8;">Requesting Agency/Office:</span> ${e.agency}</div>
+                        <div style="margin-bottom: 2px;"><span style="font-weight:700; color:#94a3b8;">Participants:</span> ${e.participants}</div>
                         <div style="margin-bottom: 2px;"><span style="font-weight:700; color:#94a3b8;">Total Pax:</span> ${e.pax}</div>
                         <div style="margin-bottom: 2px;"><span style="font-weight:700; color:#94a3b8;">Facilitator:</span> ${e.facilitator}</div>
                     </div>
