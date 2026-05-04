@@ -114,15 +114,19 @@ body {
     scroll-behavior: smooth; 
 }
 
+/* THE UPDATED HEADER */
 .page-header { 
-    background: #ffffff; 
+    background-image: linear-gradient(to right, rgba(15, 23, 42, 0.85) 0%, rgba(30, 41, 59, 0.5) 100%), url('headerbg.jpg');
+    background-size: cover; 
+    background-position: center center; 
+    background-repeat: no-repeat;
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 24px 32px; 
     margin: -16px -24px 24px -24px; 
     border-radius: 0; 
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03); 
+    box-shadow: inset 0 -4px 12px rgba(0, 0, 0, 0.1); 
     border-bottom: 1px solid #e2e8f0; 
     position: relative;
 }
@@ -145,14 +149,15 @@ body {
 }
 .header-titles h1 { 
     font-size: 1.25rem; 
-    color: #0f172a; 
+    color: #ffffff; 
     font-weight: 800; 
     letter-spacing: -0.3px; 
     margin-bottom: 6px; 
+    text-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
 }
 .header-titles h2 { 
     font-size: 0.75rem; 
-    color: rgba(71, 85, 105, 0.6); 
+    color: #e2e8f0; 
     font-weight: 700; 
     letter-spacing: 2px; 
     text-transform: uppercase;
@@ -175,14 +180,15 @@ body {
 #live-time {
     font-size: 1.3rem;
     font-weight: 800;
-    color: #0f172a;
+    color: #0ea5e9;
     letter-spacing: 0.5px;
     font-variant-numeric: tabular-nums; 
+    text-shadow: 0 0 10px rgba(14, 165, 233, 0.5);
 }
 #live-date {
     font-size: 0.7rem;
     font-weight: 700;
-    color: #64748b;
+    color: rgba(255, 255, 255, 0.7);
     text-transform: uppercase;
     letter-spacing: 1.5px;
     margin-top: 4px;
