@@ -731,12 +731,14 @@ function buildMonthHTML(year, month, isSmallScale) {
 
 function drawTrainBarChart(canvasId, labels, dataArr, customColors = null) {
     const ctx = document.getElementById(canvasId).getContext('2d');
-    if (window[canvasId + 'Inst']) window[canvasId + 'Inst'].destroy();
-
-    if (labels.length === 0) {
+    
+    // Ensure labels and dataArr are arrays and handle empty data properly
+    if (!labels || labels.length === 0) {
         labels = ["No Data"];
         dataArr = [0];
     }
+
+    if (window[canvasId + 'Inst']) window[canvasId + 'Inst'].destroy();
 
     let colors = customColors || labels.map((_, i) => pieColorPalette[(i + 2) % pieColorPalette.length]);
 
@@ -807,14 +809,14 @@ function populateRemarksModal(detailsObj) {
     if (!container) return;
     container.innerHTML = '';
     
-    if (Object.keys(detailsObj).length === 0) {
+    if (!detailsObj || Object.keys(detailsObj).length === 0) {
         container.innerHTML = `<div style="color: #94a3b8; font-size: 0.9rem; padding: 20px; text-align:center;">No Data Available</div>`;
         return;
     }
 
     for (let status in detailsObj) {
         let items = detailsObj[status];
-        if(items.length === 0) continue;
+        if(!items || items.length === 0) continue;
 
         let color = status === 'WITH AAR' ? '#10b981' : (status === 'NO AAR' ? '#f43f5e' : '#64748b');
 
@@ -916,10 +918,28 @@ function processDocumentsData(data) {
         invAttended: 0, invNotAttended: 0, others: 0, noAction: 0
     };
 
-    // STRICTLY SCAN COLUMN Q FOR "NO ACTION" EXPLICIT TEXT
+    // RAW UNFILTERED EXTRACTION FIX
+    let explicitNoAction = 0;
+    if (rawDocumentsData && rawDocumentsData.length > 0) {
+        for (let i = 0; i < Math.min(5, rawDocumentsData.length); i++) {
+            let row = rawDocumentsData[i];
+            let keys = Object.keys(row);
+            let targetKey = keys.find(k => k.trim().toUpperCase() === 'TOTAL NO ACTION' || k.trim().toUpperCase() === 'COLUMN I');
+            if (targetKey && row[targetKey] !== undefined && String(row[targetKey]).trim() !== '') {
+                let parsedVal = parseInt(String(row[targetKey]).replace(/,/g, '').trim());
+                if (!isNaN(parsedVal)) {
+                    explicitNoAction = parsedVal;
+                    break;
+                }
+            }
+        }
+    }
+    
+    dynamicKPIs.noAction = explicitNoAction;
+
     data.forEach(row => {
         let keys = Object.keys(row);
-        
+
         let rawNature = row['Nature of Letter'] || row['NATURE OF LETTER'] || row['Column P'] || row['COLUMN P'] || '';
         let rawCategory = row['Category of Writing Party'] || row['CATEGORY OF WRITING PARTY'] || row['Column O'] || row['COLUMN O'] || '';
         let rawOffice = row['Received From (OFFICE)'] || row['RECEIVED FROM (OFFICE)'] || row['Received From Office'] || row['Column N'] || row['COLUMN N'] || '';
@@ -960,8 +980,8 @@ function processDocumentsData(data) {
                 } else {
                     dynamicKPIs.others++;
                 }
-            }
-            // Blanks are safely ignored, they add to NO KPI.
+            } 
+            // MANUAL FALLBACK REMOVED. WE USE THE SPREADSHEET'S EXACT SUMMARY NUMBER.
 
             let mappedNature = rawNature.trim();
             let upperNature = mappedNature.toUpperCase();
@@ -1014,7 +1034,7 @@ function processDocumentsData(data) {
         invAttended: dynamicKPIs.invAttended, 
         invNotAttended: dynamicKPIs.invNotAttended, 
         others: dynamicKPIs.others,
-        noAction: dynamicKPIs.noAction // Updated exclusively via explicit text
+        noAction: dynamicKPIs.noAction 
     };
 
     let monthSelect = document.getElementById('docPieMonthFilter');
@@ -1425,7 +1445,7 @@ function renderMasterServicePie(monthFilter) {
         item.style.animationDelay = `${i * 0.04}s`;
         
         item.innerHTML = `
-            <div class="legend-color" style="background-color: ${mappedColors[i]}; width: 10px; height: 10px;"></div>
+            <div class="legend-color" style="background-color: ${mappedColors[i]};"></div>
             <div class="legend-text" title="${lbl}">${lbl}</div>
             <div class="legend-val">${filteredData[i]}</div>
         `;
