@@ -30,10 +30,9 @@
             z-index: 99999;
             transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.8s;
             overflow: hidden;
-            background-color: #e2e8f0; /* Fallback color while image loads */
+            background-color: #e2e8f0; 
         }
 
-        /* The 100% Opacity Background Image */
         .loader-bg {
             position: absolute;
             top: -20px; left: -20px; right: -20px; bottom: -20px;
@@ -41,13 +40,12 @@
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            opacity: 1; /* Set to exactly 100% as requested */
-            filter: blur(4px); /* Slight blur so the edges aren't harsh */
+            opacity: 1; 
+            filter: blur(4px); 
             z-index: 1;
-            animation: smoothImageFadeIn 0.8s ease-out forwards; /* Smooths out any remaining load delay */
+            animation: smoothImageFadeIn 0.8s ease-out forwards; 
         }
 
-        /* The Glossy Frosted Glass Overlay - Balances the 100% image so it isn't overwhelming */
         .loader-gloss {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -193,7 +191,6 @@
                     <span>Communication Letters</span>
                 </li>
 
-                <!-- Trainings & Seminars Sidebar Link -->
                 <li onclick="scrollToSection('trainings')">
                     <svg class="menu-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" />
@@ -243,11 +240,66 @@
                     <h1>TARLAC PROVINCIAL DISASTER RISK REDUCTION & MANAGEMENT OFFICE</h1>
                     <h2>INTEGRATED OPERATIONS DASHBOARD</h2>
                 </div>
+                
                 <div class="header-right-actions">
+                    <!-- INTERACTIVE EXPANDABLE WEATHER WIDGET -->
+                    <div id="weather-interactive-widget" class="weather-interactive-container">
+                        <!-- Collapsed Header (Clickable) -->
+                        <div class="weather-toggle" onclick="toggleWeatherPanel()">
+                            <img id="weather-icon-main" src="" alt="Weather" style="display:none;">
+                            <div class="weather-summary">
+                                <span id="weather-temp-main">--°C</span>
+                                <span id="weather-city-main">Tarlac City</span>
+                            </div>
+                            <svg class="dropdown-arrow" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+
+                        <!-- Expanded Panel (Hidden by default) -->
+                        <div id="weather-expanded-panel" class="weather-panel">
+                            <div class="weather-search-wrapper">
+                                <label for="tarlac-muni-select">Select Municipality:</label>
+                                <select id="tarlac-muni-select" onchange="changeMunicipality()">
+                                    <option value="Tarlac City,PH">Tarlac City</option>
+                                    <option value="Capas,PH">Capas</option>
+                                    <option value="Concepcion,PH">Concepcion</option>
+                                    <option value="Paniqui,PH">Paniqui</option>
+                                    <option value="Camiling,PH">Camiling</option>
+                                    <option value="Gerona,PH">Gerona</option>
+                                    <option value="Moncada,PH">Moncada</option>
+                                    <option value="Victoria,PH">Victoria</option>
+                                    <option value="Bamban,PH">Bamban</option>
+                                    <option value="San Jose,PH">San Jose</option>
+                                    <option value="San Clemente,PH">San Clemente</option>
+                                    <option value="Mayantoc,PH">Mayantoc</option>
+                                    <option value="Santa Ignacia,PH">Santa Ignacia</option>
+                                    <option value="La Paz,PH">La Paz</option>
+                                    <option value="Pura,PH">Pura</option>
+                                    <option value="Ramos,PH">Ramos</option>
+                                    <option value="Anao,PH">Anao</option>
+                                </select>
+                            </div>
+                            <div class="weather-details-grid">
+                                <div class="weather-detail">
+                                    <span class="detail-label">Condition</span>
+                                    <span id="weather-desc-detail" class="detail-value">--</span>
+                                </div>
+                                <div class="weather-detail">
+                                    <span class="detail-label">Humidity</span>
+                                    <span id="weather-humidity" class="detail-value">--%</span>
+                                </div>
+                                <div class="weather-detail">
+                                    <span class="detail-label">Wind Speed</span>
+                                    <span id="weather-wind" class="detail-value">-- m/s</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="header-clock">
                         <div id="live-time">00:00:00 AM</div>
                         <div id="live-date">Loading...</div>
                     </div>
+                    
                     <button class="btn-print" onclick="window.print()">
                         <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                         Print Report
@@ -607,7 +659,7 @@
             </section>
             
             <section id="evac-map" class="panel iframe-panel">
-                <h3 class="page-heading">Critical Facilities</h3>
+                <h3 class="panel-heading">Critical Facilities</h3>
                 <iframe src="https://tarlacpdrrmo.github.io/tarlac-evacuation-centers/" title="Critical Facilities Map"></iframe>
             </section>
             
