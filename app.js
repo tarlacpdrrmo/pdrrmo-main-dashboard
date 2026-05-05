@@ -614,7 +614,6 @@ const getRobustValue = (row, searchTerms, fallbackKeys) => {
     }
     return '';
 };
-// (...Part 1 continued)
 
 function processTrainingsData(data) {
     let workingData = Array.isArray(data) ? data : [];
@@ -753,7 +752,6 @@ function renderTrainingOverview(monthFilter) {
     drawTrainBarChart('trainStatusChart', statusLabels, statusData, statusColors); 
 }
 
-// === FIX IS HERE: Add proper quotes around 'monthly', 'quarterly', and 'yearly' ===
 function initCalendarControls() {
     const timeFilter = document.getElementById('trainCalendarFilter');
     const catFilter = document.getElementById('trainCategoryFilter'); 
@@ -926,8 +924,6 @@ function buildMonthHTML(year, month, isSmallScale) {
     html += `</div></div>`;
     return html;
 }
-// (Part 2 continued in Part 3...)
-// (...Part 2 continued)
 
 function drawTrainBarChart(canvasId, labels, dataArr, customColors = null) {
     const ctx = document.getElementById(canvasId).getContext('2d');
@@ -1034,10 +1030,6 @@ function populateRemarksModal(detailsObj) {
         container.innerHTML += html;
     }
 }
-
-// ----------------------------------------------------------------------
-// REMAINDER: VOLUNTEERS, DOCUMENTS, AND OPERATIONS
-// ----------------------------------------------------------------------
 
 function processVolunteersData(data) {
     let totalOrgs = 0;
@@ -1372,7 +1364,7 @@ function renderDocPieChart() {
         docPieChartInstance.data.labels = labels;
         docPieChartInstance.data.datasets[0].data = dataValues;
         docPieChartInstance.data.datasets[0].backgroundColor = mappedColors;
-        docPieChartInstance.data.datasets[0].hoverOffset = !hasData ? 0 : 8;
+        docPieChartInstance.data.datasets[0].hoverOffset = !hasData ? 0 : 25;
         
         docPieChartInstance.update();
         updateCustomLegend(labels, dataValues, !hasData);
@@ -1390,9 +1382,10 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
     
     docPieChartInstance = new Chart(ctx, {
         type: 'doughnut',
-        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: mappedColors, borderWidth: 1, borderColor: '#ffffff', hoverOffset: isEmptyState ? 0 : 8 }] },
+        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: mappedColors, borderWidth: 2, borderColor: '#ffffff', hoverOffset: isEmptyState ? 0 : 25 }] },
         options: {
             responsive: true, maintainAspectRatio: false, cutout: '55%',
+            layout: { padding: 25 },
             onClick: (event, elements, chart) => {
                 if (chart.data.labels.length === 1 && chart.data.labels[0] === 'No Data Found') return;
                 
@@ -1598,6 +1591,8 @@ function renderMasterServicePie(monthFilter) {
         masterServicePieInstance.data.labels = filteredLabels;
         masterServicePieInstance.data.datasets[0].data = filteredData;
         masterServicePieInstance.data.datasets[0].backgroundColor = mappedColors;
+        masterServicePieInstance.data.datasets[0].hoverOffset = 25;
+        masterServicePieInstance.data.datasets[0].borderWidth = 2;
         masterServicePieInstance.update();
     } else {
         masterServicePieInstance = new Chart(ctx, {
@@ -1607,14 +1602,14 @@ function renderMasterServicePie(monthFilter) {
                 datasets: [{
                     data: filteredData,
                     backgroundColor: mappedColors,
-                    borderWidth: 1,
+                    borderWidth: 2,
                     borderColor: '#ffffff',
-                    hoverOffset: 8
+                    hoverOffset: 25
                 }]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                layout: { padding: 10 },
+                layout: { padding: 25 },
                 animation: { animateScale: true, animateRotate: true, duration: 600, easing: 'easeOutQuart' },
                 plugins: {
                     legend: { display: false },
@@ -1704,15 +1699,15 @@ function renderToggleableChart(canvasId, type, isInitialLoad = false) {
                     datasets: [{
                         data: dataObj.data,
                         backgroundColor: mappedColors,
-                        borderWidth: 1,
+                        borderWidth: 2,
                         borderColor: '#ffffff',
-                        hoverOffset: 4
+                        hoverOffset: 25
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    layout: { padding: 10 },
+                    layout: { padding: 25 },
                     animation: { animateScale: true, animateRotate: true, duration: 700, easing: 'easeOutQuart' },
                     plugins: {
                         legend: { display: false },
@@ -1837,7 +1832,7 @@ function processOperationsData(data) {
 
     renderTrendFooter('trend-vehicular', vehicular, labels, true); 
     renderTrendFooter('trend-roadside', roadside, labels, false); 
-    renderTrendFooter('trend-patient', patient, labels, true);     
+    renderTrendFooter('trend-patient', patient, labels, true);      
     renderTrendFooter('trend-medical', medical, labels, true);                
     renderTrendFooter('trend-standby', standby, labels, false); 
     
@@ -1961,13 +1956,13 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
                 backgroundColor: mappedVibrant, 
                 borderWidth: 2, 
                 borderColor: '#ffffff',
-                hoverOffset: 12 
+                hoverOffset: 25 
             }] 
         },
         options: { 
             responsive: true, 
             maintainAspectRatio: false, 
-            layout: { padding: 15 }, 
+            layout: { padding: 25 }, 
             animation: { animateScale: true, animateRotate: true, duration: 500, easing: 'easeOutQuart' },
             plugins: { 
                 legend: { display: false }, 
