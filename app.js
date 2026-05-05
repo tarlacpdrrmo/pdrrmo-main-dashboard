@@ -3,7 +3,8 @@ Chart.register(ChartDataLabels);
 // 1. YOUR SECURE GOOGLE APPS SCRIPT WEB APP URL
 const webAppUrl = "https://script.google.com/macros/s/AKfycbwYUt0YFQClUUXRGwrNdnC5INPXWzWyGUeN3J8E5tRKsO2ME-Y6zu5Fv0a56fCtxhwzTg/exec";
 // OPENWEATHERMAP CREDENTIALS
-const OWM_API_KEY = "f1106e21a5bd8fff00b9d5b6beeb3754"; 
+const OWM_API_KEY = "f1106e21a5bd8ff00b9d5b6beeb3754"; 
+let rainChartInstance = null; // Keeps track of the chart so we can update it
 
 // Function to toggle the dropdown panel
 function toggleWeatherPanel() {
@@ -23,37 +24,143 @@ function changeMunicipality() {
     fetchOpenWeather(selectedCityQuery);
 }
 
-// Function to actually fetch the weather data from the API
+// Function to fetch both Current Weather AND Forecast Data
 async function fetchOpenWeather(cityQuery) {
     if (OWM_API_KEY === "PASTE_YOUR_OPENWEATHERMAP_API_KEY_HERE") return;
 
     try {
-        const url = `https://api.openweathermap.org/data/2.5/weather?q=${cityQuery}&units=metric&appid=${OWM_API_KEY}`;
-        const response = await fetch(url);
-        const data = await response.json();
+        // Fetch current and forecast APIs simultaneously for speed
+        const currentUrl = `https://api.openweathermap.org/data/2.5/weather?q=${cityQuery}&units=metric&appid=${OWM_API_KEY}`;
+        const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${cityQuery}&units=metric&appid=${OWM_API_KEY}`;
+        
+        const [currentRes, forecastRes] = await Promise.all([
+            fetch(currentUrl),
+            fetch(forecastUrl)
+        ]);
 
-        if (response.ok) {
-            const temp = Math.round(data.main.temp); 
-            const desc = data.weather[0].description;
-            const humidity = data.main.humidity;
-            const wind = data.wind.speed;
-            const iconCode = data.weather[0].icon;
+        const currentData = await currentRes.json();
+        const forecastData = await forecastRes.json();
 
+        if (currentRes.ok && forecastRes.ok) {
+            // 1. UPDATE CURRENT WEATHER UI
+            const temp = Math.round(currentData.main.temp); 
+            const iconCode = currentData.weather[0].icon;
+            
             document.getElementById('weather-temp-main').innerText = `${temp}°C`;
             const iconEl = document.getElementById('weather-icon-main');
             iconEl.src = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
             iconEl.style.display = 'block';
 
-            document.getElementById('weather-desc-detail').innerText = desc;
-            document.getElementById('weather-humidity').innerText = `${humidity}%`;
-            document.getElementById('weather-wind').innerText = `${wind} m/s`;
+            document.getElementById('weather-desc-detail').innerText = currentData.weather[0].description;
+            document.getElementById('weather-humidity').innerText = `${currentData.main.humidity}%`;
+            document.getElementById('weather-wind').innerText = `${currentData.wind.speed} m/s`;
+
+            // 2. BUILD THE RAIN CHANCE GRAPH (Next 12-15 hours)
+            const rainLabels = [];
+            const rainDataPoints = [];
+            
+            // Loop through the first 5 time blocks (each block is 3 hours)
+            for(let i = 0; i < 5; i++) {
+                const item = forecastData.list[i];
+                const date = new Date(item.dt * 1000);
+                let hour = date.getHours();
+                let ampm = hour >= 12 ? 'PM' : 'AM';
+                hour = hour % 12 || 12; // Convert 24h to 12h format
+                
+                rainLabels.push(`${hour} ${ampm}`);
+                // pop is "Probability of Precipitation" (0 to 1). Multiply by 100 for percentage.
+                rainDataPoints.push(Math.round(item.pop * 100)); 
+            }
+            updateRainChart(rainLabels, rainDataPoints);
+
+            // 3. BUILD THE 3-DAY FORECAST
+            const daysProcessed = new Set();
+            const forecastGrid = document.getElementById('forecast-grid');
+            forecastGrid.innerHTML = ''; // Clear previous
+            
+            const todayStr = new Date().toLocaleDateString();
+
+            for (let item of forecastData.list) {
+                const d = new Date(item.dt * 1000);
+                const dateStr = d.toLocaleDateString();
+                
+                // Skip today, and only grab the midday reading (around 11AM - 2PM) to represent the day
+                if (dateStr !== todayStr && d.getHours() >= 11 && d.getHours() <= 15 && !daysProcessed.has(dateStr)) {
+                    daysProcessed.add(dateStr);
+                    
+                    const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }); // e.g. "Mon"
+                    const dayTemp = Math.round(item.main.temp);
+                    const dayIcon = item.weather[0].icon;
+                    
+                    forecastGrid.innerHTML += `
+                        <div class="forecast-day">
+                            <span class="forecast-day-name">${dayName}</span>
+                            <img src="https://openweathermap.org/img/wn/${dayIcon}.png" alt="icon">
+                            <span class="forecast-day-temp">${dayTemp}°</span>
+                        </div>
+                    `;
+                    
+                    // Stop once we have 3 days
+                    if (daysProcessed.size === 3) break;
+                }
+            }
+
         } else {
-            console.error("OpenWeather error:", data.message);
+            console.error("OpenWeather error:", currentData.message);
             document.getElementById('weather-temp-main').innerText = "Err";
         }
     } catch (error) {
         console.error("Weather fetch failed:", error);
     }
+}
+
+// Function to draw/update the Chart.js Rain Graph
+function updateRainChart(labels, dataPoints) {
+    const ctx = document.getElementById('rainChanceChart').getContext('2d');
+    
+    // If a chart already exists, destroy it so we can draw a new one for the new city
+    if(rainChartInstance) {
+        rainChartInstance.destroy();
+    }
+    
+    rainChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: dataPoints,
+                backgroundColor: 'rgba(14, 165, 233, 0.7)', // Sleek Sky Blue
+                borderColor: '#0ea5e9',
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true, 
+            maintainAspectRatio: false,
+            plugins: { 
+                legend: { display: false }, 
+                tooltip: { enabled: false }, // Turn off hover tooltips since we use data labels
+                datalabels: { 
+                    display: true, 
+                    color: '#ffffff', 
+                    anchor: 'end',
+                    align: 'top',
+                    font: { size: 10, weight: 'bold' }, 
+                    formatter: (value) => value + '%' // Adds % sign to the number
+                } 
+            },
+            scales: {
+                y: { display: false, min: 0, max: 100 }, // Hide Y axis, lock 0-100%
+                x: { 
+                    ticks: { color: '#94a3b8', font: { size: 9, weight: 'bold' } }, 
+                    grid: { display: false },
+                    border: { display: false }
+                }
+            },
+            layout: { padding: { top: 15 } } // Give room for the % labels at the top
+        }
+    });
 }
 
 // Close the weather panel if the user clicks anywhere else on the screen
