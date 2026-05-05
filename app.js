@@ -3,7 +3,7 @@ Chart.register(ChartDataLabels);
 // 1. YOUR SECURE GOOGLE APPS SCRIPT WEB APP URL
 const webAppUrl = "https://script.google.com/macros/s/AKfycbwYUt0YFQClUUXRGwrNdnC5INPXWzWyGUeN3J8E5tRKsO2ME-Y6zu5Fv0a56fCtxhwzTg/exec";
 // OPENWEATHERMAP CREDENTIALS
-const OWM_API_KEY = "f1106e21a5bd8ff00b9d5b6beeb3754"; 
+const OWM_API_KEY = "3457c364d3f2840960216510c279837c"; 
 let rainChartInstance = null; // Keeps track of the chart so we can update it
 
 // Function to toggle the dropdown panel
