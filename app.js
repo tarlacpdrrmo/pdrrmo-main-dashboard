@@ -721,7 +721,7 @@ function renderTrainingOverview(monthFilter) {
             categoryCounts[c] = (categoryCounts[c] || 0) + 1;
             paxByCategory[c] = (paxByCategory[c] || 0) + pax;
 
-            if (status) {
+            if (status && String(status).trim() !== "") {
                 let s = String(status).trim().toUpperCase();
                 statusCounts[s] = (statusCounts[s] || 0) + 1;
 
@@ -731,8 +731,6 @@ function renderTrainingOverview(monthFilter) {
                     agency: getRobustValue(row, ['AGENCY/OFFICE', 'AGENCY', 'OFFICE'], ['Column D']) || 'N/A',
                     dates: dates || 'N/A'
                 });
-            } else {
-                statusCounts['UNKNOWN'] = (statusCounts['UNKNOWN'] || 0) + 1;
             }
         }
     });
