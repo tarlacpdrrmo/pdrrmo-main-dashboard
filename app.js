@@ -2007,9 +2007,9 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
 // FIREBASE AUTHENTICATION LOGIC
 // ==========================================
 
-// Your exact Firebase Config from the screenshot
+// Your exact Firebase Config
 const firebaseConfig = {
-    apiKey: "AIzaSyDSCB9jQIzyn9WxGZ58sLkyJPHCj5oeEKQ", 
+    apiKey: "AIzaSyD5CB9jQTYyn9WxG7S8sLkyJPHCj5owEKQ", 
     authDomain: "pdrrmo-dashboard.firebaseapp.com",
     projectId: "pdrrmo-dashboard",
     storageBucket: "pdrrmo-dashboard.firebasestorage.app",
@@ -2024,14 +2024,23 @@ const auth = firebase.auth();
 // Check if user is logged in
 auth.onAuthStateChanged(user => {
     const loginOverlay = document.getElementById('login-overlay');
+    const loader = document.getElementById('global-loader');
+    
     if (user) {
-        // User is logged in -> Hide login screen, show dashboard, fetch data!
+        // User is logged in -> Hide login screen
         if(loginOverlay) loginOverlay.style.display = 'none';
+        
+        // SHOW THE LOADER while data fetches
+        if(loader) {
+            loader.style.display = 'flex';
+            loader.style.visibility = 'visible';
+            loader.style.opacity = '1';
+        }
+        
         loadAllData(); 
     } else {
-        // User is logged out -> Show login screen, stop loaders
+        // User is logged out -> Show login screen, hide loader so it doesn't block the screen
         if(loginOverlay) loginOverlay.style.display = 'flex';
-        const loader = document.getElementById('global-loader');
         if(loader) loader.style.display = 'none';
     }
 });
@@ -2054,7 +2063,7 @@ window.handleLogin = function() {
     auth.signInWithEmailAndPassword(email, pass)
         .then(() => {
             btn.innerText = "SECURE LOGIN";
-            // The onAuthStateChanged listener will automatically hide the screen
+            // The onAuthStateChanged listener will automatically handle showing the loader and fetching data
         })
         .catch(error => {
             btn.innerText = "SECURE LOGIN";
