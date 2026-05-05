@@ -1364,7 +1364,9 @@ function renderDocPieChart() {
         docPieChartInstance.data.labels = labels;
         docPieChartInstance.data.datasets[0].data = dataValues;
         docPieChartInstance.data.datasets[0].backgroundColor = mappedColors;
-        docPieChartInstance.data.datasets[0].hoverOffset = !hasData ? 0 : 25;
+        docPieChartInstance.data.datasets[0].borderWidth = 4;
+        docPieChartInstance.data.datasets[0].offset = !hasData ? 0 : 8;
+        docPieChartInstance.data.datasets[0].hoverOffset = !hasData ? 0 : 20;
         
         docPieChartInstance.update();
         updateCustomLegend(labels, dataValues, !hasData);
@@ -1382,10 +1384,10 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
     
     docPieChartInstance = new Chart(ctx, {
         type: 'doughnut',
-        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: mappedColors, borderWidth: 2, borderColor: '#ffffff', hoverOffset: isEmptyState ? 0 : 25 }] },
+        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: mappedColors, borderWidth: 4, borderColor: '#ffffff', offset: isEmptyState ? 0 : 8, hoverOffset: isEmptyState ? 0 : 20 }] },
         options: {
             responsive: true, maintainAspectRatio: false, cutout: '55%',
-            layout: { padding: 25 },
+            layout: { padding: 20 },
             onClick: (event, elements, chart) => {
                 if (chart.data.labels.length === 1 && chart.data.labels[0] === 'No Data Found') return;
                 
@@ -1591,25 +1593,28 @@ function renderMasterServicePie(monthFilter) {
         masterServicePieInstance.data.labels = filteredLabels;
         masterServicePieInstance.data.datasets[0].data = filteredData;
         masterServicePieInstance.data.datasets[0].backgroundColor = mappedColors;
-        masterServicePieInstance.data.datasets[0].hoverOffset = 25;
-        masterServicePieInstance.data.datasets[0].borderWidth = 2;
+        masterServicePieInstance.data.datasets[0].borderWidth = 4;
+        masterServicePieInstance.data.datasets[0].offset = 8;
+        masterServicePieInstance.data.datasets[0].hoverOffset = 20;
         masterServicePieInstance.update();
     } else {
         masterServicePieInstance = new Chart(ctx, {
-            type: 'pie', 
+            type: 'doughnut', 
             data: {
                 labels: filteredLabels,
                 datasets: [{
                     data: filteredData,
                     backgroundColor: mappedColors,
-                    borderWidth: 2,
+                    borderWidth: 4,
                     borderColor: '#ffffff',
-                    hoverOffset: 25
+                    offset: 8,
+                    hoverOffset: 20
                 }]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                layout: { padding: 25 },
+                cutout: '40%',
+                layout: { padding: 20 },
                 animation: { animateScale: true, animateRotate: true, duration: 600, easing: 'easeOutQuart' },
                 plugins: {
                     legend: { display: false },
@@ -1693,21 +1698,23 @@ function renderToggleableChart(canvasId, type, isInitialLoad = false) {
         } else {
             const mappedColors = Array.isArray(dataObj.color) ? dataObj.color : dataObj.data.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
             toggleChartInstances[canvasId] = new Chart(ctx, {
-                type: 'pie',
+                type: 'doughnut',
                 data: {
                     labels: dataObj.labels,
                     datasets: [{
                         data: dataObj.data,
                         backgroundColor: mappedColors,
-                        borderWidth: 2,
+                        borderWidth: 4,
                         borderColor: '#ffffff',
-                        hoverOffset: 25
+                        offset: 8,
+                        hoverOffset: 20
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    layout: { padding: 25 },
+                    cutout: '40%',
+                    layout: { padding: 20 },
                     animation: { animateScale: true, animateRotate: true, duration: 700, easing: 'easeOutQuart' },
                     plugins: {
                         legend: { display: false },
@@ -1948,21 +1955,23 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
     if(gtEl) gtEl.innerText = grandTotal.toLocaleString();
 
     monthlyTotalPieInstance = new Chart(ctx, {
-        type: 'pie', 
+        type: 'doughnut', 
         data: { 
             labels: labels, 
             datasets: [{ 
                 data: dataArr, 
                 backgroundColor: mappedVibrant, 
-                borderWidth: 2, 
+                borderWidth: 4, 
                 borderColor: '#ffffff',
-                hoverOffset: 25 
+                offset: 8,
+                hoverOffset: 20 
             }] 
         },
         options: { 
             responsive: true, 
             maintainAspectRatio: false, 
-            layout: { padding: 25 }, 
+            cutout: '40%',
+            layout: { padding: 20 }, 
             animation: { animateScale: true, animateRotate: true, duration: 500, easing: 'easeOutQuart' },
             plugins: { 
                 legend: { display: false }, 
