@@ -25,13 +25,13 @@
             background-size: cover;
             background-position: center;
             z-index: 9999999; /* Highest priority */
-            display: flex;
+            display: none; /* FIX: Hidden by default so it doesn't flash */
             justify-content: center;
             align-items: center;
             backdrop-filter: blur(10px);
         }
 
-        /* NEW: Smooth entry animation for the login card */
+        /* Smooth entry animation for the login card */
         @keyframes popIn {
             0% { opacity: 0; transform: scale(0.95) translateY(20px); }
             100% { opacity: 1; transform: scale(1) translateY(0); }
@@ -43,16 +43,15 @@
             border-radius: 12px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             width: 100%;
-            max-width: 440px; /* Slightly wider to fit the full title nicely */
+            max-width: 440px; 
             text-align: center;
             display: flex;
             flex-direction: column;
-            animation: popIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; /* Applied animation */
+            animation: popIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
         }
 
         .login-logo { width: 80px; margin: 0 auto 16px auto; }
         
-        /* Updated typography for the longer title */
         .login-card h2 { color: #0f172a; font-weight: 800; font-size: 1.05rem; letter-spacing: 0px; margin-bottom: 8px; line-height: 1.4; padding: 0 10px; }
         .login-card p { color: #64748b; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 24px; }
 
@@ -73,7 +72,6 @@
         }
         #loginBtn:hover { background: #1d4ed8; transform: translateY(-2px); }
 
-        /* NEW: Redesigned Sign Out button to fit the premium theme */
         .btn-logout {
             display: flex; align-items: center; gap: 8px; background-color: transparent; color: #cbd5e1;
             border: 1px solid #64748b; padding: 10px 16px; border-radius: 6px;
@@ -215,11 +213,9 @@
     <div id="login-overlay" class="login-overlay">
         <div class="login-card">
             <img src="tarlac_official_seal.png" alt="PDRRMO Seal" class="login-logo">
-            <!-- NEW: Updated Title -->
             <h2>Tarlac Provincial Disaster Risk Reduction and Management Office</h2>
             <p>Authorized Personnel Only</p>
             
-            <!-- NEW: Added onkeypress listeners for the Enter Key -->
             <input type="email" id="loginEmail" placeholder="Official Email Address" onkeypress="if(event.key === 'Enter') handleLogin();" />
             <input type="password" id="loginPassword" placeholder="Password" onkeypress="if(event.key === 'Enter') handleLogin();" />
             
