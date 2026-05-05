@@ -2003,4 +2003,73 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
     });
 }
 
-window.onload = loadAllData;
+// ==========================================
+// FIREBASE AUTHENTICATION LOGIC
+// ==========================================
+
+// Your exact Firebase Config from the screenshot
+const firebaseConfig = {
+    apiKey: "AIzaSyD5CB9jQTYyn9WxG7S8sLkyJPHCj5owEKQ", 
+    authDomain: "pdrrmo-dashboard.firebaseapp.com",
+    projectId: "pdrrmo-dashboard",
+    storageBucket: "pdrrmo-dashboard.firebasestorage.app",
+    messagingSenderId: "555106842078",
+    appId: "1:555106842078:web:38f0275bc89499669ad94f"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+
+// Check if user is logged in
+auth.onAuthStateChanged(user => {
+    const loginOverlay = document.getElementById('login-overlay');
+    if (user) {
+        // User is logged in -> Hide login screen, show dashboard, fetch data!
+        if(loginOverlay) loginOverlay.style.display = 'none';
+        loadAllData(); 
+    } else {
+        // User is logged out -> Show login screen, stop loaders
+        if(loginOverlay) loginOverlay.style.display = 'flex';
+        const loader = document.getElementById('global-loader');
+        if(loader) loader.style.display = 'none';
+    }
+});
+
+// Handle Login Button Click
+window.handleLogin = function() {
+    const email = document.getElementById('loginEmail').value;
+    const pass = document.getElementById('loginPassword').value;
+    const errorEl = document.getElementById('loginError');
+    const btn = document.getElementById('loginBtn');
+
+    if(!email || !pass) {
+        errorEl.innerText = "Please enter both email and password.";
+        return;
+    }
+
+    btn.innerText = "AUTHENTICATING...";
+    errorEl.innerText = "";
+
+    auth.signInWithEmailAndPassword(email, pass)
+        .then(() => {
+            btn.innerText = "SECURE LOGIN";
+            // The onAuthStateChanged listener will automatically hide the screen
+        })
+        .catch(error => {
+            btn.innerText = "SECURE LOGIN";
+            errorEl.innerText = "Invalid credentials. Please try again.";
+            console.error("Login failed:", error.message);
+        });
+}
+
+// Handle Logout Button Click
+window.handleLogout = function() {
+    auth.signOut().then(() => {
+        // Clear all arrays and charts just to be safe
+        rawOperationsData = [];
+        rawDocumentsData = [];
+        rawTrainingsData = [];
+        location.reload(); // Refresh the page to reset the state
+    });
+}
