@@ -278,6 +278,7 @@
                                     <option value="Anao,PH">Anao</option>
                                 </select>
                             </div>
+                            
                             <div class="weather-details-grid">
                                 <div class="weather-detail">
                                     <span class="detail-label">Condition</span>
@@ -291,6 +292,18 @@
                                     <span class="detail-label">Wind Speed</span>
                                     <span id="weather-wind" class="detail-value">-- m/s</span>
                                 </div>
+                            </div>
+
+                            <!-- NEW: Chance of Rain Graph -->
+                            <h4 class="weather-section-title">Chance of Rain (Next 12 Hrs)</h4>
+                            <div class="weather-chart-wrapper">
+                                <canvas id="rainChanceChart"></canvas>
+                            </div>
+
+                            <!-- NEW: 3-Day Forecast Grid -->
+                            <h4 class="weather-section-title">3-Day Forecast</h4>
+                            <div id="forecast-grid" class="forecast-grid">
+                                <!-- JavaScript will inject the 3 days here -->
                             </div>
                         </div>
                     </div>
