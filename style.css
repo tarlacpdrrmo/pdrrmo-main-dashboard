@@ -116,7 +116,7 @@ body {
 
 /* THE UPDATED HEADER */
 .page-header { 
-    background-image: linear-gradient(to right, rgba(15, 23, 42, 0.85) 0%, rgba(30, 41, 59, 0.5) 100%), url('headerbg.jpg');
+    background-image: linear-gradient(to right, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.4) 100%), url('headerbg.jpg');
     background-size: cover; 
     background-position: center center; 
     background-repeat: no-repeat;
@@ -169,12 +169,136 @@ body {
     gap: 24px;
 }
 
+/* --- INTERACTIVE WEATHER WIDGET --- */
+.weather-interactive-container {
+    position: relative;
+    padding-right: 24px;
+    border-right: 2px solid rgba(226, 232, 240, 0.3);
+    z-index: 50; 
+}
+
+.weather-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 8px 16px;
+    border-radius: 30px;
+    transition: all 0.2s ease;
+}
+
+.weather-toggle:hover {
+    background: rgba(15, 23, 42, 0.6);
+    border-color: rgba(14, 165, 233, 0.5);
+}
+
+#weather-icon-main { width: 32px; height: 32px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+
+.weather-summary { display: flex; flex-direction: column; text-align: left; }
+
+#weather-temp-main {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #f59e0b;
+    line-height: 1;
+}
+
+#weather-city-main {
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 2px;
+}
+
+.dropdown-arrow {
+    color: #94a3b8;
+    transition: transform 0.3s ease;
+}
+
+.weather-interactive-container.active .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+.weather-panel {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 24px;
+    width: 280px;
+    background: rgba(30, 41, 59, 0.95);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.weather-interactive-container.active .weather-panel {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.weather-search-wrapper {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.weather-search-wrapper label {
+    font-size: 0.6rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+}
+
+.weather-search-wrapper select {
+    background: #0f172a;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    outline: none;
+    cursor: pointer;
+}
+
+.weather-details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.weather-detail {
+    display: flex;
+    flex-direction: column;
+}
+
+.detail-label { font-size: 0.55rem; color: #94a3b8; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; }
+.detail-value { font-size: 0.8rem; color: #f8fafc; font-weight: 600; margin-top: 2px; text-transform: capitalize; }
+
+
+/* --- HEADER CLOCK & PRINT BUTTON --- */
 .header-clock {
     text-align: right;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    border-right: 2px solid #e2e8f0;
+    border-right: 2px solid rgba(226, 232, 240, 0.3);
     padding-right: 24px;
 }
 #live-time {
@@ -963,7 +1087,6 @@ td {
     flex: 1;
 }
 
-/* OVERRIDE TRUNCATION FOR MODAL ITEMS ONLY */
 .modal-body .legend-item {
     padding: 12px 0;
     border-bottom: 1px solid #f1f5f9;
@@ -1010,7 +1133,8 @@ td {
     #calNextBtn,
     .btn-expand,
     .modal-overlay,
-    .btn-reset { 
+    .btn-reset,
+    .weather-interactive-container { 
         display: none !important; 
     }
 
