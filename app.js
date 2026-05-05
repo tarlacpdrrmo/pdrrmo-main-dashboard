@@ -2009,7 +2009,7 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
 
 // Your exact Firebase Config
 const firebaseConfig = {
-    apiKey: "AIzaSyD5CB9jQTYyn9WxG7S8sLkyJPHCj5owEKQ", 
+    apiKey: "AIzaSyDSCB9jQIzyn9WxGZ58sLkyJPHCj5oeEKQ", 
     authDomain: "pdrrmo-dashboard.firebaseapp.com",
     projectId: "pdrrmo-dashboard",
     storageBucket: "pdrrmo-dashboard.firebasestorage.app",
