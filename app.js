@@ -1386,7 +1386,7 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
         type: 'doughnut',
         data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: mappedColors, borderWidth: 4, borderColor: '#ffffff', offset: isEmptyState ? 0 : 8, hoverOffset: isEmptyState ? 0 : 20 }] },
         options: {
-            responsive: true, maintainAspectRatio: false, cutout: '55%',
+            responsive: true, maintainAspectRatio: false, cutout: '25%',
             layout: { padding: 20 },
             onClick: (event, elements, chart) => {
                 if (chart.data.labels.length === 1 && chart.data.labels[0] === 'No Data Found') return;
@@ -1613,7 +1613,7 @@ function renderMasterServicePie(monthFilter) {
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                cutout: '40%',
+                cutout: '25%',
                 layout: { padding: 20 },
                 animation: { animateScale: true, animateRotate: true, duration: 600, easing: 'easeOutQuart' },
                 plugins: {
@@ -1713,7 +1713,7 @@ function renderToggleableChart(canvasId, type, isInitialLoad = false) {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutout: '40%',
+                    cutout: '25%',
                     layout: { padding: 20 },
                     animation: { animateScale: true, animateRotate: true, duration: 700, easing: 'easeOutQuart' },
                     plugins: {
@@ -1970,7 +1970,7 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
         options: { 
             responsive: true, 
             maintainAspectRatio: false, 
-            cutout: '40%',
+            cutout: '25%',
             layout: { padding: 20 }, 
             animation: { animateScale: true, animateRotate: true, duration: 500, easing: 'easeOutQuart' },
             plugins: { 
