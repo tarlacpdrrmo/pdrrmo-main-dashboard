@@ -2,6 +2,67 @@ Chart.register(ChartDataLabels);
 
 // 1. YOUR SECURE GOOGLE APPS SCRIPT WEB APP URL
 const webAppUrl = "https://script.google.com/macros/s/AKfycbwYUt0YFQClUUXRGwrNdnC5INPXWzWyGUeN3J8E5tRKsO2ME-Y6zu5Fv0a56fCtxhwzTg/exec";
+// OPENWEATHERMAP CREDENTIALS
+const OWM_API_KEY = "f1106e21a5bd8fff00b9d5b6beeb3754"; 
+
+// Function to toggle the dropdown panel
+function toggleWeatherPanel() {
+    const container = document.getElementById('weather-interactive-widget');
+    container.classList.toggle('active');
+}
+
+// Function called when the user selects a new municipality from the dropdown
+function changeMunicipality() {
+    const selectEl = document.getElementById('tarlac-muni-select');
+    const selectedCityQuery = selectEl.value; 
+    const selectedCityName = selectEl.options[selectEl.selectedIndex].text; 
+    
+    document.getElementById('weather-city-main').innerText = selectedCityName;
+    document.getElementById('weather-temp-main').innerText = "...";
+    
+    fetchOpenWeather(selectedCityQuery);
+}
+
+// Function to actually fetch the weather data from the API
+async function fetchOpenWeather(cityQuery) {
+    if (OWM_API_KEY === "PASTE_YOUR_OPENWEATHERMAP_API_KEY_HERE") return;
+
+    try {
+        const url = `https://api.openweathermap.org/data/2.5/weather?q=${cityQuery}&units=metric&appid=${OWM_API_KEY}`;
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (response.ok) {
+            const temp = Math.round(data.main.temp); 
+            const desc = data.weather[0].description;
+            const humidity = data.main.humidity;
+            const wind = data.wind.speed;
+            const iconCode = data.weather[0].icon;
+
+            document.getElementById('weather-temp-main').innerText = `${temp}°C`;
+            const iconEl = document.getElementById('weather-icon-main');
+            iconEl.src = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+            iconEl.style.display = 'block';
+
+            document.getElementById('weather-desc-detail').innerText = desc;
+            document.getElementById('weather-humidity').innerText = `${humidity}%`;
+            document.getElementById('weather-wind').innerText = `${wind} m/s`;
+        } else {
+            console.error("OpenWeather error:", data.message);
+            document.getElementById('weather-temp-main').innerText = "Err";
+        }
+    } catch (error) {
+        console.error("Weather fetch failed:", error);
+    }
+}
+
+// Close the weather panel if the user clicks anywhere else on the screen
+document.addEventListener('click', function(event) {
+    const widget = document.getElementById('weather-interactive-widget');
+    if (widget && !widget.contains(event.target)) {
+        widget.classList.remove('active');
+    }
+});
 
 // Global Raw Data Vault
 let rawOperationsData = [];
@@ -106,6 +167,11 @@ function scrollToSection(panelId) {
 }
 
 document.addEventListener("DOMContentLoaded", function() {
+    // Load default Tarlac City weather on page load
+    fetchOpenWeather("Tarlac City,PH");
+    
+    // Refresh weather every 15 minutes (900,000 ms)
+    setInterval(() => fetchOpenWeather(document.getElementById('tarlac-muni-select').value), 900000);
     const panels = document.querySelectorAll('.panel');
     const navLinks = document.querySelectorAll('.sidebar li:not(.section-title)');
     
