@@ -528,7 +528,7 @@ body {
     height: 140px; 
     min-height: 140px; 
     max-height: 140px; 
-    padding: 0 16px 10px 16px; 
+    padding: 0; /* Removed side padding to let sparklines fill beautifully */ 
     display: block;
     min-width: 0; 
 }
