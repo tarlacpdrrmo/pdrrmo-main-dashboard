@@ -1368,9 +1368,9 @@ function renderDocPieChart() {
         docPieChartInstance.data.labels = labels;
         docPieChartInstance.data.datasets[0].data = dataValues;
         docPieChartInstance.data.datasets[0].backgroundColor = mappedColors;
-        docPieChartInstance.data.datasets[0].borderWidth = 4;
-        docPieChartInstance.data.datasets[0].offset = !hasData ? 0 : 8;
-        docPieChartInstance.data.datasets[0].hoverOffset = !hasData ? 0 : 20;
+        docPieChartInstance.data.datasets[0].borderWidth = 2; // Sleeker border
+        docPieChartInstance.data.datasets[0].offset = 0;      // Removes permanent explosion
+        docPieChartInstance.data.datasets[0].hoverOffset = !hasData ? 0 : 25; // Smooth pop-out
         
         docPieChartInstance.update();
         updateCustomLegend(labels, dataValues, !hasData);
@@ -1388,10 +1388,23 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
     
     docPieChartInstance = new Chart(ctx, {
         type: 'doughnut',
-        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: mappedColors, borderWidth: 4, borderColor: '#ffffff', offset: isEmptyState ? 0 : 8, hoverOffset: isEmptyState ? 0 : 20 }] },
+        data: { 
+            labels: labels, 
+            datasets: [{ 
+                data: dataArr, 
+                backgroundColor: mappedColors, 
+                borderWidth: 2, 
+                borderColor: '#ffffff', 
+                offset: 0, // Removes permanent explosion
+                hoverOffset: isEmptyState ? 0 : 25 // Smooth pop-out on hover
+            }] 
+        },
         options: {
-            responsive: true, maintainAspectRatio: false, cutout: '25%',
+            responsive: true, maintainAspectRatio: false, 
+            cutout: '45%', // Sleeker, more modern ring thickness
             layout: { padding: 20 },
+            animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, // Smoother initial load
+            hover: { mode: 'index', animationDuration: 300 }, // Smooth hover transition
             onClick: (event, elements, chart) => {
                 if (chart.data.labels.length === 1 && chart.data.labels[0] === 'No Data Found') return;
                 
@@ -1597,9 +1610,9 @@ function renderMasterServicePie(monthFilter) {
         masterServicePieInstance.data.labels = filteredLabels;
         masterServicePieInstance.data.datasets[0].data = filteredData;
         masterServicePieInstance.data.datasets[0].backgroundColor = mappedColors;
-        masterServicePieInstance.data.datasets[0].borderWidth = 4;
-        masterServicePieInstance.data.datasets[0].offset = 8;
-        masterServicePieInstance.data.datasets[0].hoverOffset = 20;
+        masterServicePieInstance.data.datasets[0].borderWidth = 2; // Sleeker border
+        masterServicePieInstance.data.datasets[0].offset = 0;      // Removes permanent explosion
+        masterServicePieInstance.data.datasets[0].hoverOffset = 25; // Smooth pop-out
         masterServicePieInstance.update();
     } else {
         masterServicePieInstance = new Chart(ctx, {
@@ -1609,17 +1622,18 @@ function renderMasterServicePie(monthFilter) {
                 datasets: [{
                     data: filteredData,
                     backgroundColor: mappedColors,
-                    borderWidth: 4,
+                    borderWidth: 2, // Sleeker border
                     borderColor: '#ffffff',
-                    offset: 8,
-                    hoverOffset: 20
+                    offset: 0,      // Removes permanent explosion
+                    hoverOffset: 25 // Smooth pop-out
                 }]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                cutout: '25%',
+                cutout: '45%', // Modern, slightly thinner ring
                 layout: { padding: 20 },
-                animation: { animateScale: true, animateRotate: true, duration: 600, easing: 'easeOutQuart' },
+                animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, // Smoother initial load
+                hover: { mode: 'index', animationDuration: 300 }, // Smooth hover transition
                 plugins: {
                     legend: { display: false },
                     tooltip: sharedTooltipConfig,
@@ -1708,18 +1722,19 @@ function renderToggleableChart(canvasId, type, isInitialLoad = false) {
                     datasets: [{
                         data: dataObj.data,
                         backgroundColor: mappedColors,
-                        borderWidth: 4,
+                        borderWidth: 2, // Sleeker border
                         borderColor: '#ffffff',
-                        offset: 8,
-                        hoverOffset: 20
+                        offset: 0,      // Removes permanent explosion
+                        hoverOffset: 25 // Smooth pop-out
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutout: '25%',
+                    cutout: '45%', // Modern, slightly thinner ring
                     layout: { padding: 20 },
-                    animation: { animateScale: true, animateRotate: true, duration: 700, easing: 'easeOutQuart' },
+                    animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, // Smoother initial load
+                    hover: { mode: 'index', animationDuration: 300 }, // Smooth hover transition
                     plugins: {
                         legend: { display: false },
                         tooltip: sharedTooltipConfig,
@@ -1965,18 +1980,19 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
             datasets: [{ 
                 data: dataArr, 
                 backgroundColor: mappedVibrant, 
-                borderWidth: 4, 
+                borderWidth: 2, // Sleeker border
                 borderColor: '#ffffff',
-                offset: 8,
-                hoverOffset: 20 
+                offset: 0,      // Removes permanent explosion
+                hoverOffset: 25 // Smooth pop-out
             }] 
         },
         options: { 
             responsive: true, 
             maintainAspectRatio: false, 
-            cutout: '25%',
+            cutout: '45%', // Modern, slightly thinner ring
             layout: { padding: 20 }, 
-            animation: { animateScale: true, animateRotate: true, duration: 500, easing: 'easeOutQuart' },
+            animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, // Smoother initial load
+            hover: { mode: 'index', animationDuration: 300 }, // Smooth hover transition
             plugins: { 
                 legend: { display: false }, 
                 datalabels: { 
