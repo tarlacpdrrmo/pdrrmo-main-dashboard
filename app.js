@@ -223,7 +223,7 @@ const sharedTooltipConfig = {
     caretPadding: 6
 };
 
-// --- MODAL CHART LOGIC (FULL 12 MONTHS VERTICAL BAR) ---
+// --- MODAL CHART LOGIC (FULL 12 MONTHS LINE CHART) ---
 window.openExpandedLineChart = function(chartKey) {
     try {
         const dataObj = toggleChartData[chartKey];
@@ -241,18 +241,27 @@ window.openExpandedLineChart = function(chartKey) {
         }
 
         const chartColor = Array.isArray(dataObj.color) ? dataObj.color[0] : dataObj.color;
+        let gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(37, 99, 235, 0.2)'); 
+        gradient.addColorStop(1, 'rgba(37, 99, 235, 0.0)');
 
         expandedLineInstance = new Chart(ctx, {
-            type: 'bar', // Full 12 month vertical bar chart
+            type: 'line', 
             data: {
                 labels: dataObj.labels, // Full 12 months
                 datasets: [{
                     label: dataObj.labelText,
-                    data: dataObj.data, // Full 12 months data
-                    backgroundColor: chartColor,
-                    borderRadius: 6,
-                    borderWidth: 0,
-                    maxBarThickness: 40
+                    data: dataObj.data, 
+                    borderColor: chartColor,
+                    backgroundColor: gradient,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: chartColor,
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    tension: 0.4, 
+                    fill: true
                 }]
             },
             options: {
@@ -266,14 +275,14 @@ window.openExpandedLineChart = function(chartKey) {
                         align: 'top',
                         anchor: 'end',
                         color: '#64748b',
-                        font: { weight: 'bold', family: 'Inter', size: 12 }
+                        font: { weight: 'bold', family: 'Inter', size: 11 }
                     },
                     tooltip: sharedTooltipConfig
                 },
                 scales: {
                     x: {
                         grid: { display: false, drawBorder: false },
-                        ticks: { font: { family: 'Inter', size: 11, weight: '600' }, color: '#64748b' },
+                        ticks: { font: { family: 'Inter', size: 10, weight: '600' }, color: '#64748b' },
                         border: { display: false }
                     },
                     y: {
@@ -1125,6 +1134,104 @@ function processVolunteersData(data) {
     document.getElementById('vol-ind').innerText = grandTotalHumans.toLocaleString();
 }
 
+// RESTORED HELPERS
+function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = false) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+
+    let current = 0;
+    let previous = 0;
+    let currentLabel = 'Current Month';
+    let prevLabel = 'Previous Month';
+
+    if (dataArray.length >= 2 && labelsArray.length >= 2) {
+        current = dataArray[dataArray.length - 1];
+        previous = dataArray[dataArray.length - 2];
+        currentLabel = labelsArray[labelsArray.length - 1];
+        prevLabel = labelsArray[labelsArray.length - 2];
+    } else if (dataArray.length === 1) {
+        current = dataArray[0];
+        currentLabel = labelsArray[0];
+    }
+
+    const diff = current - previous;
+    let trendHtml = '';
+    let bgColor = '#64748b'; 
+
+    if (dataArray.length < 2) {
+        trendHtml = `<span>No prior data</span>`;
+        el.style.backgroundColor = bgColor;
+        el.style.padding = '10px 16px'; 
+        el.innerHTML = `<div style="font-weight:600; font-size:0.75rem; color:#fff;">${trendHtml}</div>`;
+        return;
+    }
+
+    let symbol = '—';
+    let sign = diff > 0 ? '+' : '';
+
+    const arrowUp = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>`;
+    const arrowDown = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"></path></svg>`;
+
+    if (diff > 0) {
+        symbol = arrowUp;
+        bgColor = inverseColors ? '#ef4444' : '#10b981'; 
+    } else if (diff < 0) {
+        symbol = arrowDown;
+        bgColor = inverseColors ? '#10b981' : '#ef4444'; 
+        sign = '-'; 
+    }
+
+    let diffStr = diff > 0 ? `+${diff}` : diff;
+    let pct = previous > 0 ? Math.round((Math.abs(diff) / previous) * 100) : (diff > 0 ? 100 : 0);
+
+    let tooltipHtml = `
+        <div class="custom-tooltip">
+            <div style="color:#94a3b8; font-size:0.55rem; text-transform:uppercase; margin-bottom:6px; letter-spacing:0.5px;">Monthly Comparison</div>
+            <div style="display:flex; justify-content:space-between; gap:20px; margin-bottom:2px;"><span>${currentLabel}:</span> <strong>${current}</strong></div>
+            <div style="display:flex; justify-content:space-between; gap:20px; margin-bottom:2px;"><span>${prevLabel}:</span> <strong>${previous}</strong></div>
+            <div style="border-top:1px solid #334155; margin-top:6px; padding-top:6px; display:flex; justify-content:space-between; gap:20px;"><span>Difference:</span> <strong>${diffStr}</strong></div>
+        </div>
+    `;
+
+    el.style.backgroundColor = bgColor;
+    el.style.padding = '10px 16px'; 
+    el.style.color = '#ffffff';
+
+    el.innerHTML = `
+        <div class="has-tooltip" style="display:flex; width:100%; justify-content:space-between; align-items:center; cursor:pointer;">
+            <span style="font-weight:600; font-size:0.75rem;">${Math.abs(diff)} (${sign}${pct}%)</span>
+            <span style="display:flex; align-items:center;">${symbol}</span>
+            ${tooltipHtml}
+        </div>
+    `;
+}
+
+function renderLineChartByTimeframe(timeframe) {
+    let groupedObj = {};
+    let sortedData = [...globalLineData].sort((a, b) => a.timestamp - b.timestamp);
+
+    sortedData.forEach(item => {
+        let key = "";
+        if (timeframe === 'monthly') {
+            key = item.dateObj.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+        } else if (timeframe === 'yearly') {
+            key = item.dateObj.getFullYear().toString();
+        } else { 
+            key = item.dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+        groupedObj[key] = (groupedObj[key] || 0) + item.count;
+    });
+
+    const labels = Object.keys(groupedObj);
+    const dataValues = Object.values(groupedObj);
+    
+    if(labels.length === 0) {
+        drawLineChart('docDateLineChart', ['No Date Data Found'], [0]);
+    } else {
+        drawLineChart('docDateLineChart', labels, dataValues);
+    }
+}
+
 function processOperationsData(data) {
     try {
         operationsMonthlyCache['all'] = new Array(10).fill(0);
@@ -1244,8 +1351,8 @@ function processOperationsData(data) {
 
         drawDonutChart('monthlyPieChart', labels, monthlyTotalServices, overallGrandTotal);
         
-        // Store FULL 12-month data here for the modal
         const barColors = pieColorPalette;
+
         toggleChartData['vehicularChart'] = { labels, labelText: 'TRAUMA (ROADCRASH INCIDENT)', data: vehicular, color: barColors[0] };
         toggleChartData['roadsideChart'] = { labels, labelText: 'Roadside Assistance', data: roadside, color: barColors[1] };
         toggleChartData['patientChart'] = { labels, labelText: 'Patient Transport', data: patient, color: barColors[2] };
@@ -1258,7 +1365,6 @@ function processOperationsData(data) {
         toggleChartData['haulingChart'] = { labels, labelText: 'Hauling', data: hauling, color: barColors[8] };
         toggleChartData['ledvanChart'] = { labels, labelText: 'Ledvan Truck', data: ledvan, color: barColors[9] };
 
-        // Render the 3-Month Horizontal Bars directly
         ['vehicularChart', 'roadsideChart', 'patientChart', 'medicalChart', 'standbyChart', 'othersChart', 'clearingChart', 'firetruckChart', 'haulingChart', 'ledvanChart'].forEach(id => {
             renderToggleableChart(id, 'bar', true); 
         });
@@ -1812,81 +1918,4 @@ if(mapModalEl) {
     mapModalEl.addEventListener('click', function(e) {
         if(e.target === this) closeMapModal();
     });
-}
-
-// Ensure the helper function for charting is globally accessible
-function renderToggleableChart(canvasId, type, isInitialLoad = false) {
-    try {
-        const canvas = document.getElementById(canvasId);
-        if(!canvas) return;
-        const container = canvas.parentElement;
-
-        if (!isInitialLoad) {
-            container.classList.add('chart-fade-out');
-        }
-
-        setTimeout(() => {
-            const ctx = canvas.getContext('2d');
-            if (toggleChartInstances[canvasId]) {
-                toggleChartInstances[canvasId].destroy();
-            }
-
-            const dataObj = toggleChartData[canvasId];
-            if(!dataObj || !dataObj.labels) return;
-
-            // ONLY LAST 3 MONTHS
-            const wSize = 3;
-            // Shorten to 3 letters for compactness on y-axis
-            const recentLabels = dataObj.labels.slice(-wSize).map(l => String(l).substring(0, 3));
-            const recentData = dataObj.data.slice(-wSize);
-
-            let chartColor = dataObj.color;
-            if (Array.isArray(chartColor)) chartColor = chartColor[0];
-
-            toggleChartInstances[canvasId] = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: recentLabels,
-                    datasets: [{
-                        label: dataObj.labelText,
-                        data: recentData,
-                        backgroundColor: chartColor,
-                        maxBarThickness: 15,
-                        borderRadius: 3, 
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    indexAxis: 'y', // HORIZONTAL BAR
-                    responsive: true, 
-                    maintainAspectRatio: false,
-                    animation: { duration: 700, easing: 'easeOutQuart' },
-                    layout: { padding: { top: 5, right: 35, bottom: 5, left: 10 } }, 
-                    plugins: { 
-                        datalabels: { 
-                            display: true,
-                            color: '#1e293b', 
-                            align: 'right',
-                            anchor: 'end',
-                            font: { weight: '800', family: 'Inter', size: 10 }
-                        }, 
-                        legend: { display: false }, 
-                        tooltip: sharedTooltipConfig 
-                    },
-                    scales: { 
-                        x: { display: false, beginAtZero: true, grace: '20%' }, 
-                        y: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10, weight: '700' }, color: '#64748b' }, border: {display: false} } 
-                    }
-                }
-            });
-
-            if (!isInitialLoad) {
-                setTimeout(() => {
-                    container.classList.remove('chart-fade-out');
-                }, 50); 
-            }
-        }, isInitialLoad ? 0 : 300); 
-    } catch (e) {
-        console.error("Chart Render Failed for", canvasId, e);
-    }
 }
