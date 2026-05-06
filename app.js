@@ -9,12 +9,13 @@ let rainChartInstance = null; // Keeps track of the chart so we can update it
 // Function to toggle the dropdown panel
 function toggleWeatherPanel() {
     const container = document.getElementById('weather-interactive-widget');
-    container.classList.toggle('active');
+    if(container) container.classList.toggle('active');
 }
 
 // Function called when the user selects a new municipality from the dropdown
 function changeMunicipality() {
     const selectEl = document.getElementById('tarlac-muni-select');
+    if(!selectEl) return;
     const selectedCityQuery = selectEl.value; 
     const selectedCityName = selectEl.options[selectEl.selectedIndex].text; 
     
@@ -29,7 +30,6 @@ async function fetchOpenWeather(cityQuery) {
     if (OWM_API_KEY === "PASTE_YOUR_OPENWEATHERMAP_API_KEY_HERE") return;
 
     try {
-        // Fetch current and forecast APIs simultaneously for speed
         const currentUrl = `https://api.openweathermap.org/data/2.5/weather?q=${cityQuery}&units=metric&appid=${OWM_API_KEY}`;
         const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${cityQuery}&units=metric&appid=${OWM_API_KEY}`;
         
@@ -42,7 +42,6 @@ async function fetchOpenWeather(cityQuery) {
         const forecastData = await forecastRes.json();
 
         if (currentRes.ok && forecastRes.ok) {
-            // 1. UPDATE CURRENT WEATHER UI
             const temp = Math.round(currentData.main.temp); 
             const iconCode = currentData.weather[0].icon;
             
@@ -55,28 +54,24 @@ async function fetchOpenWeather(cityQuery) {
             document.getElementById('weather-humidity').innerText = `${currentData.main.humidity}%`;
             document.getElementById('weather-wind').innerText = `${currentData.wind.speed} m/s`;
 
-            // 2. BUILD THE RAIN CHANCE GRAPH (Next 12-15 hours)
             const rainLabels = [];
             const rainDataPoints = [];
             
-            // Loop through the first 5 time blocks (each block is 3 hours)
             for(let i = 0; i < 5; i++) {
                 const item = forecastData.list[i];
                 const date = new Date(item.dt * 1000);
                 let hour = date.getHours();
                 let ampm = hour >= 12 ? 'PM' : 'AM';
-                hour = hour % 12 || 12; // Convert 24h to 12h format
+                hour = hour % 12 || 12; 
                 
                 rainLabels.push(`${hour} ${ampm}`);
-                // pop is "Probability of Precipitation" (0 to 1). Multiply by 100 for percentage.
                 rainDataPoints.push(Math.round(item.pop * 100)); 
             }
             updateRainChart(rainLabels, rainDataPoints);
 
-            // 3. BUILD THE 3-DAY FORECAST
             const daysProcessed = new Set();
             const forecastGrid = document.getElementById('forecast-grid');
-            forecastGrid.innerHTML = ''; // Clear previous
+            if(forecastGrid) forecastGrid.innerHTML = ''; 
             
             const todayStr = new Date().toLocaleDateString();
 
@@ -84,23 +79,23 @@ async function fetchOpenWeather(cityQuery) {
                 const d = new Date(item.dt * 1000);
                 const dateStr = d.toLocaleDateString();
                 
-                // Skip today, and only grab the midday reading (around 11AM - 2PM) to represent the day
                 if (dateStr !== todayStr && d.getHours() >= 11 && d.getHours() <= 15 && !daysProcessed.has(dateStr)) {
                     daysProcessed.add(dateStr);
                     
-                    const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }); // e.g. "Mon"
+                    const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }); 
                     const dayTemp = Math.round(item.main.temp);
                     const dayIcon = item.weather[0].icon;
                     
-                    forecastGrid.innerHTML += `
-                        <div class="forecast-day">
-                            <span class="forecast-day-name">${dayName}</span>
-                            <img src="https://openweathermap.org/img/wn/${dayIcon}.png" alt="icon">
-                            <span class="forecast-day-temp">${dayTemp}°</span>
-                        </div>
-                    `;
+                    if(forecastGrid) {
+                        forecastGrid.innerHTML += `
+                            <div class="forecast-day">
+                                <span class="forecast-day-name">${dayName}</span>
+                                <img src="https://openweathermap.org/img/wn/${dayIcon}.png" alt="icon">
+                                <span class="forecast-day-temp">${dayTemp}°</span>
+                            </div>
+                        `;
+                    }
                     
-                    // Stop once we have 3 days
                     if (daysProcessed.size === 3) break;
                 }
             }
@@ -116,9 +111,10 @@ async function fetchOpenWeather(cityQuery) {
 
 // Function to draw/update the Chart.js Rain Graph
 function updateRainChart(labels, dataPoints) {
-    const ctx = document.getElementById('rainChanceChart').getContext('2d');
+    const canvas = document.getElementById('rainChanceChart');
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
     
-    // If a chart already exists, destroy it so we can draw a new one for the new city
     if(rainChartInstance) {
         rainChartInstance.destroy();
     }
@@ -139,30 +135,29 @@ function updateRainChart(labels, dataPoints) {
             maintainAspectRatio: false,
             plugins: { 
                 legend: { display: false }, 
-                tooltip: { enabled: false }, // Turn off hover tooltips since we use data labels
+                tooltip: { enabled: false }, 
                 datalabels: { 
                     display: true, 
                     color: '#ffffff', 
                     anchor: 'end',
                     align: 'top',
-                    font: { size: 10, weight: 'bold' }, 
-                    formatter: (value) => value + '%' // Adds % sign to the number
+                    font: { size: 10, weight: 'bold', family: 'Inter' }, 
+                    formatter: (value) => value + '%' 
                 } 
             },
             scales: {
-                y: { display: false, min: 0, max: 100 }, // Hide Y axis, lock 0-100%
+                y: { display: false, min: 0, max: 100 }, 
                 x: { 
-                    ticks: { color: '#94a3b8', font: { size: 9, weight: 'bold' } }, 
+                    ticks: { color: '#94a3b8', font: { size: 9, weight: 'bold', family: 'Inter' } }, 
                     grid: { display: false },
                     border: { display: false }
                 }
             },
-            layout: { padding: { top: 15 } } // Give room for the % labels at the top
+            layout: { padding: { top: 15 } } 
         }
     });
 }
 
-// Close the weather panel if the user clicks anywhere else on the screen
 document.addEventListener('click', function(event) {
     const widget = document.getElementById('weather-interactive-widget');
     if (widget && !widget.contains(event.target)) {
@@ -183,7 +178,6 @@ let masterServicePieInstance = null;
 let monthlyTotalPieInstance = null; 
 let toggleChartInstances = {};
 
-// Training Charts State Trackers
 let trainStatusChartInst = null;
 let trainTypesChartInst = null;
 let trainNumbersChartInst = null;
@@ -194,23 +188,17 @@ let originalKPITotals = {};
 let operationsMonthlyCache = {}; 
 let toggleChartData = {};
 
-// Global tracker for Training Calendar
 let globalTrainLineData = [];
 let currentCalDate = new Date();
 let currentCalView = 'monthly'; 
 let currentCalCategory = 'all'; 
 let calDataMap = {}; 
 
-// Global Trackers for Modals
 let globalTitleCounts = {};
 let globalRemarksDetails = {};
 
-// 3-Layer Interactive State Tracker
 let currentPieState = { 
-    level: 1, 
-    filterKey: 'all', 
-    level1Target: null, 
-    level2Target: null 
+    level: 1, filterKey: 'all', level1Target: null, level2Target: null 
 };
 
 const serviceCategoryLabels = [
@@ -219,10 +207,9 @@ const serviceCategoryLabels = [
     'Clearing Operations', 'Firetruck', 'Hauling', 'Ledvan Truck'
 ];
 
-// Reusable Month Order
 const monthOrder = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
 
-// REVERTED TO THE ORIGINAL VIBRANT HIGH-CONTRAST PALETTE
+// ORIGINAL VIBRANT HIGH-CONTRAST PALETTE
 const pieColorPalette = [
     '#e11d48', '#06b6d4', '#2563eb', '#ea580c', '#16a34a', 
     '#9333ea', '#f43f5e', '#f59e0b', '#3b82f6', '#10b981', 
@@ -230,22 +217,7 @@ const pieColorPalette = [
 ];
 
 const sharedTooltipConfig = {
-    backgroundColor: function(context) {
-        try {
-            if (context.tooltip && context.tooltip.dataPoints && context.tooltip.dataPoints.length > 0) {
-                const dp = context.tooltip.dataPoints[0];
-                let bg = dp.dataset.backgroundColor;
-                if (Array.isArray(bg)) bg = bg[dp.dataIndex]; 
-                if (typeof bg === 'string') return bg;
-                let bc = dp.dataset.borderColor;
-                if (Array.isArray(bc)) bc = bc[dp.dataIndex];
-                if (typeof bc === 'string') return bc;
-            }
-        } catch (e) {
-            console.warn("Tooltip color fallback triggered.");
-        }
-        return 'rgba(30, 41, 59, 0.95)';
-    },
+    backgroundColor: 'rgba(30, 41, 59, 0.95)',
     titleColor: '#ffffff',
     bodyColor: '#ffffff',
     titleFont: { family: 'Inter', size: 11, weight: '800' },
@@ -259,7 +231,7 @@ const sharedTooltipConfig = {
     caretPadding: 6
 };
 
-// --- STABLE AND CLEAN SINGLE BAR CONFIGURATION ---
+// --- STABLE AND CLEAN SINGLE HORIZONTAL BAR CONFIGURATION ---
 const singleBarOptions = {
     indexAxis: 'y', 
     responsive: true, 
@@ -279,11 +251,9 @@ function scrollToSection(panelId) {
 }
 
 document.addEventListener("DOMContentLoaded", function() {
-    // Load default Tarlac City weather on page load
     fetchOpenWeather("Tarlac City,PH");
-    
-    // Refresh weather every 15 minutes (900,000 ms)
     setInterval(() => fetchOpenWeather(document.getElementById('tarlac-muni-select').value), 900000);
+    
     const panels = document.querySelectorAll('.panel');
     const navLinks = document.querySelectorAll('.sidebar li:not(.section-title)');
     
@@ -356,34 +326,39 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    document.getElementById('globalYearSelect').addEventListener('change', function(e) {
-        applyGlobalYearFilter(e.target.value);
-    });
+    const yearSelect = document.getElementById('globalYearSelect');
+    if(yearSelect) {
+        yearSelect.addEventListener('change', function(e) {
+            applyGlobalYearFilter(e.target.value);
+        });
+    }
 
-    document.getElementById('docPieMonthFilter').addEventListener('change', function(e) {
-        currentPieState.filterKey = e.target.value;
-        renderDocPieChart();
-    });
+    const docPieMonthFilter = document.getElementById('docPieMonthFilter');
+    if(docPieMonthFilter) {
+        docPieMonthFilter.addEventListener('change', function(e) {
+            currentPieState.filterKey = e.target.value;
+            renderDocPieChart();
+        });
+    }
 
-    document.getElementById('pieBackButton').addEventListener('click', function() {
-        if (currentPieState.level === 3) {
-            currentPieState.level = 2;
-            currentPieState.level2Target = null;
-        } else if (currentPieState.level === 2) {
-            currentPieState.level = 1;
-            currentPieState.level1Target = null;
-        }
-        renderDocPieChart();
-    });
+    const pieBackBtn = document.getElementById('pieBackButton');
+    if(pieBackBtn) {
+        pieBackBtn.addEventListener('click', function() {
+            if (currentPieState.level === 3) {
+                currentPieState.level = 2;
+                currentPieState.level2Target = null;
+            } else if (currentPieState.level === 2) {
+                currentPieState.level = 1;
+                currentPieState.level1Target = null;
+            }
+            renderDocPieChart();
+        });
+    }
 
-    document.getElementById('lineChartFilter').addEventListener('change', function(e) {
-        renderLineChartByTimeframe(e.target.value);
-    });
-    
-    const trainLineFilter = document.getElementById('trainLineChartFilter');
-    if (trainLineFilter) {
-        trainLineFilter.addEventListener('change', function(e) {
-            renderTrainLineChartByTimeframe(e.target.value);
+    const lineChartFilter = document.getElementById('lineChartFilter');
+    if(lineChartFilter) {
+        lineChartFilter.addEventListener('change', function(e) {
+            renderLineChartByTimeframe(e.target.value);
         });
     }
 
@@ -407,9 +382,12 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    document.getElementById('masterServiceMonthFilter').addEventListener('change', function(e) {
-        renderMasterServicePie(e.target.value);
-    });
+    const masterServiceMonthFilter = document.getElementById('masterServiceMonthFilter');
+    if(masterServiceMonthFilter) {
+        masterServiceMonthFilter.addEventListener('change', function(e) {
+            renderMasterServicePie(e.target.value);
+        });
+    }
 
     const expandBtn = document.getElementById('expandTitlesBtn');
     const closeBtn = document.getElementById('closeModalBtn');
@@ -934,8 +912,78 @@ function buildMonthHTML(year, month, isSmallScale) {
     return html;
 }
 
-// --- CORRECTED: BULLETPROOF STABLE BAR CHARTS ---
-// This is the clean, stable bar chart function restoring the exact look you requested.
+// --- RESTORED HELPER FUNCTIONS THAT CRASHED THE ENGINE ---
+function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = false) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+
+    let current = 0;
+    let previous = 0;
+    let currentLabel = 'Current Month';
+    let prevLabel = 'Previous Month';
+
+    if (dataArray.length >= 2 && labelsArray.length >= 2) {
+        current = dataArray[dataArray.length - 1];
+        previous = dataArray[dataArray.length - 2];
+        currentLabel = labelsArray[labelsArray.length - 1];
+        prevLabel = labelsArray[labelsArray.length - 2];
+    } else if (dataArray.length === 1) {
+        current = dataArray[0];
+        currentLabel = labelsArray[0];
+    }
+
+    const diff = current - previous;
+    let trendHtml = '';
+    let bgColor = '#64748b'; 
+
+    if (dataArray.length < 2) {
+        trendHtml = `<span>No prior data</span>`;
+        el.style.backgroundColor = bgColor;
+        el.style.padding = '10px 16px'; 
+        el.innerHTML = `<div style="font-weight:600; font-size:0.75rem; color:#fff;">${trendHtml}</div>`;
+        return;
+    }
+
+    let symbol = '—';
+    let sign = diff > 0 ? '+' : '';
+
+    const arrowUp = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>`;
+    const arrowDown = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"></path></svg>`;
+
+    if (diff > 0) {
+        symbol = arrowUp;
+        bgColor = inverseColors ? '#ef4444' : '#10b981'; 
+    } else if (diff < 0) {
+        symbol = arrowDown;
+        bgColor = inverseColors ? '#10b981' : '#ef4444'; 
+        sign = '-'; 
+    }
+
+    let diffStr = diff > 0 ? `+${diff}` : diff;
+    let pct = previous > 0 ? Math.round((Math.abs(diff) / previous) * 100) : (diff > 0 ? 100 : 0);
+
+    let tooltipHtml = `
+        <div class="custom-tooltip">
+            <div style="color:#94a3b8; font-size:0.55rem; text-transform:uppercase; margin-bottom:6px; letter-spacing:0.5px;">Monthly Comparison</div>
+            <div style="display:flex; justify-content:space-between; gap:20px; margin-bottom:2px;"><span>${currentLabel}:</span> <strong>${current}</strong></div>
+            <div style="display:flex; justify-content:space-between; gap:20px; margin-bottom:2px;"><span>${prevLabel}:</span> <strong>${previous}</strong></div>
+            <div style="border-top:1px solid #334155; margin-top:6px; padding-top:6px; display:flex; justify-content:space-between; gap:20px;"><span>Difference:</span> <strong>${diffStr}</strong></div>
+        </div>
+    `;
+
+    el.style.backgroundColor = bgColor;
+    el.style.padding = '10px 16px'; 
+    el.style.color = '#ffffff';
+
+    el.innerHTML = `
+        <div class="has-tooltip" style="display:flex; width:100%; justify-content:space-between; align-items:center; cursor:pointer;">
+            <span style="font-weight:600; font-size:0.75rem;">${Math.abs(diff)} (${sign}${pct}%)</span>
+            <span style="display:flex; align-items:center;">${symbol}</span>
+            ${tooltipHtml}
+        </div>
+    `;
+}
+
 function renderToggleableChart(canvasId, type, isInitialLoad = false) {
     try {
         const canvas = document.getElementById(canvasId);
@@ -960,7 +1008,6 @@ function renderToggleableChart(canvasId, type, isInitialLoad = false) {
             if (Array.isArray(chartColor)) chartColor = chartColor[0];
 
             if (type === 'pie' || type === 'doughnut') {
-                // If user toggles the master switch to Pie mode
                 const mappedColors = Array.isArray(dataObj.color) ? dataObj.color : dataObj.data.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
                 toggleChartInstances[canvasId] = new Chart(ctx, {
                     type: 'doughnut',
@@ -984,7 +1031,6 @@ function renderToggleableChart(canvasId, type, isInitialLoad = false) {
                     }
                 });
             } else {
-                // Default: Clean Horizontal Bar Chart
                 toggleChartInstances[canvasId] = new Chart(ctx, {
                     type: 'bar',
                     data: {
@@ -998,7 +1044,7 @@ function renderToggleableChart(canvasId, type, isInitialLoad = false) {
                             borderWidth: 0 // Smooth, no-stroke bars
                         }]
                     },
-                    options: singleBarOptions // Uses the stable, standard options defined at the top
+                    options: singleBarOptions // Restored to the clean horizontal bar layout
                 });
             }
 
@@ -1030,7 +1076,6 @@ function renderMasterServicePie(monthFilter) {
             }
         }
 
-        // Failsafe for completely empty data to prevent crash
         if(filteredLabels.length === 0) {
             filteredLabels = ["No Data"];
             filteredData = [1];
@@ -1128,185 +1173,6 @@ function renderMasterServicePie(monthFilter) {
     } catch (e) {
         console.error("Master Pie Chart Crash:", e);
     }
-}
-
-function drawTrainBarChart(canvasId, labels, dataArr, customColors = null) {
-    const canvas = document.getElementById(canvasId);
-    if(!canvas) return;
-    const ctx = canvas.getContext('2d');
-    
-    if (!labels || labels.length === 0) {
-        labels = ["No Data"];
-        dataArr = [0];
-    }
-
-    if (window[canvasId + 'Inst']) window[canvasId + 'Inst'].destroy();
-
-    let colors = customColors || labels.map((_, i) => pieColorPalette[(i + 2) % pieColorPalette.length]);
-
-    window[canvasId + 'Inst'] = new Chart(ctx, {
-        type: 'bar',
-        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: colors, borderRadius: 4, borderWidth: 0, maxBarThickness: 30 }] },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            layout: { padding: { top: 25, left: 10, right: 10, bottom: 0 } }, 
-            plugins: { legend: { display: false }, tooltip: sharedTooltipConfig, datalabels: { display: true, align: 'top', anchor: 'end', color: '#64748b', font: { weight: 'bold' } } },
-            scales: {
-                x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 9 }, color: '#64748b' }, border: {display: false} },
-                y: { grid: { color: '#f1f5f9', drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 }, color: '#94a3b8' }, beginAtZero: true, grace: '20%', border: {display: false} } 
-            }
-        }
-    });
-}
-
-function populateAllList(containerId, dataObj) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    container.innerHTML = '';
-    
-    let sorted = Object.keys(dataObj).map(k => ({name: k, count: dataObj[k]})).sort((a,b) => b.count - a.count);
-    
-    if (sorted.length === 0) {
-        container.innerHTML = `<div style="color: #94a3b8; font-size: 0.7rem; padding: 10px;">No Data</div>`;
-        return;
-    }
-
-    sorted.forEach((item, index) => {
-        container.innerHTML += `
-            <div class="legend-item" style="animation-delay: ${index * 0.04}s;">
-                <div class="legend-text" title="${item.name}" style="flex: 1;">${index + 1}. ${item.name}</div>
-                <div class="legend-val">${item.count}</div>
-            </div>
-        `;
-    });
-}
-
-function populateModalList(dataObj) {
-    const container = document.getElementById('modal-title-list');
-    if (!container) return;
-    container.innerHTML = '';
-    
-    let sorted = Object.keys(dataObj).map(k => ({name: k, count: dataObj[k]})).sort((a,b) => b.count - a.count);
-    
-    if (sorted.length === 0) {
-        container.innerHTML = `<div style="color: #94a3b8; font-size: 0.9rem; padding: 20px; text-align:center;">No Data Available</div>`;
-        return;
-    }
-
-    sorted.forEach((item, index) => {
-        container.innerHTML += `
-            <div class="legend-item" style="animation-delay: ${index * 0.02}s;">
-                <div class="legend-text" style="font-size: 0.85rem; padding-right: 15px;">
-                    <span style="color:#64748b; font-weight:800; margin-right:8px;">${index + 1}.</span> 
-                    ${item.name}
-                </div>
-                <div class="legend-val">${item.count}</div>
-            </div>
-        `;
-    });
-}
-
-function populateRemarksModal(detailsObj) {
-    const container = document.getElementById('modal-remarks-list');
-    if (!container) return;
-    container.innerHTML = '';
-    
-    if (!detailsObj || Object.keys(detailsObj).length === 0) {
-        container.innerHTML = `<div style="color: #94a3b8; font-size: 0.9rem; padding: 20px; text-align:center;">No Data Available</div>`;
-        return;
-    }
-
-    for (let status in detailsObj) {
-        let items = detailsObj[status];
-        if(!items || items.length === 0) continue;
-
-        let color = status === 'WITH AAR' ? '#10b981' : (status === 'NO AAR' ? '#f43f5e' : '#64748b'); 
-
-        let html = `<h3 style="font-size: 0.9rem; color: ${color}; margin-top: 16px; margin-bottom: 8px; border-bottom: 2px solid #f1f5f9; padding-bottom: 6px;">${status} (${items.length})</h3>`;
-        
-        items.forEach((item, index) => {
-            html += `
-                <div class="legend-item" style="padding: 12px 0; border-bottom: 1px solid #f8fafc; align-items: flex-start; animation-delay: ${index * 0.02}s;">
-                    <div class="legend-text" style="font-size: 0.8rem; white-space: normal; line-height: 1.4;">
-                        <span style="font-weight: 800; color: #1e293b;">${item.title}</span><br>
-                        <span style="font-size: 0.7rem; color: #64748b;">${item.agency} &nbsp;|&nbsp; ${item.dates}</span>
-                    </div>
-                </div>
-            `;
-        });
-        container.innerHTML += html;
-    }
-}
-
-function processVolunteersData(data) {
-    let totalOrgs = 0;
-    let totalIndividualsInOrgs = 0;
-    let standaloneIndividuals = 0;
-    let orgList = []; 
-
-    const tbody = document.querySelector('#volunteerTable tbody');
-    if(!tbody) return;
-    tbody.innerHTML = ''; 
-
-    data.forEach(row => {
-        let keys = Object.keys(row);
-        if (keys.length < 6) return;
-
-        let orgKey = keys.find(k => k.toUpperCase().includes('LIST OF ORGANIZATION')) || keys[5]; 
-        let countKey = keys.find(k => k.toUpperCase().includes('TOTAL COUNT VOLUNTEER')) || keys[6]; 
-        let individualKey = keys.find(k => k.toUpperCase().includes('INDIVIDUAL VOLUNTEER')) || keys[8]; 
-
-        let orgName = row[orgKey] ? row[orgKey].trim() : '';
-        let orgCount = Number(row[countKey]) || 0;
-        let standaloneCount = Number(row[individualKey]) || 0;
-
-        if (standaloneCount > 0) {
-            standaloneIndividuals += standaloneCount;
-        }
-
-        if (orgName && orgCount > 0 && !orgName.toUpperCase().includes('TOTAL')) {
-            totalOrgs++; 
-            totalIndividualsInOrgs += orgCount; 
-            orgList.push({ name: orgName, count: orgCount });
-        }
-    });
-
-    orgList.sort((a, b) => b.count - a.count);
-
-    const maxCount = orgList.length > 0 ? orgList[0].count : 1;
-
-    orgList.forEach((org, index) => {
-        let tr = document.createElement('tr');
-        tr.style.animationDelay = `${index * 0.03}s`;
-        
-        let tdName = document.createElement('td');
-        tdName.innerHTML = `
-            <div style="display:flex; align-items:center; gap:12px;">
-                <span style="color:#94a3b8; font-weight:800; font-size:0.6rem;">${index + 1}</span>
-                <span>${org.name}</span>
-            </div>
-        `;
-        
-        let tdCount = document.createElement('td');
-        let percentage = (org.count / maxCount) * 100;
-        tdCount.innerHTML = `
-            <div style="display:flex; align-items:center; gap:12px; width:100%;">
-                <span style="width: 30px; font-weight:800;">${org.count.toLocaleString()}</span>
-                <div style="flex:1; height:6px; background:#f1f5f9; border-radius:3px; overflow:hidden;">
-                    <div style="height:100%; width:${percentage}%; background:linear-gradient(90deg, #06b6d4, #2563eb); border-radius:3px; transition: width 1s ease-in-out;"></div>
-                </div>
-            </div>
-        `; 
-        
-        tr.appendChild(tdName);
-        tr.appendChild(tdCount);
-        tbody.appendChild(tr);
-    });
-
-    let grandTotalHumans = totalIndividualsInOrgs + standaloneIndividuals;
-
-    document.getElementById('vol-orgs').innerText = totalOrgs.toLocaleString(); 
-    document.getElementById('vol-ind').innerText = grandTotalHumans.toLocaleString();
 }
 
 function processOperationsData(data) {
@@ -1428,8 +1294,8 @@ function processOperationsData(data) {
 
         drawDonutChart('monthlyPieChart', labels, monthlyTotalServices, overallGrandTotal);
         
-        // Store FULL 12-month data here for the modal
         const barColors = pieColorPalette;
+
         toggleChartData['vehicularChart'] = { labels, labelText: 'TRAUMA (ROADCRASH INCIDENT)', data: vehicular, color: barColors[0] };
         toggleChartData['roadsideChart'] = { labels, labelText: 'Roadside Assistance', data: roadside, color: barColors[1] };
         toggleChartData['patientChart'] = { labels, labelText: 'Patient Transport', data: patient, color: barColors[2] };
@@ -1442,7 +1308,6 @@ function processOperationsData(data) {
         toggleChartData['haulingChart'] = { labels, labelText: 'Hauling', data: hauling, color: barColors[8] };
         toggleChartData['ledvanChart'] = { labels, labelText: 'Ledvan Truck', data: ledvan, color: barColors[9] };
 
-        // Render the Restored Bar Charts
         ['vehicularChart', 'roadsideChart', 'patientChart', 'medicalChart', 'standbyChart', 'othersChart', 'clearingChart', 'firetruckChart', 'haulingChart', 'ledvanChart'].forEach(id => {
             renderToggleableChart(id, 'bar', true); 
         });
@@ -1826,28 +1691,12 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
     updateCustomLegend(labels, dataArr, isEmptyState);
 }
 
-function updateCustomLegend(labels, data, isEmptyState = false) {
-    const legendContainer = document.getElementById('customLegend');
-    if(!legendContainer) return;
-    legendContainer.innerHTML = '';
-    labels.forEach((label, index) => {
-        let color = isEmptyState ? '#e2e8f0' : pieColorPalette[index % pieColorPalette.length];
-        let val = isEmptyState ? '-' : data[index];
-        legendContainer.innerHTML += `
-            <div class="legend-item" style="animation-delay: ${index * 0.04}s;">
-                <div class="legend-color" style="background-color: ${color}"></div>
-                <div class="legend-text" title="${label}">${label}</div>
-                <div class="legend-val">${val}</div>
-            </div>
-        `;
-    });
-}
-
 function drawLineChart(canvasId, labels, dataArr) {
     const canvas = document.getElementById(canvasId);
     if(!canvas) return;
     const ctx = canvas.getContext('2d');
     
+    // RESTORED rendering function for line charts to prevent crash
     if(docLineChartInstance) docLineChartInstance.destroy();
 
     let gradient = ctx.createLinearGradient(0, 0, 0, 300);
