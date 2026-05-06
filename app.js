@@ -1384,25 +1384,24 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
     if (isEmptyState) mappedColors = ['#e2e8f0']; 
     
     docPieChartInstance = new Chart(ctx, {
-        type: 'polarArea', // UPDATED TO POLAR AREA
+        type: 'doughnut',
         data: { 
             labels: labels, 
             datasets: [{ 
                 data: dataArr, 
                 backgroundColor: mappedColors, 
-                borderWidth: 2, 
-                borderColor: '#ffffff', 
-                hoverBorderWidth: 5 // Creates smooth pop-out effect on hover
+                borderWidth: 0, 
+                borderRadius: 8, // Creates the rounded corners
+                spacing: 5,      // Creates the gaps between slices
+                hoverOffset: isEmptyState ? 0 : 15 // The interactive pop-out
             }] 
         },
         options: {
             responsive: true, maintainAspectRatio: false, 
-            rotation: -90,      // FORCES HALF-CIRCLE SHAPE
-            circumference: 180, // FORCES HALF-CIRCLE SHAPE
-            layout: { padding: 20 }, 
-            scales: { r: { display: false } }, // Hides the web/grid rings
-            animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, 
-            hover: { mode: 'index', animationDuration: 300 }, // Smooth hover transition
+            cutout: '55%', 
+            layout: { padding: 15 }, 
+            animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' },
+            hover: { mode: 'index', animationDuration: 300 }, 
             onClick: (event, elements, chart) => {
                 if (chart.data.labels.length === 1 && chart.data.labels[0] === 'No Data Found') return;
                 
@@ -1611,25 +1610,24 @@ function renderMasterServicePie(monthFilter) {
         masterServicePieInstance.update();
     } else {
         masterServicePieInstance = new Chart(ctx, {
-            type: 'polarArea', // UPDATED TO POLAR AREA
+            type: 'doughnut', 
             data: {
                 labels: filteredLabels,
                 datasets: [{
                     data: filteredData,
                     backgroundColor: mappedColors,
-                    borderWidth: 2, 
-                    borderColor: '#ffffff',
-                    hoverBorderWidth: 5 // Creates smooth pop-out effect on hover
+                    borderWidth: 0, 
+                    borderRadius: 8, // Creates the rounded corners
+                    spacing: 5,      // Creates the gaps between slices
+                    hoverOffset: 15  // The interactive pop-out
                 }]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                rotation: -90,      // FORCES HALF-CIRCLE SHAPE
-                circumference: 180, // FORCES HALF-CIRCLE SHAPE
-                layout: { padding: 20 }, 
-                scales: { r: { display: false } }, // Hides the web/grid rings
+                cutout: '55%', 
+                layout: { padding: 15 }, 
                 animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, 
-                hover: { mode: 'index', animationDuration: 300 }, // Smooth hover transition
+                hover: { mode: 'index', animationDuration: 300 }, 
                 plugins: {
                     legend: { display: false },
                     tooltip: sharedTooltipConfig,
@@ -1712,26 +1710,25 @@ function renderToggleableChart(canvasId, type, isInitialLoad = false) {
         } else {
             const mappedColors = Array.isArray(dataObj.color) ? dataObj.color : dataObj.data.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
             toggleChartInstances[canvasId] = new Chart(ctx, {
-                type: 'polarArea', // UPDATED TO POLAR AREA
+                type: 'doughnut',
                 data: {
                     labels: dataObj.labels,
                     datasets: [{
                         data: dataObj.data,
                         backgroundColor: mappedColors,
-                        borderWidth: 2, 
-                        borderColor: '#ffffff',
-                        hoverBorderWidth: 5 // Creates smooth pop-out effect on hover
+                        borderWidth: 0, 
+                        borderRadius: 8, // Creates the rounded corners
+                        spacing: 5,      // Creates the gaps between slices
+                        hoverOffset: 15  // The interactive pop-out
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    rotation: -90,      // FORCES HALF-CIRCLE SHAPE
-                    circumference: 180, // FORCES HALF-CIRCLE SHAPE
-                    layout: { padding: 20 }, 
-                    scales: { r: { display: false } }, // Hides the web/grid rings
+                    cutout: '55%', 
+                    layout: { padding: 15 }, 
                     animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, 
-                    hover: { mode: 'index', animationDuration: 300 }, // Smooth hover transition
+                    hover: { mode: 'index', animationDuration: 300 }, 
                     plugins: {
                         legend: { display: false },
                         tooltip: sharedTooltipConfig,
@@ -1971,24 +1968,23 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
     if(gtEl) gtEl.innerText = grandTotal.toLocaleString();
 
     monthlyTotalPieInstance = new Chart(ctx, {
-        type: 'polarArea', // UPDATED TO POLAR AREA
+        type: 'doughnut', 
         data: { 
             labels: labels, 
             datasets: [{ 
                 data: dataArr, 
                 backgroundColor: mappedVibrant, 
-                borderWidth: 2, 
-                borderColor: '#ffffff',
-                hoverBorderWidth: 5 
+                borderWidth: 0, 
+                borderRadius: 8, // Creates the rounded corners
+                spacing: 5,      // Creates the gaps between slices
+                hoverOffset: 15 // The interactive pop-out
             }] 
         },
         options: { 
             responsive: true, 
             maintainAspectRatio: false, 
-            rotation: -90,      // FORCES HALF-CIRCLE SHAPE
-            circumference: 180, // FORCES HALF-CIRCLE SHAPE
-            layout: { padding: 20 }, 
-            scales: { r: { display: false } }, 
+            cutout: '55%', 
+            layout: { padding: 15 }, 
             animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, 
             hover: { mode: 'index', animationDuration: 300 }, 
             plugins: { 
