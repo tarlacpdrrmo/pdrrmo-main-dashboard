@@ -6,15 +6,14 @@ const webAppUrl = "https://script.google.com/macros/s/AKfycbwYUt0YFQClUUXRGwrNdn
 const OWM_API_KEY = "3457c364d3f2840960216510c279837c"; 
 let rainChartInstance = null; // Keeps track of the chart so we can update it
 
-// Function to toggle the dropdown panel
 function toggleWeatherPanel() {
     const container = document.getElementById('weather-interactive-widget');
-    container.classList.toggle('active');
+    if(container) container.classList.toggle('active');
 }
 
-// Function called when the user selects a new municipality from the dropdown
 function changeMunicipality() {
     const selectEl = document.getElementById('tarlac-muni-select');
+    if(!selectEl) return;
     const selectedCityQuery = selectEl.value; 
     const selectedCityName = selectEl.options[selectEl.selectedIndex].text; 
     
@@ -24,12 +23,10 @@ function changeMunicipality() {
     fetchOpenWeather(selectedCityQuery);
 }
 
-// Function to fetch both Current Weather AND Forecast Data
 async function fetchOpenWeather(cityQuery) {
     if (OWM_API_KEY === "PASTE_YOUR_OPENWEATHERMAP_API_KEY_HERE") return;
 
     try {
-        // Fetch current and forecast APIs simultaneously for speed
         const currentUrl = `https://api.openweathermap.org/data/2.5/weather?q=${cityQuery}&units=metric&appid=${OWM_API_KEY}`;
         const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${cityQuery}&units=metric&appid=${OWM_API_KEY}`;
         
@@ -42,7 +39,6 @@ async function fetchOpenWeather(cityQuery) {
         const forecastData = await forecastRes.json();
 
         if (currentRes.ok && forecastRes.ok) {
-            // 1. UPDATE CURRENT WEATHER UI
             const temp = Math.round(currentData.main.temp); 
             const iconCode = currentData.weather[0].icon;
             
@@ -55,28 +51,24 @@ async function fetchOpenWeather(cityQuery) {
             document.getElementById('weather-humidity').innerText = `${currentData.main.humidity}%`;
             document.getElementById('weather-wind').innerText = `${currentData.wind.speed} m/s`;
 
-            // 2. BUILD THE RAIN CHANCE GRAPH (Next 12-15 hours)
             const rainLabels = [];
             const rainDataPoints = [];
             
-            // Loop through the first 5 time blocks (each block is 3 hours)
             for(let i = 0; i < 5; i++) {
                 const item = forecastData.list[i];
                 const date = new Date(item.dt * 1000);
                 let hour = date.getHours();
                 let ampm = hour >= 12 ? 'PM' : 'AM';
-                hour = hour % 12 || 12; // Convert 24h to 12h format
+                hour = hour % 12 || 12; 
                 
                 rainLabels.push(`${hour} ${ampm}`);
-                // pop is "Probability of Precipitation" (0 to 1). Multiply by 100 for percentage.
                 rainDataPoints.push(Math.round(item.pop * 100)); 
             }
             updateRainChart(rainLabels, rainDataPoints);
 
-            // 3. BUILD THE 3-DAY FORECAST
             const daysProcessed = new Set();
             const forecastGrid = document.getElementById('forecast-grid');
-            forecastGrid.innerHTML = ''; // Clear previous
+            if(forecastGrid) forecastGrid.innerHTML = ''; 
             
             const todayStr = new Date().toLocaleDateString();
 
@@ -84,41 +76,36 @@ async function fetchOpenWeather(cityQuery) {
                 const d = new Date(item.dt * 1000);
                 const dateStr = d.toLocaleDateString();
                 
-                // Skip today, and only grab the midday reading (around 11AM - 2PM) to represent the day
                 if (dateStr !== todayStr && d.getHours() >= 11 && d.getHours() <= 15 && !daysProcessed.has(dateStr)) {
                     daysProcessed.add(dateStr);
                     
-                    const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }); // e.g. "Mon"
+                    const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }); 
                     const dayTemp = Math.round(item.main.temp);
                     const dayIcon = item.weather[0].icon;
                     
-                    forecastGrid.innerHTML += `
-                        <div class="forecast-day">
-                            <span class="forecast-day-name">${dayName}</span>
-                            <img src="https://openweathermap.org/img/wn/${dayIcon}.png" alt="icon">
-                            <span class="forecast-day-temp">${dayTemp}°</span>
-                        </div>
-                    `;
-                    
-                    // Stop once we have 3 days
+                    if(forecastGrid) {
+                        forecastGrid.innerHTML += `
+                            <div class="forecast-day">
+                                <span class="forecast-day-name">${dayName}</span>
+                                <img src="https://openweathermap.org/img/wn/${dayIcon}.png" alt="icon">
+                                <span class="forecast-day-temp">${dayTemp}°</span>
+                            </div>
+                        `;
+                    }
                     if (daysProcessed.size === 3) break;
                 }
             }
-
-        } else {
-            console.error("OpenWeather error:", currentData.message);
-            document.getElementById('weather-temp-main').innerText = "Err";
         }
     } catch (error) {
         console.error("Weather fetch failed:", error);
     }
 }
 
-// Function to draw/update the Chart.js Rain Graph
 function updateRainChart(labels, dataPoints) {
-    const ctx = document.getElementById('rainChanceChart').getContext('2d');
+    const canvas = document.getElementById('rainChanceChart');
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
     
-    // If a chart already exists, destroy it so we can draw a new one for the new city
     if(rainChartInstance) {
         rainChartInstance.destroy();
     }
@@ -129,9 +116,8 @@ function updateRainChart(labels, dataPoints) {
             labels: labels,
             datasets: [{
                 data: dataPoints,
-                backgroundColor: 'rgba(14, 165, 233, 0.7)', // Sleek Sky Blue
-                borderColor: '#0ea5e9',
-                borderWidth: 1,
+                backgroundColor: 'rgba(14, 165, 233, 0.7)', 
+                borderWidth: 0, 
                 borderRadius: 4
             }]
         },
@@ -140,30 +126,29 @@ function updateRainChart(labels, dataPoints) {
             maintainAspectRatio: false,
             plugins: { 
                 legend: { display: false }, 
-                tooltip: { enabled: false }, // Turn off hover tooltips since we use data labels
+                tooltip: { enabled: false }, 
                 datalabels: { 
                     display: true, 
                     color: '#ffffff', 
                     anchor: 'end',
                     align: 'top',
-                    font: { size: 10, weight: 'bold' }, 
-                    formatter: (value) => value + '%' // Adds % sign to the number
+                    font: { size: 10, weight: 'bold', family: 'Inter' }, 
+                    formatter: (value) => value + '%' 
                 } 
             },
             scales: {
-                y: { display: false, min: 0, max: 100 }, // Hide Y axis, lock 0-100%
+                y: { display: false, min: 0, max: 100 }, 
                 x: { 
-                    ticks: { color: '#94a3b8', font: { size: 9, weight: 'bold' } }, 
+                    ticks: { color: '#94a3b8', font: { size: 9, weight: 'bold', family: 'Inter' } }, 
                     grid: { display: false },
                     border: { display: false }
                 }
             },
-            layout: { padding: { top: 15 } } // Give room for the % labels at the top
+            layout: { padding: { top: 15 } } 
         }
     });
 }
 
-// Close the weather panel if the user clicks anywhere else on the screen
 document.addEventListener('click', function(event) {
     const widget = document.getElementById('weather-interactive-widget');
     if (widget && !widget.contains(event.target)) {
@@ -183,8 +168,8 @@ let docLineChartInstance = null;
 let masterServicePieInstance = null;
 let monthlyTotalPieInstance = null; 
 let toggleChartInstances = {};
+let expandedLineInstance = null; 
 
-// Training Charts State Trackers
 let trainStatusChartInst = null;
 let trainTypesChartInst = null;
 let trainNumbersChartInst = null;
@@ -195,23 +180,17 @@ let originalKPITotals = {};
 let operationsMonthlyCache = {}; 
 let toggleChartData = {};
 
-// Global tracker for Training Calendar
 let globalTrainLineData = [];
 let currentCalDate = new Date();
 let currentCalView = 'monthly'; 
 let currentCalCategory = 'all'; 
 let calDataMap = {}; 
 
-// Global Trackers for Modals
 let globalTitleCounts = {};
 let globalRemarksDetails = {};
 
-// 3-Layer Interactive State Tracker
 let currentPieState = { 
-    level: 1, 
-    filterKey: 'all', 
-    level1Target: null, 
-    level2Target: null 
+    level: 1, filterKey: 'all', level1Target: null, level2Target: null 
 };
 
 const serviceCategoryLabels = [
@@ -220,28 +199,17 @@ const serviceCategoryLabels = [
     'Clearing Operations', 'Firetruck', 'Hauling', 'Ledvan Truck'
 ];
 
-// Reusable Month Order
 const monthOrder = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
 
-const pieColorPalette = ['#e11d48', '#06b6d4', '#2563eb', '#ea580c', '#16a34a', '#9333ea', '#f43f5e', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#d946ef', '#f97316', '#14b8a6', '#6366f1'];
+// ORIGINAL VIBRANT HIGH-CONTRAST PALETTE
+const pieColorPalette = [
+    '#e11d48', '#06b6d4', '#2563eb', '#ea580c', '#16a34a', 
+    '#9333ea', '#f43f5e', '#f59e0b', '#3b82f6', '#10b981', 
+    '#8b5cf6', '#d946ef', '#f97316', '#14b8a6', '#6366f1'
+];
 
 const sharedTooltipConfig = {
-    backgroundColor: function(context) {
-        try {
-            if (context.tooltip && context.tooltip.dataPoints && context.tooltip.dataPoints.length > 0) {
-                const dp = context.tooltip.dataPoints[0];
-                let bg = dp.dataset.backgroundColor;
-                if (Array.isArray(bg)) bg = bg[dp.dataIndex]; 
-                if (typeof bg === 'string') return bg;
-                let bc = dp.dataset.borderColor;
-                if (Array.isArray(bc)) bc = bc[dp.dataIndex];
-                if (typeof bc === 'string') return bc;
-            }
-        } catch (e) {
-            console.warn("Tooltip color fallback triggered.");
-        }
-        return 'rgba(30, 41, 59, 0.95)';
-    },
+    backgroundColor: 'rgba(30, 41, 59, 0.95)',
     titleColor: '#ffffff',
     bodyColor: '#ffffff',
     titleFont: { family: 'Inter', size: 11, weight: '800' },
@@ -255,16 +223,77 @@ const sharedTooltipConfig = {
     caretPadding: 6
 };
 
-const singleBarOptions = {
-    indexAxis: 'y', 
-    responsive: true, 
-    maintainAspectRatio: false,
-    animation: { duration: 700, easing: 'easeOutQuart' },
-    layout: { padding: { top: 15, right: 25, bottom: 10, left: 10 } }, 
-    plugins: { datalabels: { display: false }, legend: { display: false }, tooltip: sharedTooltipConfig },
-    scales: { x: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } }, y: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } } },
-    elements: { bar: { borderRadius: 3 } } 
-};
+// --- MODAL CHART LOGIC (FULL 12 MONTHS VERTICAL BAR) ---
+window.openExpandedLineChart = function(chartKey) {
+    try {
+        const dataObj = toggleChartData[chartKey];
+        if(!dataObj) return;
+
+        document.getElementById('expandedLineTitle').innerText = dataObj.labelText + " (12-Month View)";
+        document.getElementById('expandedLineModal').classList.add('active');
+
+        const canvas = document.getElementById('expandedLineCanvas');
+        if(!canvas) return;
+        const ctx = canvas.getContext('2d');
+        
+        if(expandedLineInstance) {
+            expandedLineInstance.destroy();
+        }
+
+        const chartColor = Array.isArray(dataObj.color) ? dataObj.color[0] : dataObj.color;
+
+        expandedLineInstance = new Chart(ctx, {
+            type: 'bar', // Full 12 month vertical bar chart
+            data: {
+                labels: dataObj.labels, // Full 12 months
+                datasets: [{
+                    label: dataObj.labelText,
+                    data: dataObj.data, // Full 12 months data
+                    backgroundColor: chartColor,
+                    borderRadius: 6,
+                    borderWidth: 0,
+                    maxBarThickness: 40
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 800, easing: 'easeOutQuart' },
+                plugins: {
+                    legend: { display: false },
+                    datalabels: {
+                        display: true,
+                        align: 'top',
+                        anchor: 'end',
+                        color: '#64748b',
+                        font: { weight: 'bold', family: 'Inter', size: 12 }
+                    },
+                    tooltip: sharedTooltipConfig
+                },
+                scales: {
+                    x: {
+                        grid: { display: false, drawBorder: false },
+                        ticks: { font: { family: 'Inter', size: 11, weight: '600' }, color: '#64748b' },
+                        border: { display: false }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f1f5f9', drawBorder: false },
+                        ticks: { font: { family: 'Inter', size: 11 }, color: '#94a3b8' },
+                        grace: '15%',
+                        border: { display: false }
+                    }
+                }
+            }
+        });
+    } catch (e) {
+        console.error("Error opening expanded chart:", e);
+    }
+}
+
+window.closeExpandedLineChart = function() {
+    document.getElementById('expandedLineModal').classList.remove('active');
+}
 
 function scrollToSection(panelId) {
     const section = document.getElementById(panelId);
@@ -274,11 +303,9 @@ function scrollToSection(panelId) {
 }
 
 document.addEventListener("DOMContentLoaded", function() {
-    // Load default Tarlac City weather on page load
     fetchOpenWeather("Tarlac City,PH");
-    
-    // Refresh weather every 15 minutes (900,000 ms)
     setInterval(() => fetchOpenWeather(document.getElementById('tarlac-muni-select').value), 900000);
+    
     const panels = document.querySelectorAll('.panel');
     const navLinks = document.querySelectorAll('.sidebar li:not(.section-title)');
     
@@ -338,47 +365,47 @@ document.addEventListener("DOMContentLoaded", function() {
                         changed = true;
                     }
                 });
-                
-                if (changed) {
-                    masterServicePieInstance.update();
-                }
+                if (changed) masterServicePieInstance.update();
 
                 const legendItems = document.querySelectorAll('#masterServiceLegend .legend-item');
-                legendItems.forEach(item => {
-                    item.classList.remove('hidden-slice');
-                });
+                legendItems.forEach(item => item.classList.remove('hidden-slice'));
             }
         });
     }
 
-    document.getElementById('globalYearSelect').addEventListener('change', function(e) {
-        applyGlobalYearFilter(e.target.value);
-    });
+    const yearSelect = document.getElementById('globalYearSelect');
+    if(yearSelect) {
+        yearSelect.addEventListener('change', function(e) {
+            applyGlobalYearFilter(e.target.value);
+        });
+    }
 
-    document.getElementById('docPieMonthFilter').addEventListener('change', function(e) {
-        currentPieState.filterKey = e.target.value;
-        renderDocPieChart();
-    });
+    const docPieMonthFilter = document.getElementById('docPieMonthFilter');
+    if(docPieMonthFilter) {
+        docPieMonthFilter.addEventListener('change', function(e) {
+            currentPieState.filterKey = e.target.value;
+            renderDocPieChart();
+        });
+    }
 
-    document.getElementById('pieBackButton').addEventListener('click', function() {
-        if (currentPieState.level === 3) {
-            currentPieState.level = 2;
-            currentPieState.level2Target = null;
-        } else if (currentPieState.level === 2) {
-            currentPieState.level = 1;
-            currentPieState.level1Target = null;
-        }
-        renderDocPieChart();
-    });
+    const pieBackBtn = document.getElementById('pieBackButton');
+    if(pieBackBtn) {
+        pieBackBtn.addEventListener('click', function() {
+            if (currentPieState.level === 3) {
+                currentPieState.level = 2;
+                currentPieState.level2Target = null;
+            } else if (currentPieState.level === 2) {
+                currentPieState.level = 1;
+                currentPieState.level1Target = null;
+            }
+            renderDocPieChart();
+        });
+    }
 
-    document.getElementById('lineChartFilter').addEventListener('change', function(e) {
-        renderLineChartByTimeframe(e.target.value);
-    });
-    
-    const trainLineFilter = document.getElementById('trainLineChartFilter');
-    if (trainLineFilter) {
-        trainLineFilter.addEventListener('change', function(e) {
-            renderTrainLineChartByTimeframe(e.target.value);
+    const lineChartFilter = document.getElementById('lineChartFilter');
+    if(lineChartFilter) {
+        lineChartFilter.addEventListener('change', function(e) {
+            renderLineChartByTimeframe(e.target.value);
         });
     }
 
@@ -389,22 +416,12 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    const masterToggle = document.getElementById('masterChartToggle');
-    if (masterToggle) {
-        masterToggle.addEventListener('change', function(e) {
-            const isPie = e.target.checked;
-            const type = isPie ? 'pie' : 'bar';
-            const chartIds = [
-                'vehicularChart', 'roadsideChart', 'patientChart', 'medicalChart', 'standbyChart',
-                'othersChart', 'clearingChart', 'firetruckChart', 'haulingChart', 'ledvanChart'
-            ];
-            chartIds.forEach(id => renderToggleableChart(id, type, false));
+    const masterServiceMonthFilter = document.getElementById('masterServiceMonthFilter');
+    if(masterServiceMonthFilter) {
+        masterServiceMonthFilter.addEventListener('change', function(e) {
+            renderMasterServicePie(e.target.value);
         });
     }
-
-    document.getElementById('masterServiceMonthFilter').addEventListener('change', function(e) {
-        renderMasterServicePie(e.target.value);
-    });
 
     const expandBtn = document.getElementById('expandTitlesBtn');
     const closeBtn = document.getElementById('closeModalBtn');
@@ -750,7 +767,7 @@ function renderTrainingOverview(monthFilter) {
     let statusData = Object.values(statusCounts);
     let statusColors = statusLabels.map(label => {
         if (label === 'WITH AAR') return '#10b981'; 
-        if (label === 'NO AAR') return '#f43f5e'; 
+        if (label === 'NO AAR') return '#f43f5e';   
         return '#94a3b8'; 
     });
     drawTrainBarChart('trainStatusChart', statusLabels, statusData, statusColors); 
@@ -930,7 +947,9 @@ function buildMonthHTML(year, month, isSmallScale) {
 }
 
 function drawTrainBarChart(canvasId, labels, dataArr, customColors = null) {
-    const ctx = document.getElementById(canvasId).getContext('2d');
+    const canvas = document.getElementById(canvasId);
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
     
     if (!labels || labels.length === 0) {
         labels = ["No Data"];
@@ -943,14 +962,14 @@ function drawTrainBarChart(canvasId, labels, dataArr, customColors = null) {
 
     window[canvasId + 'Inst'] = new Chart(ctx, {
         type: 'bar',
-        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: colors, borderRadius: 4, maxBarThickness: 30 }] },
+        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: colors, borderRadius: 4, borderWidth: 0, maxBarThickness: 30 }] },
         options: {
             responsive: true, maintainAspectRatio: false,
             layout: { padding: { top: 25, left: 10, right: 10, bottom: 0 } }, 
             plugins: { legend: { display: false }, tooltip: sharedTooltipConfig, datalabels: { display: true, align: 'top', anchor: 'end', color: '#64748b', font: { weight: 'bold' } } },
             scales: {
-                x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 9 }, color: '#64748b' } },
-                y: { grid: { color: '#f1f5f9' }, ticks: { font: { family: 'Inter', size: 10 }, color: '#94a3b8' }, beginAtZero: true, grace: '20%' } 
+                x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 9 }, color: '#64748b' }, border: {display: false} },
+                y: { grid: { color: '#f1f5f9', drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 }, color: '#94a3b8' }, beginAtZero: true, grace: '20%', border: {display: false} } 
             }
         }
     });
@@ -1017,7 +1036,7 @@ function populateRemarksModal(detailsObj) {
         let items = detailsObj[status];
         if(!items || items.length === 0) continue;
 
-        let color = status === 'WITH AAR' ? '#10b981' : (status === 'NO AAR' ? '#f43f5e' : '#64748b');
+        let color = status === 'WITH AAR' ? '#10b981' : (status === 'NO AAR' ? '#f43f5e' : '#64748b'); 
 
         let html = `<h3 style="font-size: 0.9rem; color: ${color}; margin-top: 16px; margin-bottom: 8px; border-bottom: 2px solid #f1f5f9; padding-bottom: 6px;">${status} (${items.length})</h3>`;
         
@@ -1042,6 +1061,7 @@ function processVolunteersData(data) {
     let orgList = []; 
 
     const tbody = document.querySelector('#volunteerTable tbody');
+    if(!tbody) return;
     tbody.innerHTML = ''; 
 
     data.forEach(row => {
@@ -1092,7 +1112,7 @@ function processVolunteersData(data) {
                     <div style="height:100%; width:${percentage}%; background:linear-gradient(90deg, #06b6d4, #2563eb); border-radius:3px; transition: width 1s ease-in-out;"></div>
                 </div>
             </div>
-        `;
+        `; 
         
         tr.appendChild(tdName);
         tr.appendChild(tdCount);
@@ -1103,6 +1123,160 @@ function processVolunteersData(data) {
 
     document.getElementById('vol-orgs').innerText = totalOrgs.toLocaleString(); 
     document.getElementById('vol-ind').innerText = grandTotalHumans.toLocaleString();
+}
+
+function processOperationsData(data) {
+    try {
+        operationsMonthlyCache['all'] = new Array(10).fill(0);
+        let monthSet = new Set();
+        const monthlyAgg = {};
+        
+        data.forEach(row => {
+            if(row['MONTH']) { 
+                let m = String(row['MONTH']).trim().toUpperCase();
+                if(!monthlyAgg[m]) {
+                    monthlyAgg[m] = { vehicular:0, roadside:0, patient:0, medical:0, standby:0, others:0, clearing:0, firetruck:0, hauling:0, ledvan:0, grandTotal:0, total1st:0, total2nd:0, total3rd:0, totalOutside:0 };
+                }
+                
+                monthlyAgg[m].vehicular += Number(row['VEHICULAR ACCIDENT']) || Number(row['TRAUMA (ROADCRASH INCIDENT)']) || 0;
+                monthlyAgg[m].roadside += Number(row['ROADSIDE ASSISTANCE']) || 0;
+                monthlyAgg[m].patient += Number(row['PATIENT TRANSPORT']) || 0;
+                monthlyAgg[m].medical += Number(row['MEDICAL']) || 0;
+                monthlyAgg[m].standby += Number(row['STANDBY MEDIC, MARSHAL & VIP']) || 0;
+                monthlyAgg[m].others += Number(row['OTHERS']) || 0;
+                monthlyAgg[m].clearing += Number(row['CLEARING OPERATIONS']) || 0;
+                monthlyAgg[m].firetruck += Number(row['FIRETRUCK']) || 0;
+                monthlyAgg[m].hauling += Number(row['HAULING']) || 0;
+                monthlyAgg[m].ledvan += Number(row['LEDVAN TRUCK']) || 0;
+
+                for (let key in row) {
+                    let upperKey = key.toUpperCase();
+                    if (upperKey.includes("1ST DISTRICT")) { monthlyAgg[m].total1st += Number(row[key]) || 0; }
+                    if (upperKey.includes("2ND DISTRICT")) { monthlyAgg[m].total2nd += Number(row[key]) || 0; }
+                    if (upperKey.includes("3RD DISTRICT")) { monthlyAgg[m].total3rd += Number(row[key]) || 0; }
+                    if (upperKey.includes("OUTSIDE")) { monthlyAgg[m].totalOutside += Number(row[key]) || 0; }
+                    if (upperKey === "GRAND TOTAL") { monthlyAgg[m].grandTotal += Number(row[key]) || 0; }
+                }
+            }
+        });
+
+        const labels = [];
+        const vehicular = [], roadside = [], patient = [], medical = [], standby = [];
+        const others = [], clearing = [], firetruck = [], hauling = [], ledvan = [];
+        const monthlyTotalServices = [];
+
+        let total1st = 0, total2nd = 0, total3rd = 0, totalOutside = 0;
+        let overallGrandTotal = 0;
+
+        monthOrder.forEach(m => {
+            if(monthlyAgg[m]) {
+                labels.push(m);
+                monthSet.add(m);
+                
+                operationsMonthlyCache[m] = [
+                    monthlyAgg[m].vehicular, monthlyAgg[m].roadside, monthlyAgg[m].patient,
+                    monthlyAgg[m].medical, monthlyAgg[m].standby, monthlyAgg[m].others,
+                    monthlyAgg[m].clearing, monthlyAgg[m].firetruck, monthlyAgg[m].hauling, monthlyAgg[m].ledvan
+                ];
+
+                vehicular.push(monthlyAgg[m].vehicular);
+                roadside.push(monthlyAgg[m].roadside);
+                patient.push(monthlyAgg[m].patient);
+                medical.push(monthlyAgg[m].medical);
+                standby.push(monthlyAgg[m].standby);
+                others.push(monthlyAgg[m].others);
+                clearing.push(monthlyAgg[m].clearing);
+                firetruck.push(monthlyAgg[m].firetruck);
+                hauling.push(monthlyAgg[m].hauling);
+                ledvan.push(monthlyAgg[m].ledvan);
+
+                monthlyTotalServices.push(monthlyAgg[m].grandTotal);
+                overallGrandTotal += monthlyAgg[m].grandTotal;
+                
+                total1st += monthlyAgg[m].total1st;
+                total2nd += monthlyAgg[m].total2nd;
+                total3rd += monthlyAgg[m].total3rd;
+                totalOutside += monthlyAgg[m].totalOutside;
+                
+                for(let i=0; i<10; i++) {
+                    operationsMonthlyCache['all'][i] += operationsMonthlyCache[m][i];
+                }
+            }
+        });
+
+        let referenceTotal = overallGrandTotal > 0 ? overallGrandTotal : (total1st + total2nd + total3rd + totalOutside);
+
+        const el1st = document.getElementById('kpi-1st');
+        if(el1st) {
+            el1st.innerText = total1st;
+            document.getElementById('pct-1st').innerText = referenceTotal > 0 ? ((total1st / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
+        }
+
+        const el2nd = document.getElementById('kpi-2nd');
+        if(el2nd) {
+            el2nd.innerText = total2nd;
+            document.getElementById('pct-2nd').innerText = referenceTotal > 0 ? ((total2nd / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
+        }
+
+        const el3rd = document.getElementById('kpi-3rd');
+        if(el3rd) {
+            el3rd.innerText = total3rd;
+            document.getElementById('pct-3rd').innerText = referenceTotal > 0 ? ((total3rd / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
+        }
+
+        const elOutside = document.getElementById('kpi-outside');
+        if(elOutside) {
+            elOutside.innerText = totalOutside;
+            document.getElementById('pct-outside').innerText = referenceTotal > 0 ? ((totalOutside / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
+        }
+
+        renderTrendFooter('trend-vehicular', vehicular, labels, true); 
+        renderTrendFooter('trend-roadside', roadside, labels, false); 
+        renderTrendFooter('trend-patient', patient, labels, true);      
+        renderTrendFooter('trend-medical', medical, labels, true);                
+        renderTrendFooter('trend-standby', standby, labels, false); 
+        
+        renderTrendFooter('trend-others', others, labels, false);
+        renderTrendFooter('trend-clearing', clearing, labels, false);
+        renderTrendFooter('trend-firetruck', firetruck, labels, false);
+        renderTrendFooter('trend-hauling', hauling, labels, false);
+        renderTrendFooter('trend-ledvan', ledvan, labels, false);
+
+        drawDonutChart('monthlyPieChart', labels, monthlyTotalServices, overallGrandTotal);
+        
+        // Store FULL 12-month data here for the modal
+        const barColors = pieColorPalette;
+        toggleChartData['vehicularChart'] = { labels, labelText: 'TRAUMA (ROADCRASH INCIDENT)', data: vehicular, color: barColors[0] };
+        toggleChartData['roadsideChart'] = { labels, labelText: 'Roadside Assistance', data: roadside, color: barColors[1] };
+        toggleChartData['patientChart'] = { labels, labelText: 'Patient Transport', data: patient, color: barColors[2] };
+        toggleChartData['medicalChart'] = { labels, labelText: 'MEDICAL EMERGENCIES', data: medical, color: barColors[3] };
+        toggleChartData['standbyChart'] = { labels, labelText: 'Standby Medic & VIP', data: standby, color: barColors[4] };
+        
+        toggleChartData['othersChart'] = { labels, labelText: 'SUPPORT SERVICES', data: others, color: barColors[5] };
+        toggleChartData['clearingChart'] = { labels, labelText: 'Clearing Operations', data: clearing, color: barColors[6] };
+        toggleChartData['firetruckChart'] = { labels, labelText: 'Firetruck', data: firetruck, color: barColors[7] };
+        toggleChartData['haulingChart'] = { labels, labelText: 'Hauling', data: hauling, color: barColors[8] };
+        toggleChartData['ledvanChart'] = { labels, labelText: 'Ledvan Truck', data: ledvan, color: barColors[9] };
+
+        // Render the 3-Month Horizontal Bars directly
+        ['vehicularChart', 'roadsideChart', 'patientChart', 'medicalChart', 'standbyChart', 'othersChart', 'clearingChart', 'firetruckChart', 'haulingChart', 'ledvanChart'].forEach(id => {
+            renderToggleableChart(id, 'bar', true); 
+        });
+
+        const drop = document.getElementById('masterServiceMonthFilter');
+        if(drop) {
+            drop.innerHTML = '<option value="all">All Time</option>';
+            Array.from(monthSet).forEach(m => {
+                let opt = document.createElement('option');
+                opt.value = m; opt.innerText = m;
+                drop.appendChild(opt);
+            });
+        }
+        renderMasterServicePie('all');
+
+    } catch (e) {
+        console.error("FATAL ERROR in processOperationsData:", e);
+    }
 }
 
 function processDocumentsData(data) {
@@ -1153,7 +1327,6 @@ function processDocumentsData(data) {
             let actionTxt = (rawActionTaken || '').toString().trim().toLowerCase();
             let actionActuallyTaken = false;
             
-            // STRICT LOGIC: Must explicitly contain the text "no action" in Column Q
             if (actionTxt.includes('no action')) {
                 dynamicKPIs.noAction++;
             } 
@@ -1348,15 +1521,15 @@ function renderDocPieChart() {
 
     if (currentPieState.level === 1) {
         titleEl.innerText = 'NATURE OF LETTER';
-        backBtn.style.display = 'none';
+        if(backBtn) backBtn.style.display = 'none';
     } 
     else if (currentPieState.level === 2) {
         titleEl.innerHTML = `BREAKDOWN: ${currentPieState.level1Target.toUpperCase()} <span style="color: #64748b; font-weight: 600; font-size: 0.65rem; opacity: 0.7; letter-spacing: 0.5px;">(CATEGORY OF REQUESTING/ WRITING PARTY)</span>`;
-        backBtn.style.display = 'block';
+        if(backBtn) backBtn.style.display = 'block';
     } 
     else if (currentPieState.level === 3) {
         titleEl.innerHTML = `BREAKDOWN: ${currentPieState.level2Target.toUpperCase()} <span style="color: #64748b; font-weight: 600; font-size: 0.65rem; opacity: 0.7; letter-spacing: 0.5px;">(SPECIFIC OFFICE / ENTITY)</span>`;
-        backBtn.style.display = 'block';
+        if(backBtn) backBtn.style.display = 'block';
     }
 
     updateTrackingKPIDisplays();
@@ -1377,7 +1550,10 @@ function renderDocPieChart() {
 }
 
 function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = false) {
-    const ctx = document.getElementById(canvasId).getContext('2d');
+    const canvas = document.getElementById(canvasId);
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
     if(docPieChartInstance) docPieChartInstance.destroy();
     
     let mappedColors = labels.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
@@ -1391,9 +1567,9 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
                 data: dataArr, 
                 backgroundColor: mappedColors, 
                 borderWidth: 0, 
-                borderRadius: 8, // Creates the rounded corners
-                spacing: 5,      // Creates the gaps between slices
-                hoverOffset: isEmptyState ? 0 : 15 // The interactive pop-out
+                borderRadius: 8, 
+                spacing: 5,      
+                hoverOffset: isEmptyState ? 0 : 15 
             }] 
         },
         options: {
@@ -1468,6 +1644,7 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
 
 function updateCustomLegend(labels, data, isEmptyState = false) {
     const legendContainer = document.getElementById('customLegend');
+    if(!legendContainer) return;
     legendContainer.innerHTML = '';
     labels.forEach((label, index) => {
         let color = isEmptyState ? '#e2e8f0' : pieColorPalette[index % pieColorPalette.length];
@@ -1482,422 +1659,11 @@ function updateCustomLegend(labels, data, isEmptyState = false) {
     });
 }
 
-function renderLineChartByTimeframe(timeframe) {
-    let groupedObj = {};
-    let sortedData = [...globalLineData].sort((a, b) => a.timestamp - b.timestamp);
-
-    sortedData.forEach(item => {
-        let key = "";
-        if (timeframe === 'monthly') {
-            key = item.dateObj.toLocaleString('en-US', { month: 'short', year: 'numeric' });
-        } else if (timeframe === 'yearly') {
-            key = item.dateObj.getFullYear().toString();
-        } else { 
-            key = item.dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        }
-        groupedObj[key] = (groupedObj[key] || 0) + item.count;
-    });
-
-    const labels = Object.keys(groupedObj);
-    const dataValues = Object.values(groupedObj);
-    
-    if(labels.length === 0) {
-        drawLineChart('docDateLineChart', ['No Date Data Found'], [0]);
-    } else {
-        drawLineChart('docDateLineChart', labels, dataValues);
-    }
-}
-
-function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = false) {
-    const el = document.getElementById(elementId);
-    if (!el) return;
-
-    let current = 0;
-    let previous = 0;
-    let currentLabel = 'Current Month';
-    let prevLabel = 'Previous Month';
-
-    if (dataArray.length >= 2 && labelsArray.length >= 2) {
-        current = dataArray[dataArray.length - 1];
-        previous = dataArray[dataArray.length - 2];
-        currentLabel = labelsArray[labelsArray.length - 1];
-        prevLabel = labelsArray[labelsArray.length - 2];
-    } else if (dataArray.length === 1) {
-        current = dataArray[0];
-        currentLabel = labelsArray[0];
-    }
-
-    const diff = current - previous;
-    let trendHtml = '';
-    let bgColor = '#64748b'; 
-
-    if (dataArray.length < 2) {
-        trendHtml = `<span>No prior data</span>`;
-        el.style.backgroundColor = bgColor;
-        el.style.padding = '10px 16px'; 
-        el.innerHTML = `<div style="font-weight:600; font-size:0.75rem; color:#fff;">${trendHtml}</div>`;
-        return;
-    }
-
-    let symbol = '—';
-    let sign = diff > 0 ? '+' : '';
-
-    const arrowUp = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>`;
-    const arrowDown = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"></path></svg>`;
-
-    if (diff > 0) {
-        symbol = arrowUp;
-        bgColor = inverseColors ? '#ef4444' : '#10b981'; 
-    } else if (diff < 0) {
-        symbol = arrowDown;
-        bgColor = inverseColors ? '#10b981' : '#ef4444'; 
-        sign = '-'; 
-    }
-
-    let diffStr = diff > 0 ? `+${diff}` : diff;
-    let pct = previous > 0 ? Math.round((Math.abs(diff) / previous) * 100) : (diff > 0 ? 100 : 0);
-
-    let tooltipHtml = `
-        <div class="custom-tooltip">
-            <div style="color:#94a3b8; font-size:0.55rem; text-transform:uppercase; margin-bottom:6px; letter-spacing:0.5px;">Monthly Comparison</div>
-            <div style="display:flex; justify-content:space-between; gap:20px; margin-bottom:2px;"><span>${currentLabel}:</span> <strong>${current}</strong></div>
-            <div style="display:flex; justify-content:space-between; gap:20px; margin-bottom:2px;"><span>${prevLabel}:</span> <strong>${previous}</strong></div>
-            <div style="border-top:1px solid #334155; margin-top:6px; padding-top:6px; display:flex; justify-content:space-between; gap:20px;"><span>Difference:</span> <strong>${diffStr}</strong></div>
-        </div>
-    `;
-
-    el.style.backgroundColor = bgColor;
-    el.style.padding = '10px 16px'; 
-    el.style.color = '#ffffff';
-
-    el.innerHTML = `
-        <div class="has-tooltip" style="display:flex; width:100%; justify-content:space-between; align-items:center; cursor:pointer;">
-            <span style="font-weight:600; font-size:0.75rem;">${Math.abs(diff)} (${sign}${pct}%)</span>
-            <span style="display:flex; align-items:center;">${symbol}</span>
-            ${tooltipHtml}
-        </div>
-    `;
-}
-
-function renderMasterServicePie(monthFilter) {
-    const dataArr = operationsMonthlyCache[monthFilter] || new Array(10).fill(0);
-
-    let filteredLabels = [];
-    let filteredData = [];
-    let mappedColors = [];
-
-    for(let i=0; i<10; i++) {
-        if(dataArr[i] > 0) {
-            filteredLabels.push(serviceCategoryLabels[i]);
-            filteredData.push(dataArr[i]);
-            mappedColors.push(pieColorPalette[i % pieColorPalette.length]);
-        }
-    }
-
-    let combined = filteredLabels.map((l, i) => ({l, d: filteredData[i], c: mappedColors[i]}));
-    combined.sort((a,b) => b.d - a.d);
-
-    filteredLabels = combined.map(x => x.l);
-    filteredData = combined.map(x => x.d);
-    mappedColors = combined.map(x => x.c);
-
-    const ctx = document.getElementById('masterServicePieChart').getContext('2d');
-    
-    if(masterServicePieInstance) {
-        masterServicePieInstance.data.labels = filteredLabels;
-        masterServicePieInstance.data.datasets[0].data = filteredData;
-        masterServicePieInstance.data.datasets[0].backgroundColor = mappedColors;
-        masterServicePieInstance.update();
-    } else {
-        masterServicePieInstance = new Chart(ctx, {
-            type: 'doughnut', 
-            data: {
-                labels: filteredLabels,
-                datasets: [{
-                    data: filteredData,
-                    backgroundColor: mappedColors,
-                    borderWidth: 0, 
-                    borderRadius: 8, // Creates the rounded corners
-                    spacing: 5,      // Creates the gaps between slices
-                    hoverOffset: 15  // The interactive pop-out
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                cutout: '55%', 
-                layout: { padding: 15 }, 
-                animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, 
-                hover: { mode: 'index', animationDuration: 300 }, 
-                plugins: {
-                    legend: { display: false },
-                    tooltip: sharedTooltipConfig,
-                    datalabels: {
-                        color: '#ffffff', font: { weight: '800', family: 'Inter', size: 10 },
-                        formatter: (value, context) => {
-                            let sum = context.chart.data.datasets[0].data.reduce((a,b)=>a+b,0);
-                            let p = (value/sum*100);
-                            return p >= 5 ? p.toFixed(1)+'%' : '';
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    const leg = document.getElementById('masterServiceLegend');
-    leg.innerHTML = '';
-    
-    filteredLabels.forEach((lbl, i) => {
-        let item = document.createElement('div');
-        item.className = 'legend-item interactive-legend-item';
-        item.style.padding = '8px 0';
-        item.style.animationDelay = `${i * 0.04}s`;
-        
-        item.innerHTML = `
-            <div class="legend-color" style="background-color: ${mappedColors[i]};"></div>
-            <div class="legend-text" title="${lbl}">${lbl}</div>
-            <div class="legend-val">${filteredData[i]}</div>
-        `;
-        
-        item.onclick = function() {
-            if (masterServicePieInstance) {
-                masterServicePieInstance.toggleDataVisibility(i);
-                masterServicePieInstance.update();
-                
-                if (masterServicePieInstance.getDataVisibility(i)) {
-                    item.classList.remove('hidden-slice');
-                } else {
-                    item.classList.add('hidden-slice');
-                }
-            }
-        };
-        
-        leg.appendChild(item);
-    });
-}
-
-function renderToggleableChart(canvasId, type, isInitialLoad = false) {
-    const canvas = document.getElementById(canvasId);
-    const container = canvas.parentElement;
-
-    if (!isInitialLoad) {
-        container.classList.add('chart-fade-out');
-    }
-
-    setTimeout(() => {
-        const ctx = canvas.getContext('2d');
-        
-        if (toggleChartInstances[canvasId]) {
-            toggleChartInstances[canvasId].destroy();
-        }
-
-        const dataObj = toggleChartData[canvasId];
-
-        if (type === 'bar') {
-            toggleChartInstances[canvasId] = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: dataObj.labels,
-                    datasets: [{
-                        label: dataObj.labelText,
-                        data: dataObj.data,
-                        backgroundColor: dataObj.color,
-                        maxBarThickness: 15
-                    }]
-                },
-                options: singleBarOptions
-            });
-        } else {
-            const mappedColors = Array.isArray(dataObj.color) ? dataObj.color : dataObj.data.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
-            toggleChartInstances[canvasId] = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: dataObj.labels,
-                    datasets: [{
-                        data: dataObj.data,
-                        backgroundColor: mappedColors,
-                        borderWidth: 0, 
-                        borderRadius: 8, // Creates the rounded corners
-                        spacing: 5,      // Creates the gaps between slices
-                        hoverOffset: 15  // The interactive pop-out
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '55%', 
-                    layout: { padding: 15 }, 
-                    animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, 
-                    hover: { mode: 'index', animationDuration: 300 }, 
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: sharedTooltipConfig,
-                        datalabels: {
-                            color: '#ffffff',
-                            font: { weight: '800', family: 'Inter', size: 9 },
-                            formatter: (value, context) => {
-                                let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                                if (sum === 0) return '';
-                                let pctFloat = (value * 100) / sum;
-                                return pctFloat >= 6 ? pctFloat.toFixed(0) + '%' : '';
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        if (!isInitialLoad) {
-            setTimeout(() => {
-                container.classList.remove('chart-fade-out');
-            }, 50); 
-        }
-
-    }, isInitialLoad ? 0 : 300); 
-}
-
-function processOperationsData(data) {
-    operationsMonthlyCache['all'] = new Array(10).fill(0);
-    let monthSet = new Set();
-    const monthlyAgg = {};
-    
-    data.forEach(row => {
-        if(row['MONTH']) { 
-            let m = row['MONTH'].trim().toUpperCase();
-            if(!monthlyAgg[m]) {
-                monthlyAgg[m] = { vehicular:0, roadside:0, patient:0, medical:0, standby:0, others:0, clearing:0, firetruck:0, hauling:0, ledvan:0, grandTotal:0, total1st:0, total2nd:0, total3rd:0, totalOutside:0 };
-            }
-            
-            monthlyAgg[m].vehicular += Number(row['VEHICULAR ACCIDENT']) || Number(row['TRAUMA (ROADCRASH INCIDENT)']) || 0;
-            monthlyAgg[m].roadside += Number(row['ROADSIDE ASSISTANCE']) || 0;
-            monthlyAgg[m].patient += Number(row['PATIENT TRANSPORT']) || 0;
-            monthlyAgg[m].medical += Number(row['MEDICAL']) || 0;
-            monthlyAgg[m].standby += Number(row['STANDBY MEDIC, MARSHAL & VIP']) || 0;
-            monthlyAgg[m].others += Number(row['OTHERS']) || 0;
-            monthlyAgg[m].clearing += Number(row['CLEARING OPERATIONS']) || 0;
-            monthlyAgg[m].firetruck += Number(row['FIRETRUCK']) || 0;
-            monthlyAgg[m].hauling += Number(row['HAULING']) || 0;
-            monthlyAgg[m].ledvan += Number(row['LEDVAN TRUCK']) || 0;
-
-            for (let key in row) {
-                let upperKey = key.toUpperCase();
-                if (upperKey.includes("1ST DISTRICT")) { monthlyAgg[m].total1st += Number(row[key]) || 0; }
-                if (upperKey.includes("2ND DISTRICT")) { monthlyAgg[m].total2nd += Number(row[key]) || 0; }
-                if (upperKey.includes("3RD DISTRICT")) { monthlyAgg[m].total3rd += Number(row[key]) || 0; }
-                if (upperKey.includes("OUTSIDE")) { monthlyAgg[m].totalOutside += Number(row[key]) || 0; }
-                if (upperKey === "GRAND TOTAL") { monthlyAgg[m].grandTotal += Number(row[key]) || 0; }
-            }
-        }
-    });
-
-    const labels = [];
-    const vehicular = [], roadside = [], patient = [], medical = [], standby = [];
-    const others = [], clearing = [], firetruck = [], hauling = [], ledvan = [];
-    const monthlyTotalServices = [];
-
-    let total1st = 0, total2nd = 0, total3rd = 0, totalOutside = 0;
-    let overallGrandTotal = 0;
-
-    const monthOrder = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
-    
-    monthOrder.forEach(m => {
-        if(monthlyAgg[m]) {
-            labels.push(m);
-            monthSet.add(m);
-            
-            operationsMonthlyCache[m] = [
-                monthlyAgg[m].vehicular, monthlyAgg[m].roadside, monthlyAgg[m].patient,
-                monthlyAgg[m].medical, monthlyAgg[m].standby, monthlyAgg[m].others,
-                monthlyAgg[m].clearing, monthlyAgg[m].firetruck, monthlyAgg[m].hauling, monthlyAgg[m].ledvan
-            ];
-
-            vehicular.push(monthlyAgg[m].vehicular);
-            roadside.push(monthlyAgg[m].roadside);
-            patient.push(monthlyAgg[m].patient);
-            medical.push(monthlyAgg[m].medical);
-            standby.push(monthlyAgg[m].standby);
-            others.push(monthlyAgg[m].others);
-            clearing.push(monthlyAgg[m].clearing);
-            firetruck.push(monthlyAgg[m].firetruck);
-            hauling.push(monthlyAgg[m].hauling);
-            ledvan.push(monthlyAgg[m].ledvan);
-
-            monthlyTotalServices.push(monthlyAgg[m].grandTotal);
-            overallGrandTotal += monthlyAgg[m].grandTotal;
-            
-            total1st += monthlyAgg[m].total1st;
-            total2nd += monthlyAgg[m].total2nd;
-            total3rd += monthlyAgg[m].total3rd;
-            totalOutside += monthlyAgg[m].totalOutside;
-            
-            for(let i=0; i<10; i++) {
-                operationsMonthlyCache['all'][i] += operationsMonthlyCache[m][i];
-            }
-        }
-    });
-
-    let referenceTotal = overallGrandTotal > 0 ? overallGrandTotal : (total1st + total2nd + total3rd + totalOutside);
-
-    document.getElementById('kpi-1st').innerText = total1st;
-    document.getElementById('pct-1st').innerText = referenceTotal > 0 ? ((total1st / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
-
-    document.getElementById('kpi-2nd').innerText = total2nd;
-    document.getElementById('pct-2nd').innerText = referenceTotal > 0 ? ((total2nd / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
-
-    document.getElementById('kpi-3rd').innerText = total3rd;
-    document.getElementById('pct-3rd').innerText = referenceTotal > 0 ? ((total3rd / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
-
-    document.getElementById('kpi-outside').innerText = totalOutside;
-    document.getElementById('pct-outside').innerText = referenceTotal > 0 ? ((totalOutside / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
-
-    renderTrendFooter('trend-vehicular', vehicular, labels, true); 
-    renderTrendFooter('trend-roadside', roadside, labels, false); 
-    renderTrendFooter('trend-patient', patient, labels, true);      
-    renderTrendFooter('trend-medical', medical, labels, true);                
-    renderTrendFooter('trend-standby', standby, labels, false); 
-    
-    renderTrendFooter('trend-others', others, labels, false);
-    renderTrendFooter('trend-clearing', clearing, labels, false);
-    renderTrendFooter('trend-firetruck', firetruck, labels, false);
-    renderTrendFooter('trend-hauling', hauling, labels, false);
-    renderTrendFooter('trend-ledvan', ledvan, labels, false);
-
-    drawDonutChart('monthlyPieChart', labels, monthlyTotalServices, overallGrandTotal);
-    
-    const barColors = labels.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
-
-    toggleChartData['vehicularChart'] = { labels, labelText: 'TRAUMA (ROADCRASH INCIDENT)', data: vehicular, color: barColors };
-    toggleChartData['roadsideChart'] = { labels, labelText: 'Roadside Assistance', data: roadside, color: barColors };
-    toggleChartData['patientChart'] = { labels, labelText: 'Patient Transport', data: patient, color: barColors };
-    toggleChartData['medicalChart'] = { labels, labelText: 'MEDICAL EMERGENCIES', data: medical, color: barColors };
-    toggleChartData['standbyChart'] = { labels, labelText: 'Standby Medic & VIP', data: standby, color: barColors };
-    
-    toggleChartData['othersChart'] = { labels, labelText: 'SUPPORT SERVICES (MANPOWER, TRANSPORTATION & OTHER RESOURCES)', data: others, color: barColors };
-    toggleChartData['clearingChart'] = { labels, labelText: 'Clearing Operations', data: clearing, color: barColors };
-    toggleChartData['firetruckChart'] = { labels, labelText: 'Firetruck', data: firetruck, color: barColors };
-    toggleChartData['haulingChart'] = { labels, labelText: 'Hauling', data: hauling, color: barColors };
-    toggleChartData['ledvanChart'] = { labels, labelText: 'Ledvan Truck', data: ledvan, color: barColors };
-
-    const masterToggle = document.getElementById('masterChartToggle');
-    const isPie = masterToggle ? masterToggle.checked : false;
-    ['vehicularChart', 'roadsideChart', 'patientChart', 'medicalChart', 'standbyChart', 'othersChart', 'clearingChart', 'firetruckChart', 'haulingChart', 'ledvanChart'].forEach(id => {
-        renderToggleableChart(id, isPie ? 'pie' : 'bar', true); 
-    });
-
-    const drop = document.getElementById('masterServiceMonthFilter');
-    if(drop) {
-        drop.innerHTML = '<option value="all">All Time</option>';
-        Array.from(monthSet).forEach(m => {
-            let opt = document.createElement('option');
-            opt.value = m; opt.innerText = m;
-            drop.appendChild(opt);
-        });
-    }
-    renderMasterServicePie('all');
-}
-
 function drawLineChart(canvasId, labels, dataArr) {
-    const ctx = document.getElementById(canvasId).getContext('2d');
+    const canvas = document.getElementById(canvasId);
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
     if(docLineChartInstance) docLineChartInstance.destroy();
 
     let gradient = ctx.createLinearGradient(0, 0, 0, 300);
@@ -1954,74 +1720,6 @@ function drawLineChart(canvasId, labels, dataArr) {
     });
 }
 
-function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
-    const ctx = document.getElementById(canvasId).getContext('2d');
-    
-    if (monthlyTotalPieInstance) {
-        monthlyTotalPieInstance.destroy();
-    }
-
-    const vibrantColors = ['#2563eb', '#06b6d4', '#e11d48', '#ea580c', '#16a34a', '#9333ea'];
-    const mappedVibrant = dataArr.map((_, i) => vibrantColors[i % vibrantColors.length]);
-    
-    const gtEl = document.getElementById('pie-grand-total');
-    if(gtEl) gtEl.innerText = grandTotal.toLocaleString();
-
-    monthlyTotalPieInstance = new Chart(ctx, {
-        type: 'doughnut', 
-        data: { 
-            labels: labels, 
-            datasets: [{ 
-                data: dataArr, 
-                backgroundColor: mappedVibrant, 
-                borderWidth: 0, 
-                borderRadius: 8, // Creates the rounded corners
-                spacing: 5,      // Creates the gaps between slices
-                hoverOffset: 15 // The interactive pop-out
-            }] 
-        },
-        options: { 
-            responsive: true, 
-            maintainAspectRatio: false, 
-            cutout: '55%', 
-            layout: { padding: 15 }, 
-            animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, 
-            hover: { mode: 'index', animationDuration: 300 }, 
-            plugins: { 
-                legend: { display: false }, 
-                datalabels: { 
-                    color: '#ffffff', 
-                    font: { weight: '800', family: 'Inter', size: 9 }, 
-                    anchor: 'center',
-                    align: 'center',
-                    formatter: (value, context) => { 
-                        let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); 
-                        if (sum === 0) return ''; 
-                        let pctStr = ((value * 100) / sum).toFixed(1);
-                        let pctFloat = parseFloat(pctStr);
-                        return pctFloat >= 8 ? pctStr + '%' : ''; 
-                    } 
-                },
-                tooltip: {
-                    ...sharedTooltipConfig, 
-                    callbacks: {
-                        label: function(context) {
-                            let val = context.raw;
-                            let pct = grandTotal > 0 ? ((val / grandTotal) * 100).toFixed(1) : 0;
-                            return [`${val} Services Catered`, `vs Grand Total: ${pct}%`];
-                        }
-                    }
-                }
-            } 
-        }
-    });
-}
-
-// ==========================================
-// FIREBASE AUTHENTICATION LOGIC
-// ==========================================
-
-// Your exact Firebase Config
 const firebaseConfig = {
     apiKey: "AIzaSyDSCB9jQIzyn9WxGZ58sLkyJPHCj5oeEKQ", 
     authDomain: "pdrrmo-dashboard.firebaseapp.com",
@@ -2031,35 +1729,29 @@ const firebaseConfig = {
     appId: "1:555106842078:web:38f0275bc89499669ad94f"
 };
 
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
 const auth = firebase.auth();
 
-// Check if user is logged in
 auth.onAuthStateChanged(user => {
     const loginOverlay = document.getElementById('login-overlay');
     const loader = document.getElementById('global-loader');
     
     if (user) {
-        // User is logged in -> Hide login screen
         if(loginOverlay) loginOverlay.style.display = 'none';
-        
-        // SHOW THE LOADER while data fetches
         if(loader) {
             loader.style.display = 'flex';
             loader.style.visibility = 'visible';
             loader.style.opacity = '1';
         }
-        
         loadAllData(); 
     } else {
-        // User is logged out -> Show login screen, hide loader so it doesn't block the screen
         if(loginOverlay) loginOverlay.style.display = 'flex';
         if(loader) loader.style.display = 'none';
     }
 });
 
-// Handle Login Button Click
 window.handleLogin = function() {
     const email = document.getElementById('loginEmail').value;
     const pass = document.getElementById('loginPassword').value;
@@ -2067,64 +1759,134 @@ window.handleLogin = function() {
     const btn = document.getElementById('loginBtn');
 
     if(!email || !pass) {
-        errorEl.innerText = "Please enter both email and password.";
+        if(errorEl) errorEl.innerText = "Please enter both email and password.";
         return;
     }
 
-    btn.innerText = "AUTHENTICATING...";
-    errorEl.innerText = "";
+    if(btn) btn.innerText = "AUTHENTICATING...";
+    if(errorEl) errorEl.innerText = "";
 
     auth.signInWithEmailAndPassword(email, pass)
         .then(() => {
-            btn.innerText = "SECURE LOGIN";
-            // The onAuthStateChanged listener will automatically handle showing the loader and fetching data
+            if(btn) btn.innerText = "SECURE LOGIN";
         })
         .catch(error => {
-            btn.innerText = "SECURE LOGIN";
-            errorEl.innerText = "Invalid credentials. Please try again.";
+            if(btn) btn.innerText = "SECURE LOGIN";
+            if(errorEl) errorEl.innerText = "Invalid credentials. Please try again.";
             console.error("Login failed:", error.message);
         });
 }
 
-// Handle Logout Button Click
 window.handleLogout = function() {
     auth.signOut().then(() => {
-        // Clear all arrays and charts just to be safe
         rawOperationsData = [];
         rawDocumentsData = [];
         rawTrainingsData = [];
-        location.reload(); // Refresh the page to reset the state
+        location.reload(); 
     });
 }
 
-// --- MAP MODAL LOGIC ---
 window.openMapModal = function(url, title) {
     const modal = document.getElementById('mapModal');
     const titleEl = document.getElementById('mapModalTitle');
     const bodyEl = document.getElementById('mapModalBody');
 
-    titleEl.innerText = title;
-    // Inject iframe on demand so it does not load in the background initially
-    bodyEl.innerHTML = `<iframe src="${url}" allowfullscreen></iframe>`;
-    
-    modal.classList.add('active');
+    if(titleEl) titleEl.innerText = title;
+    if(bodyEl) bodyEl.innerHTML = `<iframe src="${url}" allowfullscreen></iframe>`;
+    if(modal) modal.classList.add('active');
 }
 
 window.closeMapModal = function() {
     const modal = document.getElementById('mapModal');
     const bodyEl = document.getElementById('mapModalBody');
     
-    modal.classList.remove('active');
+    if(modal) modal.classList.remove('active');
     
-    // Clear iframe after animation completes to stop it running in the background and reset state
     setTimeout(() => {
-        bodyEl.innerHTML = '';
+        if(bodyEl) bodyEl.innerHTML = '';
     }, 300);
 }
 
-// Allow user to click anywhere in the dark background to close the map
-document.getElementById('mapModal').addEventListener('click', function(e) {
-    if(e.target === this) {
-        closeMapModal();
+const mapModalEl = document.getElementById('mapModal');
+if(mapModalEl) {
+    mapModalEl.addEventListener('click', function(e) {
+        if(e.target === this) closeMapModal();
+    });
+}
+
+// Ensure the helper function for charting is globally accessible
+function renderToggleableChart(canvasId, type, isInitialLoad = false) {
+    try {
+        const canvas = document.getElementById(canvasId);
+        if(!canvas) return;
+        const container = canvas.parentElement;
+
+        if (!isInitialLoad) {
+            container.classList.add('chart-fade-out');
+        }
+
+        setTimeout(() => {
+            const ctx = canvas.getContext('2d');
+            if (toggleChartInstances[canvasId]) {
+                toggleChartInstances[canvasId].destroy();
+            }
+
+            const dataObj = toggleChartData[canvasId];
+            if(!dataObj || !dataObj.labels) return;
+
+            // ONLY LAST 3 MONTHS
+            const wSize = 3;
+            // Shorten to 3 letters for compactness on y-axis
+            const recentLabels = dataObj.labels.slice(-wSize).map(l => String(l).substring(0, 3));
+            const recentData = dataObj.data.slice(-wSize);
+
+            let chartColor = dataObj.color;
+            if (Array.isArray(chartColor)) chartColor = chartColor[0];
+
+            toggleChartInstances[canvasId] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: recentLabels,
+                    datasets: [{
+                        label: dataObj.labelText,
+                        data: recentData,
+                        backgroundColor: chartColor,
+                        maxBarThickness: 15,
+                        borderRadius: 3, 
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', // HORIZONTAL BAR
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    animation: { duration: 700, easing: 'easeOutQuart' },
+                    layout: { padding: { top: 5, right: 35, bottom: 5, left: 10 } }, 
+                    plugins: { 
+                        datalabels: { 
+                            display: true,
+                            color: '#1e293b', 
+                            align: 'right',
+                            anchor: 'end',
+                            font: { weight: '800', family: 'Inter', size: 10 }
+                        }, 
+                        legend: { display: false }, 
+                        tooltip: sharedTooltipConfig 
+                    },
+                    scales: { 
+                        x: { display: false, beginAtZero: true, grace: '20%' }, 
+                        y: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10, weight: '700' }, color: '#64748b' }, border: {display: false} } 
+                    }
+                }
+            });
+
+            if (!isInitialLoad) {
+                setTimeout(() => {
+                    container.classList.remove('chart-fade-out');
+                }, 50); 
+            }
+        }, isInitialLoad ? 0 : 300); 
+    } catch (e) {
+        console.error("Chart Render Failed for", canvasId, e);
     }
-});
+}
