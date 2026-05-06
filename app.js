@@ -4,16 +4,17 @@ Chart.register(ChartDataLabels);
 const webAppUrl = "https://script.google.com/macros/s/AKfycbwYUt0YFQClUUXRGwrNdnC5INPXWzWyGUeN3J8E5tRKsO2ME-Y6zu5Fv0a56fCtxhwzTg/exec";
 // OPENWEATHERMAP CREDENTIALS
 const OWM_API_KEY = "3457c364d3f2840960216510c279837c"; 
-let rainChartInstance = null; 
+let rainChartInstance = null; // Keeps track of the chart so we can update it
 
+// Function to toggle the dropdown panel
 function toggleWeatherPanel() {
     const container = document.getElementById('weather-interactive-widget');
-    if(container) container.classList.toggle('active');
+    container.classList.toggle('active');
 }
 
+// Function called when the user selects a new municipality from the dropdown
 function changeMunicipality() {
     const selectEl = document.getElementById('tarlac-muni-select');
-    if(!selectEl) return;
     const selectedCityQuery = selectEl.value; 
     const selectedCityName = selectEl.options[selectEl.selectedIndex].text; 
     
@@ -23,10 +24,12 @@ function changeMunicipality() {
     fetchOpenWeather(selectedCityQuery);
 }
 
+// Function to fetch both Current Weather AND Forecast Data
 async function fetchOpenWeather(cityQuery) {
     if (OWM_API_KEY === "PASTE_YOUR_OPENWEATHERMAP_API_KEY_HERE") return;
 
     try {
+        // Fetch current and forecast APIs simultaneously for speed
         const currentUrl = `https://api.openweathermap.org/data/2.5/weather?q=${cityQuery}&units=metric&appid=${OWM_API_KEY}`;
         const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${cityQuery}&units=metric&appid=${OWM_API_KEY}`;
         
@@ -39,6 +42,7 @@ async function fetchOpenWeather(cityQuery) {
         const forecastData = await forecastRes.json();
 
         if (currentRes.ok && forecastRes.ok) {
+            // 1. UPDATE CURRENT WEATHER UI
             const temp = Math.round(currentData.main.temp); 
             const iconCode = currentData.weather[0].icon;
             
@@ -51,24 +55,28 @@ async function fetchOpenWeather(cityQuery) {
             document.getElementById('weather-humidity').innerText = `${currentData.main.humidity}%`;
             document.getElementById('weather-wind').innerText = `${currentData.wind.speed} m/s`;
 
+            // 2. BUILD THE RAIN CHANCE GRAPH (Next 12-15 hours)
             const rainLabels = [];
             const rainDataPoints = [];
             
+            // Loop through the first 5 time blocks (each block is 3 hours)
             for(let i = 0; i < 5; i++) {
                 const item = forecastData.list[i];
                 const date = new Date(item.dt * 1000);
                 let hour = date.getHours();
                 let ampm = hour >= 12 ? 'PM' : 'AM';
-                hour = hour % 12 || 12; 
+                hour = hour % 12 || 12; // Convert 24h to 12h format
                 
                 rainLabels.push(`${hour} ${ampm}`);
+                // pop is "Probability of Precipitation" (0 to 1). Multiply by 100 for percentage.
                 rainDataPoints.push(Math.round(item.pop * 100)); 
             }
             updateRainChart(rainLabels, rainDataPoints);
 
+            // 3. BUILD THE 3-DAY FORECAST
             const daysProcessed = new Set();
             const forecastGrid = document.getElementById('forecast-grid');
-            if(forecastGrid) forecastGrid.innerHTML = ''; 
+            forecastGrid.innerHTML = ''; // Clear previous
             
             const todayStr = new Date().toLocaleDateString();
 
@@ -76,36 +84,41 @@ async function fetchOpenWeather(cityQuery) {
                 const d = new Date(item.dt * 1000);
                 const dateStr = d.toLocaleDateString();
                 
+                // Skip today, and only grab the midday reading (around 11AM - 2PM) to represent the day
                 if (dateStr !== todayStr && d.getHours() >= 11 && d.getHours() <= 15 && !daysProcessed.has(dateStr)) {
                     daysProcessed.add(dateStr);
                     
-                    const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }); 
+                    const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }); // e.g. "Mon"
                     const dayTemp = Math.round(item.main.temp);
                     const dayIcon = item.weather[0].icon;
                     
-                    if(forecastGrid) {
-                        forecastGrid.innerHTML += `
-                            <div class="forecast-day">
-                                <span class="forecast-day-name">${dayName}</span>
-                                <img src="https://openweathermap.org/img/wn/${dayIcon}.png" alt="icon">
-                                <span class="forecast-day-temp">${dayTemp}°</span>
-                            </div>
-                        `;
-                    }
+                    forecastGrid.innerHTML += `
+                        <div class="forecast-day">
+                            <span class="forecast-day-name">${dayName}</span>
+                            <img src="https://openweathermap.org/img/wn/${dayIcon}.png" alt="icon">
+                            <span class="forecast-day-temp">${dayTemp}°</span>
+                        </div>
+                    `;
+                    
+                    // Stop once we have 3 days
                     if (daysProcessed.size === 3) break;
                 }
             }
+
+        } else {
+            console.error("OpenWeather error:", currentData.message);
+            document.getElementById('weather-temp-main').innerText = "Err";
         }
     } catch (error) {
         console.error("Weather fetch failed:", error);
     }
 }
 
+// Function to draw/update the Chart.js Rain Graph
 function updateRainChart(labels, dataPoints) {
-    const canvas = document.getElementById('rainChanceChart');
-    if(!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = document.getElementById('rainChanceChart').getContext('2d');
     
+    // If a chart already exists, destroy it so we can draw a new one for the new city
     if(rainChartInstance) {
         rainChartInstance.destroy();
     }
@@ -126,29 +139,30 @@ function updateRainChart(labels, dataPoints) {
             maintainAspectRatio: false,
             plugins: { 
                 legend: { display: false }, 
-                tooltip: { enabled: false }, 
+                tooltip: { enabled: false }, // Turn off hover tooltips since we use data labels
                 datalabels: { 
                     display: true, 
                     color: '#ffffff', 
                     anchor: 'end',
                     align: 'top',
-                    font: { size: 10, weight: 'bold', family: 'Inter' }, 
-                    formatter: (value) => value + '%' 
+                    font: { size: 10, weight: 'bold' }, 
+                    formatter: (value) => value + '%' // Adds % sign to the number
                 } 
             },
             scales: {
-                y: { display: false, min: 0, max: 100 }, 
+                y: { display: false, min: 0, max: 100 }, // Hide Y axis, lock 0-100%
                 x: { 
-                    ticks: { color: '#94a3b8', font: { size: 9, weight: 'bold', family: 'Inter' } }, 
+                    ticks: { color: '#94a3b8', font: { size: 9, weight: 'bold' } }, 
                     grid: { display: false },
                     border: { display: false }
                 }
             },
-            layout: { padding: { top: 15 } } 
+            layout: { padding: { top: 15 } } // Give room for the % labels at the top
         }
     });
 }
 
+// Close the weather panel if the user clicks anywhere else on the screen
 document.addEventListener('click', function(event) {
     const widget = document.getElementById('weather-interactive-widget');
     if (widget && !widget.contains(event.target)) {
@@ -168,8 +182,8 @@ let docLineChartInstance = null;
 let masterServicePieInstance = null;
 let monthlyTotalPieInstance = null; 
 let toggleChartInstances = {};
-let expandedLineInstance = null; 
 
+// Training Charts State Trackers
 let trainStatusChartInst = null;
 let trainTypesChartInst = null;
 let trainNumbersChartInst = null;
@@ -180,17 +194,23 @@ let originalKPITotals = {};
 let operationsMonthlyCache = {}; 
 let toggleChartData = {};
 
+// Global tracker for Training Calendar
 let globalTrainLineData = [];
 let currentCalDate = new Date();
 let currentCalView = 'monthly'; 
 let currentCalCategory = 'all'; 
 let calDataMap = {}; 
 
+// Global Trackers for Modals
 let globalTitleCounts = {};
 let globalRemarksDetails = {};
 
+// 3-Layer Interactive State Tracker
 let currentPieState = { 
-    level: 1, filterKey: 'all', level1Target: null, level2Target: null 
+    level: 1, 
+    filterKey: 'all', 
+    level1Target: null, 
+    level2Target: null 
 };
 
 const serviceCategoryLabels = [
@@ -199,9 +219,10 @@ const serviceCategoryLabels = [
     'Clearing Operations', 'Firetruck', 'Hauling', 'Ledvan Truck'
 ];
 
+// Reusable Month Order
 const monthOrder = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
 
-// ORIGINAL VIBRANT HIGH-CONTRAST PALETTE
+// REVERTED TO THE ORIGINAL VIBRANT HIGH-CONTRAST PALETTE
 const pieColorPalette = [
     '#e11d48', '#06b6d4', '#2563eb', '#ea580c', '#16a34a', 
     '#9333ea', '#f43f5e', '#f59e0b', '#3b82f6', '#10b981', 
@@ -209,7 +230,22 @@ const pieColorPalette = [
 ];
 
 const sharedTooltipConfig = {
-    backgroundColor: 'rgba(30, 41, 59, 0.95)',
+    backgroundColor: function(context) {
+        try {
+            if (context.tooltip && context.tooltip.dataPoints && context.tooltip.dataPoints.length > 0) {
+                const dp = context.tooltip.dataPoints[0];
+                let bg = dp.dataset.backgroundColor;
+                if (Array.isArray(bg)) bg = bg[dp.dataIndex]; 
+                if (typeof bg === 'string') return bg;
+                let bc = dp.dataset.borderColor;
+                if (Array.isArray(bc)) bc = bc[dp.dataIndex];
+                if (typeof bc === 'string') return bc;
+            }
+        } catch (e) {
+            console.warn("Tooltip color fallback triggered.");
+        }
+        return 'rgba(30, 41, 59, 0.95)';
+    },
     titleColor: '#ffffff',
     bodyColor: '#ffffff',
     titleFont: { family: 'Inter', size: 11, weight: '800' },
@@ -223,86 +259,17 @@ const sharedTooltipConfig = {
     caretPadding: 6
 };
 
-// --- MODAL CHART LOGIC (FULL 12 MONTHS VERTICAL BAR OR LINE) ---
-window.openExpandedLineChart = function(chartKey) {
-    try {
-        const dataObj = toggleChartData[chartKey];
-        if(!dataObj) return;
-
-        document.getElementById('expandedLineTitle').innerText = dataObj.labelText + " (12-Month View)";
-        document.getElementById('expandedLineModal').classList.add('active');
-
-        const canvas = document.getElementById('expandedLineCanvas');
-        if(!canvas) return;
-        const ctx = canvas.getContext('2d');
-        
-        if(expandedLineInstance) {
-            expandedLineInstance.destroy();
-        }
-
-        const chartColor = Array.isArray(dataObj.color) ? dataObj.color[0] : dataObj.color;
-        let gradient = ctx.createLinearGradient(0, 0, 0, 400);
-        gradient.addColorStop(0, 'rgba(37, 99, 235, 0.2)'); 
-        gradient.addColorStop(1, 'rgba(37, 99, 235, 0.0)');
-
-        expandedLineInstance = new Chart(ctx, {
-            type: 'line', 
-            data: {
-                labels: dataObj.labels, // Full 12 months
-                datasets: [{
-                    label: dataObj.labelText,
-                    data: dataObj.data, 
-                    borderColor: chartColor,
-                    backgroundColor: gradient,
-                    borderWidth: 3,
-                    pointBackgroundColor: '#ffffff',
-                    pointBorderColor: chartColor,
-                    pointBorderWidth: 2,
-                    pointRadius: 4,
-                    pointHoverRadius: 6,
-                    tension: 0.4, 
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                animation: { duration: 800, easing: 'easeOutQuart' },
-                plugins: {
-                    legend: { display: false },
-                    datalabels: {
-                        display: true,
-                        align: 'top',
-                        anchor: 'end',
-                        color: '#64748b',
-                        font: { weight: 'bold', family: 'Inter', size: 11 }
-                    },
-                    tooltip: sharedTooltipConfig
-                },
-                scales: {
-                    x: {
-                        grid: { display: false, drawBorder: false },
-                        ticks: { font: { family: 'Inter', size: 10, weight: '600' }, color: '#64748b' },
-                        border: { display: false }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: '#f1f5f9', drawBorder: false },
-                        ticks: { font: { family: 'Inter', size: 11 }, color: '#94a3b8' },
-                        grace: '15%',
-                        border: { display: false }
-                    }
-                }
-            }
-        });
-    } catch (e) {
-        console.error("Error opening expanded chart:", e);
-    }
-}
-
-window.closeExpandedLineChart = function() {
-    document.getElementById('expandedLineModal').classList.remove('active');
-}
+// --- STABLE AND CLEAN SINGLE BAR CONFIGURATION ---
+const singleBarOptions = {
+    indexAxis: 'y', 
+    responsive: true, 
+    maintainAspectRatio: false,
+    animation: { duration: 700, easing: 'easeOutQuart' },
+    layout: { padding: { top: 15, right: 25, bottom: 10, left: 10 } }, 
+    plugins: { datalabels: { display: false }, legend: { display: false }, tooltip: sharedTooltipConfig },
+    scales: { x: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } }, y: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } } },
+    elements: { bar: { borderRadius: 3, borderWidth: 0 } } // Smooth, no-stroke bars
+};
 
 function scrollToSection(panelId) {
     const section = document.getElementById(panelId);
@@ -312,9 +279,11 @@ function scrollToSection(panelId) {
 }
 
 document.addEventListener("DOMContentLoaded", function() {
+    // Load default Tarlac City weather on page load
     fetchOpenWeather("Tarlac City,PH");
-    setInterval(() => fetchOpenWeather(document.getElementById('tarlac-muni-select').value), 900000);
     
+    // Refresh weather every 15 minutes (900,000 ms)
+    setInterval(() => fetchOpenWeather(document.getElementById('tarlac-muni-select').value), 900000);
     const panels = document.querySelectorAll('.panel');
     const navLinks = document.querySelectorAll('.sidebar li:not(.section-title)');
     
@@ -374,47 +343,47 @@ document.addEventListener("DOMContentLoaded", function() {
                         changed = true;
                     }
                 });
-                if (changed) masterServicePieInstance.update();
+                
+                if (changed) {
+                    masterServicePieInstance.update();
+                }
 
                 const legendItems = document.querySelectorAll('#masterServiceLegend .legend-item');
-                legendItems.forEach(item => item.classList.remove('hidden-slice'));
+                legendItems.forEach(item => {
+                    item.classList.remove('hidden-slice');
+                });
             }
         });
     }
 
-    const yearSelect = document.getElementById('globalYearSelect');
-    if(yearSelect) {
-        yearSelect.addEventListener('change', function(e) {
-            applyGlobalYearFilter(e.target.value);
-        });
-    }
+    document.getElementById('globalYearSelect').addEventListener('change', function(e) {
+        applyGlobalYearFilter(e.target.value);
+    });
 
-    const docPieMonthFilter = document.getElementById('docPieMonthFilter');
-    if(docPieMonthFilter) {
-        docPieMonthFilter.addEventListener('change', function(e) {
-            currentPieState.filterKey = e.target.value;
-            renderDocPieChart();
-        });
-    }
+    document.getElementById('docPieMonthFilter').addEventListener('change', function(e) {
+        currentPieState.filterKey = e.target.value;
+        renderDocPieChart();
+    });
 
-    const pieBackBtn = document.getElementById('pieBackButton');
-    if(pieBackBtn) {
-        pieBackBtn.addEventListener('click', function() {
-            if (currentPieState.level === 3) {
-                currentPieState.level = 2;
-                currentPieState.level2Target = null;
-            } else if (currentPieState.level === 2) {
-                currentPieState.level = 1;
-                currentPieState.level1Target = null;
-            }
-            renderDocPieChart();
-        });
-    }
+    document.getElementById('pieBackButton').addEventListener('click', function() {
+        if (currentPieState.level === 3) {
+            currentPieState.level = 2;
+            currentPieState.level2Target = null;
+        } else if (currentPieState.level === 2) {
+            currentPieState.level = 1;
+            currentPieState.level1Target = null;
+        }
+        renderDocPieChart();
+    });
 
-    const lineChartFilter = document.getElementById('lineChartFilter');
-    if(lineChartFilter) {
-        lineChartFilter.addEventListener('change', function(e) {
-            renderLineChartByTimeframe(e.target.value);
+    document.getElementById('lineChartFilter').addEventListener('change', function(e) {
+        renderLineChartByTimeframe(e.target.value);
+    });
+    
+    const trainLineFilter = document.getElementById('trainLineChartFilter');
+    if (trainLineFilter) {
+        trainLineFilter.addEventListener('change', function(e) {
+            renderTrainLineChartByTimeframe(e.target.value);
         });
     }
 
@@ -425,7 +394,6 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    // Toggle switch logic (Fallback safety)
     const masterToggle = document.getElementById('masterChartToggle');
     if (masterToggle) {
         masterToggle.addEventListener('change', function(e) {
@@ -439,12 +407,9 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    const masterServiceMonthFilter = document.getElementById('masterServiceMonthFilter');
-    if(masterServiceMonthFilter) {
-        masterServiceMonthFilter.addEventListener('change', function(e) {
-            renderMasterServicePie(e.target.value);
-        });
-    }
+    document.getElementById('masterServiceMonthFilter').addEventListener('change', function(e) {
+        renderMasterServicePie(e.target.value);
+    });
 
     const expandBtn = document.getElementById('expandTitlesBtn');
     const closeBtn = document.getElementById('closeModalBtn');
@@ -969,12 +934,12 @@ function buildMonthHTML(year, month, isSmallScale) {
     return html;
 }
 
-// --- CORRECTED: BULLETPROOF VERTICAL BARS (LAST 3 MONTHS) ---
+// --- CORRECTED: BULLETPROOF STABLE BAR CHARTS ---
+// This is the clean, stable bar chart function restoring the exact look you requested.
 function renderToggleableChart(canvasId, type, isInitialLoad = false) {
     try {
         const canvas = document.getElementById(canvasId);
         if(!canvas) return;
-        
         const container = canvas.parentElement;
 
         if (!isInitialLoad) {
@@ -990,77 +955,50 @@ function renderToggleableChart(canvasId, type, isInitialLoad = false) {
 
             const dataObj = toggleChartData[canvasId];
             if(!dataObj || !dataObj.labels) return;
-            
-            // Rolling Window Logic: Take only the last 3 items for the small vertical bar chart
-            const wSize = 3;
-            // Shorten month labels to 3 letters (e.g. "JAN") to save space on X axis
-            const recentLabels = dataObj.labels.slice(-wSize).map(l => String(l).substring(0, 3));
-            const recentData = dataObj.data.slice(-wSize);
-            
+
             let chartColor = dataObj.color;
             if (Array.isArray(chartColor)) chartColor = chartColor[0];
 
             if (type === 'pie' || type === 'doughnut') {
                 // If user toggles the master switch to Pie mode
+                const mappedColors = Array.isArray(dataObj.color) ? dataObj.color : dataObj.data.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
                 toggleChartInstances[canvasId] = new Chart(ctx, {
                     type: 'doughnut',
                     data: {
-                        labels: recentLabels,
+                        labels: dataObj.labels,
                         datasets: [{
-                            data: recentData,
-                            backgroundColor: [pieColorPalette[0], pieColorPalette[1], pieColorPalette[2]],
+                            data: dataObj.data,
+                            backgroundColor: mappedColors,
                             borderWidth: 0,
-                            borderRadius: 4
+                            borderRadius: 8,
+                            spacing: 5,
+                            hoverOffset: 15
                         }]
                     },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false, 
+                        cutout: '55%', 
+                        layout: { padding: 15 }, 
+                        plugins: { legend: { display: false } } 
+                    }
                 });
             } else {
-                // Default: Clean Vertical Bar Chart for the last 3 months
+                // Default: Clean Horizontal Bar Chart
                 toggleChartInstances[canvasId] = new Chart(ctx, {
-                    type: 'bar', // Standard vertical columns
+                    type: 'bar',
                     data: {
-                        labels: recentLabels,
+                        labels: dataObj.labels,
                         datasets: [{
                             label: dataObj.labelText,
-                            data: recentData,
+                            data: dataObj.data,
                             backgroundColor: chartColor,
-                            borderRadius: 4,     // Smooth corners
-                            borderWidth: 0,      // No pixelated stroke
-                            barThickness: 16,    // Fixed thickness so they don't get squished
-                            maxBarThickness: 20
+                            maxBarThickness: 15,
+                            borderRadius: 3, 
+                            borderWidth: 0 // Smooth, no-stroke bars
                         }]
                     },
-                    options: {
-                        indexAxis: 'x', // Forces Vertical Columns
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        layout: { padding: { top: 20, right: 10, bottom: 5, left: 10 } }, 
-                        plugins: {
-                            legend: { display: false },
-                            datalabels: { 
-                                display: true,     
-                                color: '#1e293b', 
-                                align: 'top',
-                                anchor: 'end',
-                                font: { weight: '800', family: 'Inter', size: 10 }
-                            },
-                            tooltip: sharedTooltipConfig
-                        },
-                        scales: {
-                            x: { 
-                                display: true, // Show the 3 month names on bottom
-                                grid: { display: false, drawBorder: false },
-                                ticks: { font: { family: 'Inter', size: 9, weight: '700' }, color: '#64748b' },
-                                border: { display: false }
-                            },
-                            y: { 
-                                display: false, // Hide vertical axis to save space
-                                beginAtZero: true,
-                                grace: '25%'    // Buffer so data labels don't clip ceiling
-                            }
-                        }
-                    }
+                    options: singleBarOptions // Uses the stable, standard options defined at the top
                 });
             }
 
@@ -1490,10 +1428,8 @@ function processOperationsData(data) {
 
         drawDonutChart('monthlyPieChart', labels, monthlyTotalServices, overallGrandTotal);
         
-        // Ensure pieColorPalette is correctly mapping
-        const barColors = pieColorPalette;
-
         // Store FULL 12-month data here for the modal
+        const barColors = pieColorPalette;
         toggleChartData['vehicularChart'] = { labels, labelText: 'TRAUMA (ROADCRASH INCIDENT)', data: vehicular, color: barColors[0] };
         toggleChartData['roadsideChart'] = { labels, labelText: 'Roadside Assistance', data: roadside, color: barColors[1] };
         toggleChartData['patientChart'] = { labels, labelText: 'Patient Transport', data: patient, color: barColors[2] };
@@ -1506,7 +1442,7 @@ function processOperationsData(data) {
         toggleChartData['haulingChart'] = { labels, labelText: 'Hauling', data: hauling, color: barColors[8] };
         toggleChartData['ledvanChart'] = { labels, labelText: 'Ledvan Truck', data: ledvan, color: barColors[9] };
 
-        // Render the 3-Month Vertical Bars
+        // Render the Restored Bar Charts
         ['vehicularChart', 'roadsideChart', 'patientChart', 'medicalChart', 'standbyChart', 'othersChart', 'clearingChart', 'firetruckChart', 'haulingChart', 'ledvanChart'].forEach(id => {
             renderToggleableChart(id, 'bar', true); 
         });
@@ -1968,10 +1904,6 @@ function drawLineChart(canvasId, labels, dataArr) {
     });
 }
 
-// ==========================================
-// FIREBASE AUTHENTICATION LOGIC
-// ==========================================
-
 const firebaseConfig = {
     apiKey: "AIzaSyDSCB9jQIzyn9WxGZ58sLkyJPHCj5oeEKQ", 
     authDomain: "pdrrmo-dashboard.firebaseapp.com",
@@ -1981,7 +1913,6 @@ const firebaseConfig = {
     appId: "1:555106842078:web:38f0275bc89499669ad94f"
 };
 
-// Initialize Firebase
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
@@ -2036,5 +1967,33 @@ window.handleLogout = function() {
         rawDocumentsData = [];
         rawTrainingsData = [];
         location.reload(); 
+    });
+}
+
+window.openMapModal = function(url, title) {
+    const modal = document.getElementById('mapModal');
+    const titleEl = document.getElementById('mapModalTitle');
+    const bodyEl = document.getElementById('mapModalBody');
+
+    if(titleEl) titleEl.innerText = title;
+    if(bodyEl) bodyEl.innerHTML = `<iframe src="${url}" allowfullscreen></iframe>`;
+    if(modal) modal.classList.add('active');
+}
+
+window.closeMapModal = function() {
+    const modal = document.getElementById('mapModal');
+    const bodyEl = document.getElementById('mapModalBody');
+    
+    if(modal) modal.classList.remove('active');
+    
+    setTimeout(() => {
+        if(bodyEl) bodyEl.innerHTML = '';
+    }, 300);
+}
+
+const mapModalEl = document.getElementById('mapModal');
+if(mapModalEl) {
+    mapModalEl.addEventListener('click', function(e) {
+        if(e.target === this) closeMapModal();
     });
 }
