@@ -528,7 +528,7 @@ body {
     height: 140px; 
     min-height: 140px; 
     max-height: 140px; 
-    padding: 0; /* Removed side padding to let sparklines fill beautifully */ 
+    padding: 0; 
     display: block;
     min-width: 0; 
 }
@@ -1069,21 +1069,6 @@ td {
 }
 
 /* --- MODAL OVERLAY STYLES --- */
-.btn-expand {
-    background: transparent;
-    border: none;
-    color: #94a3b8;
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 4px;
-    transition: all 0.2s ease;
-    margin-top: 12px;
-}
-.btn-expand:hover {
-    background: #f1f5f9;
-    color: #2563eb;
-}
-
 .modal-overlay {
     position: fixed;
     top: 0; left: 0; width: 100vw; height: 100vh;
