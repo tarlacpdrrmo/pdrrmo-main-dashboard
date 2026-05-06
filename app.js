@@ -1124,7 +1124,7 @@ function processVolunteersData(data) {
     document.getElementById('vol-ind').innerText = grandTotalHumans.toLocaleString();
 }
 
-// --- RESTORED HELPERS ---
+// --- HELPER FUNCTIONS RESTORED ---
 function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = false) {
     const el = document.getElementById(elementId);
     if (!el) return;
@@ -1341,7 +1341,6 @@ function processOperationsData(data) {
 
         drawDonutChart('monthlyPieChart', labels, monthlyTotalServices, overallGrandTotal);
         
-        // Ensure pieColorPalette is correctly mapping for unique colors
         const barColors = pieColorPalette;
 
         toggleChartData['vehicularChart'] = { labels, labelText: 'TRAUMA (ROADCRASH INCIDENT)', data: vehicular, color: barColors[0] };
@@ -1374,6 +1373,198 @@ function processOperationsData(data) {
 
     } catch (e) {
         console.error("FATAL ERROR in processOperationsData:", e);
+    }
+}
+
+// --- RENDERING ONLY HORIZONTAL 3-MONTH BARS ---
+function renderToggleableChart(canvasId, type, isInitialLoad = false) {
+    try {
+        const canvas = document.getElementById(canvasId);
+        if(!canvas) return;
+        const container = canvas.parentElement;
+
+        if (!isInitialLoad) {
+            container.classList.add('chart-fade-out');
+        }
+
+        setTimeout(() => {
+            const ctx = canvas.getContext('2d');
+            if (toggleChartInstances[canvasId]) {
+                toggleChartInstances[canvasId].destroy();
+            }
+
+            const dataObj = toggleChartData[canvasId];
+            if(!dataObj || !dataObj.labels) return;
+
+            // ONLY LAST 3 MONTHS
+            const wSize = 3;
+            // Shorten to 3 letters for compactness on y-axis
+            const recentLabels = dataObj.labels.slice(-wSize).map(l => String(l).substring(0, 3));
+            const recentData = dataObj.data.slice(-wSize);
+
+            let chartColor = dataObj.color;
+            if (Array.isArray(chartColor)) chartColor = chartColor[0];
+
+            toggleChartInstances[canvasId] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: recentLabels,
+                    datasets: [{
+                        label: dataObj.labelText,
+                        data: recentData,
+                        backgroundColor: chartColor,
+                        maxBarThickness: 15,
+                        borderRadius: 3, 
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', // HORIZONTAL BAR
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    animation: { duration: 700, easing: 'easeOutQuart' },
+                    layout: { padding: { top: 5, right: 35, bottom: 5, left: 10 } }, 
+                    plugins: { 
+                        datalabels: { 
+                            display: true,
+                            color: '#1e293b', 
+                            align: 'right',
+                            anchor: 'end',
+                            font: { weight: '800', family: 'Inter', size: 10 }
+                        }, 
+                        legend: { display: false }, 
+                        tooltip: sharedTooltipConfig 
+                    },
+                    scales: { 
+                        x: { display: false, beginAtZero: true, grace: '20%' }, 
+                        y: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10, weight: '700' }, color: '#64748b' }, border: {display: false} } 
+                    }
+                }
+            });
+
+            if (!isInitialLoad) {
+                setTimeout(() => {
+                    container.classList.remove('chart-fade-out');
+                }, 50); 
+            }
+        }, isInitialLoad ? 0 : 300); 
+    } catch (e) {
+        console.error("Chart Render Failed for", canvasId, e);
+    }
+}
+
+function renderMasterServicePie(monthFilter) {
+    try {
+        const dataArr = operationsMonthlyCache[monthFilter] || new Array(10).fill(0);
+
+        let filteredLabels = [];
+        let filteredData = [];
+        let mappedColors = [];
+
+        for(let i=0; i<10; i++) {
+            if(dataArr[i] > 0) {
+                filteredLabels.push(serviceCategoryLabels[i]);
+                filteredData.push(dataArr[i]);
+                mappedColors.push(pieColorPalette[i % pieColorPalette.length]);
+            }
+        }
+
+        if(filteredLabels.length === 0) {
+            filteredLabels = ["No Data"];
+            filteredData = [1];
+            mappedColors = ["#e2e8f0"];
+        } else {
+            let combined = filteredLabels.map((l, i) => ({l, d: filteredData[i], c: mappedColors[i]}));
+            combined.sort((a,b) => b.d - a.d);
+            filteredLabels = combined.map(x => x.l);
+            filteredData = combined.map(x => x.d);
+            mappedColors = combined.map(x => x.c);
+        }
+
+        const canvas = document.getElementById('masterServicePieChart');
+        if(!canvas) return;
+        const ctx = canvas.getContext('2d');
+        
+        if(masterServicePieInstance) {
+            masterServicePieInstance.data.labels = filteredLabels;
+            masterServicePieInstance.data.datasets[0].data = filteredData;
+            masterServicePieInstance.data.datasets[0].backgroundColor = mappedColors;
+            masterServicePieInstance.update();
+        } else {
+            masterServicePieInstance = new Chart(ctx, {
+                type: 'doughnut', 
+                data: {
+                    labels: filteredLabels,
+                    datasets: [{
+                        data: filteredData,
+                        backgroundColor: mappedColors,
+                        borderWidth: 0, 
+                        borderRadius: 8, 
+                        spacing: 5,      
+                        hoverOffset: 15  
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    cutout: '55%', 
+                    layout: { padding: 15 }, 
+                    animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, 
+                    hover: { mode: 'index', animationDuration: 300 }, 
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: sharedTooltipConfig,
+                        datalabels: {
+                            color: '#ffffff', font: { weight: '800', family: 'Inter', size: 10 },
+                            formatter: (value, context) => {
+                                if(context.chart.data.labels[0] === "No Data") return "";
+                                let sum = context.chart.data.datasets[0].data.reduce((a,b)=>a+b,0);
+                                let p = (value/sum*100);
+                                return p >= 5 ? p.toFixed(1)+'%' : '';
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        const leg = document.getElementById('masterServiceLegend');
+        if(leg) {
+            leg.innerHTML = '';
+            
+            if(filteredLabels[0] !== "No Data") {
+                filteredLabels.forEach((lbl, i) => {
+                    let item = document.createElement('div');
+                    item.className = 'legend-item interactive-legend-item';
+                    item.style.padding = '8px 0';
+                    item.style.animationDelay = `${i * 0.04}s`;
+                    
+                    item.innerHTML = `
+                        <div class="legend-color" style="background-color: ${mappedColors[i]};"></div>
+                        <div class="legend-text" title="${lbl}">${lbl}</div>
+                        <div class="legend-val">${filteredData[i]}</div>
+                    `;
+                    
+                    item.onclick = function() {
+                        if (masterServicePieInstance) {
+                            masterServicePieInstance.toggleDataVisibility(i);
+                            masterServicePieInstance.update();
+                            
+                            if (masterServicePieInstance.getDataVisibility(i)) {
+                                item.classList.remove('hidden-slice');
+                            } else {
+                                item.classList.add('hidden-slice');
+                            }
+                        }
+                    };
+                    
+                    leg.appendChild(item);
+                });
+            } else {
+                leg.innerHTML = `<div style="padding:20px; color:#94a3b8; font-size:0.8rem;">No Data Available</div>`;
+            }
+        }
+    } catch (e) {
+        console.error("Master Pie Chart Crash:", e);
     }
 }
 
@@ -1762,6 +1953,7 @@ function drawLineChart(canvasId, labels, dataArr) {
     if(!canvas) return;
     const ctx = canvas.getContext('2d');
     
+    // RESTORED rendering function for line charts to prevent crash
     if(docLineChartInstance) docLineChartInstance.destroy();
 
     let gradient = ctx.createLinearGradient(0, 0, 0, 300);
@@ -1883,10 +2075,6 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
     });
 }
 
-// ==========================================
-// FIREBASE AUTHENTICATION LOGIC
-// ==========================================
-
 const firebaseConfig = {
     apiKey: "AIzaSyDSCB9jQIzyn9WxGZ58sLkyJPHCj5oeEKQ", 
     authDomain: "pdrrmo-dashboard.firebaseapp.com",
@@ -1979,95 +2167,4 @@ if(mapModalEl) {
     mapModalEl.addEventListener('click', function(e) {
         if(e.target === this) closeMapModal();
     });
-}
-
-// --- RENDERING ONLY HORIZONTAL 3-MONTH BARS WITH AXES & COLORS ---
-function renderToggleableChart(canvasId, type, isInitialLoad = false) {
-    try {
-        const canvas = document.getElementById(canvasId);
-        if(!canvas) return;
-        const container = canvas.parentElement;
-
-        if (!isInitialLoad) {
-            container.classList.add('chart-fade-out');
-        }
-
-        setTimeout(() => {
-            const ctx = canvas.getContext('2d');
-            if (toggleChartInstances[canvasId]) {
-                toggleChartInstances[canvasId].destroy();
-            }
-
-            const dataObj = toggleChartData[canvasId];
-            if(!dataObj || !dataObj.labels) return;
-
-            // ONLY LAST 3 MONTHS
-            const wSize = 3;
-            // Shorten to 3 letters for compactness on y-axis
-            const recentLabels = dataObj.labels.slice(-wSize).map(l => String(l).substring(0, 3));
-            const recentData = dataObj.data.slice(-wSize);
-
-            // Get the unique color assigned to this specific chart
-            let chartColor = dataObj.color;
-            if (Array.isArray(chartColor)) chartColor = chartColor[0];
-
-            toggleChartInstances[canvasId] = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: recentLabels,
-                    datasets: [{
-                        label: dataObj.labelText,
-                        data: recentData,
-                        backgroundColor: chartColor, // Applies distinct color
-                        maxBarThickness: 15,
-                        borderRadius: 3, 
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    indexAxis: 'y', // HORIZONTAL BAR
-                    responsive: true, 
-                    maintainAspectRatio: false,
-                    animation: { duration: 700, easing: 'easeOutQuart' },
-                    layout: { padding: { top: 5, right: 35, bottom: 5, left: 0 } }, 
-                    plugins: { 
-                        datalabels: { 
-                            display: true,
-                            color: '#1e293b', 
-                            align: 'right',
-                            anchor: 'end',
-                            font: { weight: '800', family: 'Inter', size: 10 }
-                        }, 
-                        legend: { display: false }, 
-                        tooltip: sharedTooltipConfig 
-                    },
-                    scales: { 
-                        // Restored the axes values as requested
-                        x: { 
-                            display: true, 
-                            beginAtZero: true, 
-                            grace: '20%',
-                            grid: { display: false, drawBorder: false },
-                            ticks: { font: { family: 'Inter', size: 9 }, color: '#94a3b8' },
-                            border: { display: false }
-                        }, 
-                        y: { 
-                            display: true, 
-                            grid: { display: false, drawBorder: false }, 
-                            ticks: { font: { family: 'Inter', size: 9, weight: '700' }, color: '#64748b' }, 
-                            border: {display: false} 
-                        } 
-                    }
-                }
-            });
-
-            if (!isInitialLoad) {
-                setTimeout(() => {
-                    container.classList.remove('chart-fade-out');
-                }, 50); 
-            }
-        }, isInitialLoad ? 0 : 300); 
-    } catch (e) {
-        console.error("Chart Render Failed for", canvasId, e);
-    }
 }
