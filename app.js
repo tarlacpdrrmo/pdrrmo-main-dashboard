@@ -4,17 +4,18 @@ Chart.register(ChartDataLabels);
 const webAppUrl = "https://script.google.com/macros/s/AKfycbwYUt0YFQClUUXRGwrNdnC5INPXWzWyGUeN3J8E5tRKsO2ME-Y6zu5Fv0a56fCtxhwzTg/exec";
 // OPENWEATHERMAP CREDENTIALS
 const OWM_API_KEY = "3457c364d3f2840960216510c279837c"; 
-let rainChartInstance = null; // Keeps track of the chart so we can update it
+let rainChartInstance = null; 
 
 // Function to toggle the dropdown panel
 function toggleWeatherPanel() {
     const container = document.getElementById('weather-interactive-widget');
-    container.classList.toggle('active');
+    if(container) container.classList.toggle('active');
 }
 
 // Function called when the user selects a new municipality from the dropdown
 function changeMunicipality() {
     const selectEl = document.getElementById('tarlac-muni-select');
+    if(!selectEl) return;
     const selectedCityQuery = selectEl.value; 
     const selectedCityName = selectEl.options[selectEl.selectedIndex].text; 
     
@@ -29,7 +30,6 @@ async function fetchOpenWeather(cityQuery) {
     if (OWM_API_KEY === "PASTE_YOUR_OPENWEATHERMAP_API_KEY_HERE") return;
 
     try {
-        // Fetch current and forecast APIs simultaneously for speed
         const currentUrl = `https://api.openweathermap.org/data/2.5/weather?q=${cityQuery}&units=metric&appid=${OWM_API_KEY}`;
         const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${cityQuery}&units=metric&appid=${OWM_API_KEY}`;
         
@@ -42,7 +42,6 @@ async function fetchOpenWeather(cityQuery) {
         const forecastData = await forecastRes.json();
 
         if (currentRes.ok && forecastRes.ok) {
-            // 1. UPDATE CURRENT WEATHER UI
             const temp = Math.round(currentData.main.temp); 
             const iconCode = currentData.weather[0].icon;
             
@@ -55,28 +54,24 @@ async function fetchOpenWeather(cityQuery) {
             document.getElementById('weather-humidity').innerText = `${currentData.main.humidity}%`;
             document.getElementById('weather-wind').innerText = `${currentData.wind.speed} m/s`;
 
-            // 2. BUILD THE RAIN CHANCE GRAPH (Next 12-15 hours)
             const rainLabels = [];
             const rainDataPoints = [];
             
-            // Loop through the first 5 time blocks (each block is 3 hours)
             for(let i = 0; i < 5; i++) {
                 const item = forecastData.list[i];
                 const date = new Date(item.dt * 1000);
                 let hour = date.getHours();
                 let ampm = hour >= 12 ? 'PM' : 'AM';
-                hour = hour % 12 || 12; // Convert 24h to 12h format
+                hour = hour % 12 || 12; 
                 
                 rainLabels.push(`${hour} ${ampm}`);
-                // pop is "Probability of Precipitation" (0 to 1). Multiply by 100 for percentage.
                 rainDataPoints.push(Math.round(item.pop * 100)); 
             }
             updateRainChart(rainLabels, rainDataPoints);
 
-            // 3. BUILD THE 3-DAY FORECAST
             const daysProcessed = new Set();
             const forecastGrid = document.getElementById('forecast-grid');
-            forecastGrid.innerHTML = ''; // Clear previous
+            if(forecastGrid) forecastGrid.innerHTML = ''; 
             
             const todayStr = new Date().toLocaleDateString();
 
@@ -84,30 +79,25 @@ async function fetchOpenWeather(cityQuery) {
                 const d = new Date(item.dt * 1000);
                 const dateStr = d.toLocaleDateString();
                 
-                // Skip today, and only grab the midday reading (around 11AM - 2PM) to represent the day
                 if (dateStr !== todayStr && d.getHours() >= 11 && d.getHours() <= 15 && !daysProcessed.has(dateStr)) {
                     daysProcessed.add(dateStr);
                     
-                    const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }); // e.g. "Mon"
+                    const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }); 
                     const dayTemp = Math.round(item.main.temp);
                     const dayIcon = item.weather[0].icon;
                     
-                    forecastGrid.innerHTML += `
-                        <div class="forecast-day">
-                            <span class="forecast-day-name">${dayName}</span>
-                            <img src="https://openweathermap.org/img/wn/${dayIcon}.png" alt="icon">
-                            <span class="forecast-day-temp">${dayTemp}°</span>
-                        </div>
-                    `;
-                    
-                    // Stop once we have 3 days
+                    if(forecastGrid) {
+                        forecastGrid.innerHTML += `
+                            <div class="forecast-day">
+                                <span class="forecast-day-name">${dayName}</span>
+                                <img src="https://openweathermap.org/img/wn/${dayIcon}.png" alt="icon">
+                                <span class="forecast-day-temp">${dayTemp}°</span>
+                            </div>
+                        `;
+                    }
                     if (daysProcessed.size === 3) break;
                 }
             }
-
-        } else {
-            console.error("OpenWeather error:", currentData.message);
-            document.getElementById('weather-temp-main').innerText = "Err";
         }
     } catch (error) {
         console.error("Weather fetch failed:", error);
@@ -116,9 +106,10 @@ async function fetchOpenWeather(cityQuery) {
 
 // Function to draw/update the Chart.js Rain Graph
 function updateRainChart(labels, dataPoints) {
-    const ctx = document.getElementById('rainChanceChart').getContext('2d');
+    const canvas = document.getElementById('rainChanceChart');
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
     
-    // If a chart already exists, destroy it so we can draw a new one for the new city
     if(rainChartInstance) {
         rainChartInstance.destroy();
     }
@@ -139,30 +130,29 @@ function updateRainChart(labels, dataPoints) {
             maintainAspectRatio: false,
             plugins: { 
                 legend: { display: false }, 
-                tooltip: { enabled: false }, // Turn off hover tooltips since we use data labels
+                tooltip: { enabled: false }, 
                 datalabels: { 
                     display: true, 
                     color: '#ffffff', 
                     anchor: 'end',
                     align: 'top',
-                    font: { size: 10, weight: 'bold' }, 
-                    formatter: (value) => value + '%' // Adds % sign to the number
+                    font: { size: 10, weight: 'bold', family: 'Inter' }, 
+                    formatter: (value) => value + '%' 
                 } 
             },
             scales: {
-                y: { display: false, min: 0, max: 100 }, // Hide Y axis, lock 0-100%
+                y: { display: false, min: 0, max: 100 }, 
                 x: { 
-                    ticks: { color: '#94a3b8', font: { size: 9, weight: 'bold' } }, 
+                    ticks: { color: '#94a3b8', font: { size: 9, weight: 'bold', family: 'Inter' } }, 
                     grid: { display: false },
                     border: { display: false }
                 }
             },
-            layout: { padding: { top: 15 } } // Give room for the % labels at the top
+            layout: { padding: { top: 15 } } 
         }
     });
 }
 
-// Close the weather panel if the user clicks anywhere else on the screen
 document.addEventListener('click', function(event) {
     const widget = document.getElementById('weather-interactive-widget');
     if (widget && !widget.contains(event.target)) {
@@ -182,6 +172,7 @@ let docLineChartInstance = null;
 let masterServicePieInstance = null;
 let monthlyTotalPieInstance = null; 
 let toggleChartInstances = {};
+let expandedLineInstance = null; // Track the modal chart
 
 // Training Charts State Trackers
 let trainStatusChartInst = null;
@@ -194,23 +185,17 @@ let originalKPITotals = {};
 let operationsMonthlyCache = {}; 
 let toggleChartData = {};
 
-// Global tracker for Training Calendar
 let globalTrainLineData = [];
 let currentCalDate = new Date();
 let currentCalView = 'monthly'; 
 let currentCalCategory = 'all'; 
 let calDataMap = {}; 
 
-// Global Trackers for Modals
 let globalTitleCounts = {};
 let globalRemarksDetails = {};
 
-// 3-Layer Interactive State Tracker
 let currentPieState = { 
-    level: 1, 
-    filterKey: 'all', 
-    level1Target: null, 
-    level2Target: null 
+    level: 1, filterKey: 'all', level1Target: null, level2Target: null 
 };
 
 const serviceCategoryLabels = [
@@ -219,7 +204,6 @@ const serviceCategoryLabels = [
     'Clearing Operations', 'Firetruck', 'Hauling', 'Ledvan Truck'
 ];
 
-// Reusable Month Order
 const monthOrder = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
 
 // ORIGINAL VIBRANT HIGH-CONTRAST PALETTE
@@ -230,22 +214,7 @@ const pieColorPalette = [
 ];
 
 const sharedTooltipConfig = {
-    backgroundColor: function(context) {
-        try {
-            if (context.tooltip && context.tooltip.dataPoints && context.tooltip.dataPoints.length > 0) {
-                const dp = context.tooltip.dataPoints[0];
-                let bg = dp.dataset.backgroundColor;
-                if (Array.isArray(bg)) bg = bg[dp.dataIndex]; 
-                if (typeof bg === 'string') return bg;
-                let bc = dp.dataset.borderColor;
-                if (Array.isArray(bc)) bc = bc[dp.dataIndex];
-                if (typeof bc === 'string') return bc;
-            }
-        } catch (e) {
-            console.warn("Tooltip color fallback triggered.");
-        }
-        return 'rgba(30, 41, 59, 0.95)';
-    },
+    backgroundColor: 'rgba(30, 41, 59, 0.95)',
     titleColor: '#ffffff',
     bodyColor: '#ffffff',
     titleFont: { family: 'Inter', size: 11, weight: '800' },
@@ -259,71 +228,71 @@ const sharedTooltipConfig = {
     caretPadding: 6
 };
 
-// --- NEW EXPANDED MODAL LOGIC FOR 12-MONTH VIEW ---
-let expandedLineInstance = null;
-
+// --- MODAL CHART LOGIC (FULL 12 MONTHS VERTICAL BAR) ---
 window.openExpandedLineChart = function(chartKey) {
-    const dataObj = toggleChartData[chartKey];
-    if(!dataObj) return;
+    try {
+        const dataObj = toggleChartData[chartKey];
+        if(!dataObj) return;
 
-    document.getElementById('expandedLineTitle').innerText = dataObj.labelText + " (12-Month View)";
-    document.getElementById('expandedLineModal').classList.add('active');
+        document.getElementById('expandedLineTitle').innerText = dataObj.labelText + " (12-Month View)";
+        document.getElementById('expandedLineModal').classList.add('active');
 
-    const ctx = document.getElementById('expandedLineCanvas').getContext('2d');
-    if(expandedLineInstance) expandedLineInstance.destroy();
+        const canvas = document.getElementById('expandedLineCanvas');
+        if(!canvas) return;
+        const ctx = canvas.getContext('2d');
+        
+        if(expandedLineInstance) {
+            expandedLineInstance.destroy();
+        }
 
-    // Create a smooth gradient specific to the chart's theme color
-    let gradient = ctx.createLinearGradient(0, 0, 0, 400);
-    gradient.addColorStop(0, 'rgba(37, 99, 235, 0.2)'); 
-    gradient.addColorStop(1, 'rgba(37, 99, 235, 0.0)');
+        const chartColor = Array.isArray(dataObj.color) ? dataObj.color[0] : dataObj.color;
 
-    expandedLineInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: dataObj.labels, // Pulls the full array of labels
-            datasets: [{
-                label: dataObj.labelText,
-                data: dataObj.data,     // Pulls the full array of data
-                borderColor: dataObj.color,
-                backgroundColor: gradient,
-                borderWidth: 3,
-                pointBackgroundColor: '#ffffff',
-                pointBorderColor: dataObj.color,
-                pointBorderWidth: 2,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-                tension: 0.4, // Smooth curve
-                fill: true
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: { duration: 800, easing: 'easeOutQuart' },
-            interaction: { mode: 'index', intersect: false },
-            plugins: {
-                legend: { display: false },
-                datalabels: {
-                    display: true,
-                    align: 'top',
-                    color: '#64748b',
-                    font: { weight: 'bold', family: 'Inter', size: 11 }
-                },
-                tooltip: sharedTooltipConfig
+        expandedLineInstance = new Chart(ctx, {
+            type: 'bar', // Full 12 month vertical bar chart
+            data: {
+                labels: dataObj.labels, // Full 12 months
+                datasets: [{
+                    label: dataObj.labelText,
+                    data: dataObj.data, // Full 12 months data
+                    backgroundColor: chartColor,
+                    borderRadius: 6,
+                    borderWidth: 0
+                }]
             },
-            scales: {
-                x: {
-                    grid: { display: false },
-                    ticks: { font: { family: 'Inter', size: 10 }, color: '#64748b' }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 800, easing: 'easeOutQuart' },
+                plugins: {
+                    legend: { display: false },
+                    datalabels: {
+                        display: true,
+                        align: 'top',
+                        anchor: 'end',
+                        color: '#64748b',
+                        font: { weight: 'bold', family: 'Inter', size: 11 }
+                    },
+                    tooltip: sharedTooltipConfig
                 },
-                y: {
-                    grid: { color: '#f1f5f9', drawBorder: false },
-                    beginAtZero: true,
-                    ticks: { font: { family: 'Inter', size: 11 }, color: '#94a3b8' }
+                scales: {
+                    x: {
+                        grid: { display: false, drawBorder: false },
+                        ticks: { font: { family: 'Inter', size: 10, weight: '600' }, color: '#64748b' },
+                        border: { display: false }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f1f5f9', drawBorder: false },
+                        ticks: { font: { family: 'Inter', size: 11 }, color: '#94a3b8' },
+                        grace: '15%',
+                        border: { display: false }
+                    }
                 }
             }
-        }
-    });
+        });
+    } catch (e) {
+        console.error("Error opening expanded chart:", e);
+    }
 }
 
 window.closeExpandedLineChart = function() {
@@ -338,11 +307,9 @@ function scrollToSection(panelId) {
 }
 
 document.addEventListener("DOMContentLoaded", function() {
-    // Load default Tarlac City weather on page load
     fetchOpenWeather("Tarlac City,PH");
-    
-    // Refresh weather every 15 minutes (900,000 ms)
     setInterval(() => fetchOpenWeather(document.getElementById('tarlac-muni-select').value), 900000);
+    
     const panels = document.querySelectorAll('.panel');
     const navLinks = document.querySelectorAll('.sidebar li:not(.section-title)');
     
@@ -402,47 +369,47 @@ document.addEventListener("DOMContentLoaded", function() {
                         changed = true;
                     }
                 });
-                
-                if (changed) {
-                    masterServicePieInstance.update();
-                }
+                if (changed) masterServicePieInstance.update();
 
                 const legendItems = document.querySelectorAll('#masterServiceLegend .legend-item');
-                legendItems.forEach(item => {
-                    item.classList.remove('hidden-slice');
-                });
+                legendItems.forEach(item => item.classList.remove('hidden-slice'));
             }
         });
     }
 
-    document.getElementById('globalYearSelect').addEventListener('change', function(e) {
-        applyGlobalYearFilter(e.target.value);
-    });
+    const yearSelect = document.getElementById('globalYearSelect');
+    if(yearSelect) {
+        yearSelect.addEventListener('change', function(e) {
+            applyGlobalYearFilter(e.target.value);
+        });
+    }
 
-    document.getElementById('docPieMonthFilter').addEventListener('change', function(e) {
-        currentPieState.filterKey = e.target.value;
-        renderDocPieChart();
-    });
+    const docPieMonthFilter = document.getElementById('docPieMonthFilter');
+    if(docPieMonthFilter) {
+        docPieMonthFilter.addEventListener('change', function(e) {
+            currentPieState.filterKey = e.target.value;
+            renderDocPieChart();
+        });
+    }
 
-    document.getElementById('pieBackButton').addEventListener('click', function() {
-        if (currentPieState.level === 3) {
-            currentPieState.level = 2;
-            currentPieState.level2Target = null;
-        } else if (currentPieState.level === 2) {
-            currentPieState.level = 1;
-            currentPieState.level1Target = null;
-        }
-        renderDocPieChart();
-    });
+    const pieBackBtn = document.getElementById('pieBackButton');
+    if(pieBackBtn) {
+        pieBackBtn.addEventListener('click', function() {
+            if (currentPieState.level === 3) {
+                currentPieState.level = 2;
+                currentPieState.level2Target = null;
+            } else if (currentPieState.level === 2) {
+                currentPieState.level = 1;
+                currentPieState.level1Target = null;
+            }
+            renderDocPieChart();
+        });
+    }
 
-    document.getElementById('lineChartFilter').addEventListener('change', function(e) {
-        renderLineChartByTimeframe(e.target.value);
-    });
-    
-    const trainLineFilter = document.getElementById('trainLineChartFilter');
-    if (trainLineFilter) {
-        trainLineFilter.addEventListener('change', function(e) {
-            renderTrainLineChartByTimeframe(e.target.value);
+    const lineChartFilter = document.getElementById('lineChartFilter');
+    if(lineChartFilter) {
+        lineChartFilter.addEventListener('change', function(e) {
+            renderLineChartByTimeframe(e.target.value);
         });
     }
 
@@ -453,9 +420,12 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    document.getElementById('masterServiceMonthFilter').addEventListener('change', function(e) {
-        renderMasterServicePie(e.target.value);
-    });
+    const masterServiceMonthFilter = document.getElementById('masterServiceMonthFilter');
+    if(masterServiceMonthFilter) {
+        masterServiceMonthFilter.addEventListener('change', function(e) {
+            renderMasterServicePie(e.target.value);
+        });
+    }
 
     const expandBtn = document.getElementById('expandTitlesBtn');
     const closeBtn = document.getElementById('closeModalBtn');
@@ -980,334 +950,915 @@ function buildMonthHTML(year, month, isSmallScale) {
     return html;
 }
 
-// --- CORRECTED: Sparkline Chart Render Function ---
-function renderToggleableChart(canvasId, type, isInitialLoad = false) {
+function drawTrainBarChart(canvasId, labels, dataArr, customColors = null) {
     const canvas = document.getElementById(canvasId);
-    const container = canvas.parentElement;
-
-    if (!isInitialLoad) {
-        container.classList.add('chart-fade-out');
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    if (!labels || labels.length === 0) {
+        labels = ["No Data"];
+        dataArr = [0];
     }
 
-    setTimeout(() => {
-        const ctx = canvas.getContext('2d');
+    if (window[canvasId + 'Inst']) window[canvasId + 'Inst'].destroy();
+
+    let colors = customColors || labels.map((_, i) => pieColorPalette[(i + 2) % pieColorPalette.length]);
+
+    window[canvasId + 'Inst'] = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: colors, borderRadius: 4, borderWidth: 0, maxBarThickness: 30 }] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            layout: { padding: { top: 25, left: 10, right: 10, bottom: 0 } }, 
+            plugins: { legend: { display: false }, tooltip: sharedTooltipConfig, datalabels: { display: true, align: 'top', anchor: 'end', color: '#64748b', font: { weight: 'bold' } } },
+            scales: {
+                x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 9 }, color: '#64748b' }, border: {display: false} },
+                y: { grid: { color: '#f1f5f9', drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 }, color: '#94a3b8' }, beginAtZero: true, grace: '20%', border: {display: false} } 
+            }
+        }
+    });
+}
+
+function populateAllList(containerId, dataObj) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    
+    let sorted = Object.keys(dataObj).map(k => ({name: k, count: dataObj[k]})).sort((a,b) => b.count - a.count);
+    
+    if (sorted.length === 0) {
+        container.innerHTML = `<div style="color: #94a3b8; font-size: 0.7rem; padding: 10px;">No Data</div>`;
+        return;
+    }
+
+    sorted.forEach((item, index) => {
+        container.innerHTML += `
+            <div class="legend-item" style="animation-delay: ${index * 0.04}s;">
+                <div class="legend-text" title="${item.name}" style="flex: 1;">${index + 1}. ${item.name}</div>
+                <div class="legend-val">${item.count}</div>
+            </div>
+        `;
+    });
+}
+
+function populateModalList(dataObj) {
+    const container = document.getElementById('modal-title-list');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    let sorted = Object.keys(dataObj).map(k => ({name: k, count: dataObj[k]})).sort((a,b) => b.count - a.count);
+    
+    if (sorted.length === 0) {
+        container.innerHTML = `<div style="color: #94a3b8; font-size: 0.9rem; padding: 20px; text-align:center;">No Data Available</div>`;
+        return;
+    }
+
+    sorted.forEach((item, index) => {
+        container.innerHTML += `
+            <div class="legend-item" style="animation-delay: ${index * 0.02}s;">
+                <div class="legend-text" style="font-size: 0.85rem; padding-right: 15px;">
+                    <span style="color:#64748b; font-weight:800; margin-right:8px;">${index + 1}.</span> 
+                    ${item.name}
+                </div>
+                <div class="legend-val">${item.count}</div>
+            </div>
+        `;
+    });
+}
+
+function populateRemarksModal(detailsObj) {
+    const container = document.getElementById('modal-remarks-list');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    if (!detailsObj || Object.keys(detailsObj).length === 0) {
+        container.innerHTML = `<div style="color: #94a3b8; font-size: 0.9rem; padding: 20px; text-align:center;">No Data Available</div>`;
+        return;
+    }
+
+    for (let status in detailsObj) {
+        let items = detailsObj[status];
+        if(!items || items.length === 0) continue;
+
+        let color = status === 'WITH AAR' ? '#10b981' : (status === 'NO AAR' ? '#f43f5e' : '#64748b'); 
+
+        let html = `<h3 style="font-size: 0.9rem; color: ${color}; margin-top: 16px; margin-bottom: 8px; border-bottom: 2px solid #f1f5f9; padding-bottom: 6px;">${status} (${items.length})</h3>`;
         
-        if (toggleChartInstances[canvasId]) {
-            toggleChartInstances[canvasId].destroy();
+        items.forEach((item, index) => {
+            html += `
+                <div class="legend-item" style="padding: 12px 0; border-bottom: 1px solid #f8fafc; align-items: flex-start; animation-delay: ${index * 0.02}s;">
+                    <div class="legend-text" style="font-size: 0.8rem; white-space: normal; line-height: 1.4;">
+                        <span style="font-weight: 800; color: #1e293b;">${item.title}</span><br>
+                        <span style="font-size: 0.7rem; color: #64748b;">${item.agency} &nbsp;|&nbsp; ${item.dates}</span>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML += html;
+    }
+}
+
+function processVolunteersData(data) {
+    let totalOrgs = 0;
+    let totalIndividualsInOrgs = 0;
+    let standaloneIndividuals = 0;
+    let orgList = []; 
+
+    const tbody = document.querySelector('#volunteerTable tbody');
+    if(!tbody) return;
+    tbody.innerHTML = ''; 
+
+    data.forEach(row => {
+        let keys = Object.keys(row);
+        if (keys.length < 6) return;
+
+        let orgKey = keys.find(k => k.toUpperCase().includes('LIST OF ORGANIZATION')) || keys[5]; 
+        let countKey = keys.find(k => k.toUpperCase().includes('TOTAL COUNT VOLUNTEER')) || keys[6]; 
+        let individualKey = keys.find(k => k.toUpperCase().includes('INDIVIDUAL VOLUNTEER')) || keys[8]; 
+
+        let orgName = row[orgKey] ? row[orgKey].trim() : '';
+        let orgCount = Number(row[countKey]) || 0;
+        let standaloneCount = Number(row[individualKey]) || 0;
+
+        if (standaloneCount > 0) {
+            standaloneIndividuals += standaloneCount;
         }
 
-        const dataObj = toggleChartData[canvasId];
-        
-        // Rolling Window Logic: Take only the last 4 items to create the sparkline
-        const wSize = 4;
-        // Abbreviate the months (e.g. "JAN", "FEB") so they fit cleanly under the line
-        const sparkLabels = dataObj.labels.slice(-wSize).map(l => l.substring(0, 3));
-        const sparkData = dataObj.data.slice(-wSize);
-        const chartColor = Array.isArray(dataObj.color) ? dataObj.color[0] : dataObj.color;
+        if (orgName && orgCount > 0 && !orgName.toUpperCase().includes('TOTAL')) {
+            totalOrgs++; 
+            totalIndividualsInOrgs += orgCount; 
+            orgList.push({ name: orgName, count: orgCount });
+        }
+    });
 
-        toggleChartInstances[canvasId] = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: sparkLabels,
-                datasets: [{
-                    label: dataObj.labelText,
-                    data: sparkData,
-                    borderColor: chartColor,
-                    borderWidth: 3,
-                    pointBackgroundColor: '#ffffff',
-                    pointBorderColor: chartColor,
-                    pointBorderWidth: 2,
-                    pointRadius: 4,     // Slightly larger so points are easily visible
-                    pointHoverRadius: 6,
-                    tension: 0.4,       // Super smooth curves
-                    fill: false
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                // Added top padding to ensure floating data labels are not cut off
-                layout: { padding: { top: 25, bottom: 5, left: 10, right: 15 } },
-                plugins: {
-                    legend: { display: false },
-                    datalabels: { 
-                        display: true,     // Show exact numbers above the line
-                        color: chartColor, // Matches the line color
-                        align: 'top',
-                        anchor: 'bottom',
-                        offset: 6,
-                        font: { weight: '800', family: 'Inter', size: 10 }
-                    },
-                    tooltip: sharedTooltipConfig
-                },
-                scales: {
-                    x: { 
-                        display: true, // Show abbreviated months
-                        grid: { display: false, drawBorder: false },
-                        ticks: { font: { family: 'Inter', size: 9, weight: '700' }, color: '#94a3b8' },
-                        border: { display: false }
-                    },
-                    y: { 
-                        display: false, // Keep Y hidden to save horizontal space
-                        beginAtZero: true,
-                        grace: '30%'    // Adds invisible ceiling space so top numbers don't touch the roof
+    orgList.sort((a, b) => b.count - a.count);
+
+    const maxCount = orgList.length > 0 ? orgList[0].count : 1;
+
+    orgList.forEach((org, index) => {
+        let tr = document.createElement('tr');
+        tr.style.animationDelay = `${index * 0.03}s`;
+        
+        let tdName = document.createElement('td');
+        tdName.innerHTML = `
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span style="color:#94a3b8; font-weight:800; font-size:0.6rem;">${index + 1}</span>
+                <span>${org.name}</span>
+            </div>
+        `;
+        
+        let tdCount = document.createElement('td');
+        let percentage = (org.count / maxCount) * 100;
+        tdCount.innerHTML = `
+            <div style="display:flex; align-items:center; gap:12px; width:100%;">
+                <span style="width: 30px; font-weight:800;">${org.count.toLocaleString()}</span>
+                <div style="flex:1; height:6px; background:#f1f5f9; border-radius:3px; overflow:hidden;">
+                    <div style="height:100%; width:${percentage}%; background:linear-gradient(90deg, #06b6d4, #2563eb); border-radius:3px; transition: width 1s ease-in-out;"></div>
+                </div>
+            </div>
+        `; 
+        
+        tr.appendChild(tdName);
+        tr.appendChild(tdCount);
+        tbody.appendChild(tr);
+    });
+
+    let grandTotalHumans = totalIndividualsInOrgs + standaloneIndividuals;
+
+    document.getElementById('vol-orgs').innerText = totalOrgs.toLocaleString(); 
+    document.getElementById('vol-ind').innerText = grandTotalHumans.toLocaleString();
+}
+
+function processDocumentsData(data) {
+    let uniqueMonths = new Set();
+    
+    let dynamicKPIs = {
+        req: 0, action: 0, catered: 0, notCatered: 0, cancelled: 0, 
+        invAttended: 0, invNotAttended: 0, others: 0, noAction: 0
+    };
+
+    let explicitNoAction = 0;
+    if (rawDocumentsData && rawDocumentsData.length > 0) {
+        for (let i = 0; i < Math.min(5, rawDocumentsData.length); i++) {
+            let row = rawDocumentsData[i];
+            let keys = Object.keys(row);
+            let targetKey = keys.find(k => k.trim().toUpperCase() === 'TOTAL NO ACTION' || k.trim().toUpperCase() === 'COLUMN I');
+            if (targetKey && row[targetKey] !== undefined && String(row[targetKey]).trim() !== '') {
+                let parsedVal = parseInt(String(row[targetKey]).replace(/,/g, '').trim());
+                if (!isNaN(parsedVal)) {
+                    explicitNoAction = parsedVal;
+                    break;
+                }
+            }
+        }
+    }
+    
+    dynamicKPIs.noAction = explicitNoAction;
+
+    data.forEach(row => {
+        let keys = Object.keys(row);
+
+        let rawNature = row['Nature of Letter'] || row['NATURE OF LETTER'] || row['Column P'] || row['COLUMN P'] || '';
+        let rawCategory = row['Category of Writing Party'] || row['CATEGORY OF WRITING PARTY'] || row['Column O'] || row['COLUMN O'] || '';
+        let rawOffice = row['Received From (OFFICE)'] || row['RECEIVED FROM (OFFICE)'] || row['Received From Office'] || row['Column N'] || row['COLUMN N'] || '';
+        let rawActionTaken = row['Actions Taken'] || row['ACTIONS TAKEN'] || row['Column Q'] || row['COLUMN Q'] || '';
+        let dateStr = row['Column M'] || row['COLUMN M'] || row['Date Received'] || row['DATE RECEIVED'] || row[keys[12]] || '';
+        
+        let isSummaryRow = (row['TOTAL ACTION TAKEN (OVERALL)'] !== undefined && String(row['TOTAL ACTION TAKEN (OVERALL)']).trim() !== '') || 
+                           (row['TOTAL REQUEST CATERED'] !== undefined && String(row['TOTAL REQUEST CATERED']).trim() !== '');
+                           
+        let isBlankRow = (!rawNature || String(rawNature).trim() === '') && 
+                         (!rawCategory || String(rawCategory).trim() === '') &&
+                         (!dateStr || String(dateStr).trim() === '');
+
+        if (!isSummaryRow && !isBlankRow) {
+            
+            dynamicKPIs.req++;
+            let actionTxt = (rawActionTaken || '').toString().trim().toLowerCase();
+            let actionActuallyTaken = false;
+            
+            if (actionTxt.includes('no action')) {
+                dynamicKPIs.noAction++;
+            } 
+            else if (actionTxt !== '' && actionTxt !== 'null') {
+                actionActuallyTaken = true;
+                dynamicKPIs.action++;
+                
+                if (actionTxt.includes('not catered')) {
+                    dynamicKPIs.notCatered++;
+                } else if (actionTxt.includes('catered') || actionTxt === 'catered') {
+                    dynamicKPIs.catered++;
+                } else if (actionTxt.includes('cancelled')) {
+                    dynamicKPIs.cancelled++;
+                } else if (actionTxt.includes('not attended')) {
+                    dynamicKPIs.invNotAttended++;
+                } else if (actionTxt.includes('attended')) {
+                    dynamicKPIs.invAttended++;
+                } else {
+                    dynamicKPIs.others++;
+                }
+            } 
+
+            let mappedNature = rawNature.trim();
+            let upperNature = mappedNature.toUpperCase();
+            
+            if (upperNature.includes('OFFER') || upperNature.includes('PROPOSAL')) {
+                mappedNature = 'Offer/Proposal';
+            } else if (upperNature.includes('REQUEST')) {
+                mappedNature = 'Request';
+            } else if (upperNature.includes('INVITATION')) {
+                mappedNature = 'Invitation';
+            } else if (upperNature.includes('FYI') || upperNature.includes('INFORMATION')) {
+                mappedNature = 'For Information';
+            } else {
+                mappedNature = 'Uncategorized';
+            }
+            
+            let subCategory = rawCategory.trim() !== '' ? rawCategory.trim() : 'Uncategorized';
+            let specificOffice = rawOffice.trim() !== '' ? rawOffice.trim() : 'Unspecified Office';
+            
+            let monthYearKey = 'all';
+            
+            if (dateStr && String(dateStr).trim() !== '') {
+                let parsedDate = parseCustomDate(dateStr);
+                if (parsedDate) {
+                    globalLineData.push({ dateObj: parsedDate, count: 1, timestamp: parsedDate.getTime() });
+                    let m = parsedDate.getMonth() + 1;
+                    let y = parsedDate.getFullYear();
+                    monthYearKey = `${y}-${m.toString().padStart(2, '0')}`;
+                    uniqueMonths.add(monthYearKey);
+                }
+            }
+
+            globalDocRecords.push({
+                dateKey: monthYearKey,
+                level1: mappedNature,     
+                level2: subCategory,      
+                level3: specificOffice,
+                hasActionTaken: actionActuallyTaken,
+                count: 1 
+            });
+        }
+    });
+
+    originalKPITotals = {
+        req: dynamicKPIs.req, 
+        action: dynamicKPIs.action, 
+        catered: dynamicKPIs.catered,     
+        notCatered: dynamicKPIs.notCatered, 
+        cancelled: dynamicKPIs.cancelled,     
+        invAttended: dynamicKPIs.invAttended, 
+        invNotAttended: dynamicKPIs.invNotAttended, 
+        others: dynamicKPIs.others,
+        noAction: dynamicKPIs.noAction 
+    };
+
+    let monthSelect = document.getElementById('docPieMonthFilter');
+    if (monthSelect) {
+        monthSelect.innerHTML = '<option value="all">All Time</option>';
+        let sortedMonths = Array.from(uniqueMonths).sort().reverse(); 
+        sortedMonths.forEach(my => {
+            if(my === 'all') return;
+            let [y, m] = my.split('-');
+            let dateObj = new Date(y, m - 1);
+            let label = dateObj.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+            let opt = document.createElement('option');
+            opt.value = my;
+            opt.innerText = label;
+            monthSelect.appendChild(opt);
+        });
+    }
+
+    renderDocPieChart();
+    renderLineChartByTimeframe('daily');
+}
+
+function updateTrackingKPIDisplays() {
+    const cardReqCount = document.getElementById('doc-kpi-request').parentElement; 
+    const cardAction = document.getElementById('doc-kpi-action').parentElement; 
+    const cardCatered = document.getElementById('doc-kpi-catered').parentElement; 
+    const cardInvAtt = document.getElementById('doc-kpi-inv-att').parentElement; 
+    const cardNotCatered = document.getElementById('doc-kpi-not-catered').parentElement; 
+    const cardOthers = document.getElementById('doc-kpi-others').parentElement; 
+    const cardInvNot = document.getElementById('doc-kpi-inv-not').parentElement; 
+    const cardCancelled = document.getElementById('doc-kpi-cancelled').parentElement; 
+    const cardNoAction = document.getElementById('doc-kpi-no-action').parentElement; 
+
+    cardReqCount.style.display = '';
+
+    if (currentPieState.level === 1) {
+        [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => card.style.display = '');
+        
+        document.getElementById('doc-kpi-request').innerText = originalKPITotals.req;
+        document.getElementById('doc-kpi-action').innerText = originalKPITotals.action;
+        document.getElementById('doc-kpi-catered').innerText = originalKPITotals.catered;
+        document.getElementById('doc-kpi-inv-att').innerText = originalKPITotals.invAttended;
+        document.getElementById('doc-kpi-not-catered').innerText = originalKPITotals.notCatered;
+        document.getElementById('doc-kpi-others').innerText = originalKPITotals.others;
+        document.getElementById('doc-kpi-inv-not').innerText = originalKPITotals.invNotAttended;
+        document.getElementById('doc-kpi-cancelled').innerText = originalKPITotals.cancelled;
+        document.getElementById('doc-kpi-no-action').innerText = originalKPITotals.noAction;
+    } else {
+        let dynTotalRequestsMatched = 0;
+        let dynActionsActuallyTakenMatched = 0;
+        let targetCategory = currentPieState.level1Target;
+
+        globalDocRecords.forEach(record => {
+            if (currentPieState.filterKey === 'all' || record.dateKey === currentPieState.filterKey) {
+                if (record.level1 === targetCategory) {
+                    dynTotalRequestsMatched++;
+                    if (record.hasActionTaken) {
+                        dynActionsActuallyTakenMatched++;
                     }
                 }
             }
         });
 
-        if (!isInitialLoad) {
-            setTimeout(() => {
-                container.classList.remove('chart-fade-out');
-            }, 50); 
-        }
+        document.getElementById('doc-kpi-request').innerText = dynTotalRequestsMatched;
+        document.getElementById('doc-kpi-action').innerText = dynActionsActuallyTakenMatched;
 
-    }, isInitialLoad ? 0 : 300); 
-}
-
-function renderMasterServicePie(monthFilter) {
-    const dataArr = operationsMonthlyCache[monthFilter] || new Array(10).fill(0);
-
-    let filteredLabels = [];
-    let filteredData = [];
-    let mappedColors = [];
-
-    for(let i=0; i<10; i++) {
-        if(dataArr[i] > 0) {
-            filteredLabels.push(serviceCategoryLabels[i]);
-            filteredData.push(dataArr[i]);
-            mappedColors.push(pieColorPalette[i % pieColorPalette.length]);
+        [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => card.style.display = 'none');
+        
+        if (targetCategory === 'Request') {
+            cardCatered.style.display = '';
+            cardNotCatered.style.display = '';
+            cardCancelled.style.display = ''; 
+        } else if (targetCategory === 'Invitation') {
+            cardInvAtt.style.display = '';
+            cardInvNot.style.display = '';
+        } else if (targetCategory === 'Offer/Proposal' || targetCategory === 'For Information') {
+            cardAction.style.display = ''; 
+        } else {
+            cardAction.style.display = '';
         }
     }
+}
 
-    let combined = filteredLabels.map((l, i) => ({l, d: filteredData[i], c: mappedColors[i]}));
-    combined.sort((a,b) => b.d - a.d);
+function renderDocPieChart() {
+    let sourceMap = {};
+    let hasData = false;
 
-    filteredLabels = combined.map(x => x.l);
-    filteredData = combined.map(x => x.d);
-    mappedColors = combined.map(x => x.c);
+    globalDocRecords.forEach(record => {
+        if (currentPieState.filterKey === 'all' || record.dateKey === currentPieState.filterKey) {
+            if (currentPieState.level === 1) {
+                sourceMap[record.level1] = (sourceMap[record.level1] || 0) + record.count;
+                hasData = true;
+            } 
+            else if (currentPieState.level === 2 && record.level1 === currentPieState.level1Target) {
+                sourceMap[record.level2] = (sourceMap[record.level2] || 0) + record.count;
+                hasData = true;
+            } 
+            else if (currentPieState.level === 3 && record.level1 === currentPieState.level1Target && record.level2 === currentPieState.level2Target) {
+                sourceMap[record.level3] = (sourceMap[record.level3] || 0) + record.count;
+                hasData = true;
+            }
+        }
+    });
 
-    const ctx = document.getElementById('masterServicePieChart').getContext('2d');
-    
-    if(masterServicePieInstance) {
-        masterServicePieInstance.data.labels = filteredLabels;
-        masterServicePieInstance.data.datasets[0].data = filteredData;
-        masterServicePieInstance.data.datasets[0].backgroundColor = mappedColors;
-        masterServicePieInstance.update();
+    let sortedSources = [];
+    if (!hasData) {
+        sortedSources = [{ label: 'No Data Found', value: 1 }];
     } else {
-        masterServicePieInstance = new Chart(ctx, {
-            type: 'doughnut', 
-            data: {
-                labels: filteredLabels,
-                datasets: [{
-                    data: filteredData,
-                    backgroundColor: mappedColors,
-                    borderWidth: 0, 
-                    borderRadius: 8, // Creates the rounded corners
-                    spacing: 5,      // Creates the gaps between slices
-                    hoverOffset: 15  // The interactive pop-out
-                }]
+        sortedSources = Object.keys(sourceMap).map(key => ({ label: key, value: sourceMap[key] }));
+        sortedSources.sort((a, b) => b.value - a.value);
+    }
+
+    let labels = sortedSources.map(item => item.label);
+    let dataValues = sortedSources.map(item => item.value);
+
+    const titleEl = document.getElementById('pieChartTitle');
+    const backBtn = document.getElementById('pieBackButton');
+
+    if (currentPieState.level === 1) {
+        titleEl.innerText = 'NATURE OF LETTER';
+        if(backBtn) backBtn.style.display = 'none';
+    } 
+    else if (currentPieState.level === 2) {
+        titleEl.innerHTML = `BREAKDOWN: ${currentPieState.level1Target.toUpperCase()} <span style="color: #64748b; font-weight: 600; font-size: 0.65rem; opacity: 0.7; letter-spacing: 0.5px;">(CATEGORY OF REQUESTING/ WRITING PARTY)</span>`;
+        if(backBtn) backBtn.style.display = 'block';
+    } 
+    else if (currentPieState.level === 3) {
+        titleEl.innerHTML = `BREAKDOWN: ${currentPieState.level2Target.toUpperCase()} <span style="color: #64748b; font-weight: 600; font-size: 0.65rem; opacity: 0.7; letter-spacing: 0.5px;">(SPECIFIC OFFICE / ENTITY)</span>`;
+        if(backBtn) backBtn.style.display = 'block';
+    }
+
+    updateTrackingKPIDisplays();
+
+    if (docPieChartInstance) {
+        let mappedColors = labels.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
+        if (!hasData) mappedColors = ['#e2e8f0'];
+
+        docPieChartInstance.data.labels = labels;
+        docPieChartInstance.data.datasets[0].data = dataValues;
+        docPieChartInstance.data.datasets[0].backgroundColor = mappedColors;
+        
+        docPieChartInstance.update();
+        updateCustomLegend(labels, dataValues, !hasData);
+    } else {
+        drawInteractiveDonutChart('docSourcePieChart', labels, dataValues, !hasData);
+    }
+}
+
+function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = false) {
+    const canvas = document.getElementById(canvasId);
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    if(docPieChartInstance) docPieChartInstance.destroy();
+    
+    let mappedColors = labels.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
+    if (isEmptyState) mappedColors = ['#e2e8f0']; 
+    
+    docPieChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: { 
+            labels: labels, 
+            datasets: [{ 
+                data: dataArr, 
+                backgroundColor: mappedColors, 
+                borderWidth: 0, 
+                borderRadius: 8, 
+                spacing: 5,      
+                hoverOffset: isEmptyState ? 0 : 15 
+            }] 
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false, 
+            cutout: '55%', 
+            layout: { padding: 15 }, 
+            animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' },
+            hover: { mode: 'index', animationDuration: 300 }, 
+            onClick: (event, elements, chart) => {
+                if (chart.data.labels.length === 1 && chart.data.labels[0] === 'No Data Found') return;
+                
+                if (elements[0]) {
+                    const index = elements[0].index;
+                    const label = chart.data.labels[index];
+                    
+                    if (currentPieState.level === 1) {
+                        currentPieState.level = 2;
+                        currentPieState.level1Target = label;
+                        renderDocPieChart();
+                    } else if (currentPieState.level === 2) {
+                        currentPieState.level = 3;
+                        currentPieState.level2Target = label;
+                        renderDocPieChart();
+                    }
+                }
             },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                cutout: '55%', 
-                layout: { padding: 15 }, 
-                animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, 
-                hover: { mode: 'index', animationDuration: 300 }, 
-                plugins: {
-                    legend: { display: false },
-                    tooltip: sharedTooltipConfig,
-                    datalabels: {
-                        color: '#ffffff', font: { weight: '800', family: 'Inter', size: 10 },
-                        formatter: (value, context) => {
-                            let sum = context.chart.data.datasets[0].data.reduce((a,b)=>a+b,0);
-                            let p = (value/sum*100);
-                            return p >= 5 ? p.toFixed(1)+'%' : '';
+            plugins: {
+                legend: { display: false },
+                datalabels: {
+                    color: (context) => (context.chart.data.labels.length === 1 && context.chart.data.labels[0] === 'No Data Found') ? '#94a3b8' : '#ffffff', 
+                    font: (context) => ({ weight: '800', family: 'Inter', size: (context.chart.data.labels.length === 1 && context.chart.data.labels[0] === 'No Data Found') ? 12 : 9 }), 
+                    anchor: 'center',
+                    align: 'center',
+                    formatter: (value, context) => { 
+                        if (context.chart.data.labels.length === 1 && context.chart.data.labels[0] === 'No Data Found') return 'No Data';
+                        
+                        let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); 
+                        if (sum === 0) return ''; 
+                        
+                        let pctStr = ((value * 100) / sum).toFixed(1);
+                        let pctFloat = parseFloat(pctStr);
+                        
+                        return pctFloat >= 8 ? pctStr + '%' : ''; 
+                    } 
+                },
+                tooltip: {
+                    filter: function(tooltipItem) { return tooltipItem.label !== 'No Data Found'; },
+                    ...sharedTooltipConfig, 
+                    callbacks: {
+                        label: function(context) {
+                            let suffix = '';
+                            if (currentPieState.level < 3) {
+                                suffix = ' (Click to zoom)';
+                            }
+                            
+                            let activeNature = (currentPieState.level === 1) ? context.label : currentPieState.level1Target;
+                            let unitStr = "Requests"; 
+                            
+                            if (activeNature === 'Invitation') unitStr = 'Invitations';
+                            else if (activeNature === 'For Information') unitStr = 'Information';
+                            else if (activeNature === 'Offer/Proposal') unitStr = 'Offers/Proposals';
+                            
+                            return `${context.raw} ${unitStr}${suffix}`;
                         }
                     }
                 }
             }
-        });
+        }
+    });
+    updateCustomLegend(labels, dataArr, isEmptyState);
+}
+
+function updateCustomLegend(labels, data, isEmptyState = false) {
+    const legendContainer = document.getElementById('customLegend');
+    if(!legendContainer) return;
+    legendContainer.innerHTML = '';
+    labels.forEach((label, index) => {
+        let color = isEmptyState ? '#e2e8f0' : pieColorPalette[index % pieColorPalette.length];
+        let val = isEmptyState ? '-' : data[index];
+        legendContainer.innerHTML += `
+            <div class="legend-item" style="animation-delay: ${index * 0.04}s;">
+                <div class="legend-color" style="background-color: ${color}"></div>
+                <div class="legend-text" title="${label}">${label}</div>
+                <div class="legend-val">${val}</div>
+            </div>
+        `;
+    });
+}
+
+function renderLineChartByTimeframe(timeframe) {
+    let groupedObj = {};
+    let sortedData = [...globalLineData].sort((a, b) => a.timestamp - b.timestamp);
+
+    sortedData.forEach(item => {
+        let key = "";
+        if (timeframe === 'monthly') {
+            key = item.dateObj.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+        } else if (timeframe === 'yearly') {
+            key = item.dateObj.getFullYear().toString();
+        } else { 
+            key = item.dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+        groupedObj[key] = (groupedObj[key] || 0) + item.count;
+    });
+
+    const labels = Object.keys(groupedObj);
+    const dataValues = Object.values(groupedObj);
+    
+    if(labels.length === 0) {
+        drawLineChart('docDateLineChart', ['No Date Data Found'], [0]);
+    } else {
+        drawLineChart('docDateLineChart', labels, dataValues);
+    }
+}
+
+function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = false) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+
+    let current = 0;
+    let previous = 0;
+    let currentLabel = 'Current Month';
+    let prevLabel = 'Previous Month';
+
+    if (dataArray.length >= 2 && labelsArray.length >= 2) {
+        current = dataArray[dataArray.length - 1];
+        previous = dataArray[dataArray.length - 2];
+        currentLabel = labelsArray[labelsArray.length - 1];
+        prevLabel = labelsArray[labelsArray.length - 2];
+    } else if (dataArray.length === 1) {
+        current = dataArray[0];
+        currentLabel = labelsArray[0];
     }
 
-    const leg = document.getElementById('masterServiceLegend');
-    leg.innerHTML = '';
-    
-    filteredLabels.forEach((lbl, i) => {
-        let item = document.createElement('div');
-        item.className = 'legend-item interactive-legend-item';
-        item.style.padding = '8px 0';
-        item.style.animationDelay = `${i * 0.04}s`;
+    const diff = current - previous;
+    let trendHtml = '';
+    let bgColor = '#64748b'; 
+
+    if (dataArray.length < 2) {
+        trendHtml = `<span>No prior data</span>`;
+        el.style.backgroundColor = bgColor;
+        el.style.padding = '10px 16px'; 
+        el.innerHTML = `<div style="font-weight:600; font-size:0.75rem; color:#fff;">${trendHtml}</div>`;
+        return;
+    }
+
+    let symbol = '—';
+    let sign = diff > 0 ? '+' : '';
+
+    const arrowUp = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>`;
+    const arrowDown = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"></path></svg>`;
+
+    if (diff > 0) {
+        symbol = arrowUp;
+        bgColor = inverseColors ? '#ef4444' : '#10b981'; 
+    } else if (diff < 0) {
+        symbol = arrowDown;
+        bgColor = inverseColors ? '#10b981' : '#ef4444'; 
+        sign = '-'; 
+    }
+
+    let diffStr = diff > 0 ? `+${diff}` : diff;
+    let pct = previous > 0 ? Math.round((Math.abs(diff) / previous) * 100) : (diff > 0 ? 100 : 0);
+
+    let tooltipHtml = `
+        <div class="custom-tooltip">
+            <div style="color:#94a3b8; font-size:0.55rem; text-transform:uppercase; margin-bottom:6px; letter-spacing:0.5px;">Monthly Comparison</div>
+            <div style="display:flex; justify-content:space-between; gap:20px; margin-bottom:2px;"><span>${currentLabel}:</span> <strong>${current}</strong></div>
+            <div style="display:flex; justify-content:space-between; gap:20px; margin-bottom:2px;"><span>${prevLabel}:</span> <strong>${previous}</strong></div>
+            <div style="border-top:1px solid #334155; margin-top:6px; padding-top:6px; display:flex; justify-content:space-between; gap:20px;"><span>Difference:</span> <strong>${diffStr}</strong></div>
+        </div>
+    `;
+
+    el.style.backgroundColor = bgColor;
+    el.style.padding = '10px 16px'; 
+    el.style.color = '#ffffff';
+
+    el.innerHTML = `
+        <div class="has-tooltip" style="display:flex; width:100%; justify-content:space-between; align-items:center; cursor:pointer;">
+            <span style="font-weight:600; font-size:0.75rem;">${Math.abs(diff)} (${sign}${pct}%)</span>
+            <span style="display:flex; align-items:center;">${symbol}</span>
+            ${tooltipHtml}
+        </div>
+    `;
+}
+
+// --- CORRECTED: Bulletproof render function for the rolling 3-Month Horizontal Bars ---
+function renderToggleableChart(canvasId, type, isInitialLoad = false) {
+    try {
+        const canvas = document.getElementById(canvasId);
+        if(!canvas) return;
         
-        item.innerHTML = `
-            <div class="legend-color" style="background-color: ${mappedColors[i]};"></div>
-            <div class="legend-text" title="${lbl}">${lbl}</div>
-            <div class="legend-val">${filteredData[i]}</div>
-        `;
-        
-        item.onclick = function() {
-            if (masterServicePieInstance) {
-                masterServicePieInstance.toggleDataVisibility(i);
-                masterServicePieInstance.update();
-                
-                if (masterServicePieInstance.getDataVisibility(i)) {
-                    item.classList.remove('hidden-slice');
-                } else {
-                    item.classList.add('hidden-slice');
-                }
+        const container = canvas.parentElement;
+
+        if (!isInitialLoad) {
+            container.classList.add('chart-fade-out');
+        }
+
+        setTimeout(() => {
+            const ctx = canvas.getContext('2d');
+            
+            if (toggleChartInstances[canvasId]) {
+                toggleChartInstances[canvasId].destroy();
             }
-        };
-        
-        leg.appendChild(item);
-    });
+
+            const dataObj = toggleChartData[canvasId];
+            if(!dataObj || !dataObj.labels) return;
+            
+            // Rolling Window Logic: Take only the last 3 items for the small bar chart
+            const wSize = 3;
+            // Shorten month labels to 3 letters (e.g. "JAN") to save space on Y axis
+            const recentLabels = dataObj.labels.slice(-wSize).map(l => String(l).substring(0, 3));
+            const recentData = dataObj.data.slice(-wSize);
+            
+            let chartColor = dataObj.color;
+            if (Array.isArray(chartColor)) chartColor = chartColor[0];
+
+            toggleChartInstances[canvasId] = new Chart(ctx, {
+                type: 'bar', // Clean horizontal line bars
+                data: {
+                    labels: recentLabels,
+                    datasets: [{
+                        label: dataObj.labelText,
+                        data: recentData,
+                        backgroundColor: chartColor,
+                        borderRadius: 4,     // Smooth corners
+                        borderWidth: 0,      // No pixelated stroke
+                        barThickness: 12,    // Fixed thickness so they don't get squished
+                        maxBarThickness: 15
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', // Makes it horizontal
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: { top: 5, right: 25, bottom: 0, left: 0 } }, // Padded right for labels
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: { 
+                            display: true,     
+                            color: '#1e293b', 
+                            align: 'right',
+                            anchor: 'end',
+                            font: { weight: '800', family: 'Inter', size: 10 }
+                        },
+                        tooltip: sharedTooltipConfig
+                    },
+                    scales: {
+                        x: { 
+                            display: false, // Hide bottom axis
+                            beginAtZero: true,
+                            grace: '15%'    // Buffer so data labels don't clip
+                        },
+                        y: { 
+                            display: true, // Show the 3 month names
+                            grid: { display: false, drawBorder: false },
+                            ticks: { font: { family: 'Inter', size: 9, weight: '700' }, color: '#64748b' },
+                            border: { display: false }
+                        }
+                    }
+                }
+            });
+
+            if (!isInitialLoad) {
+                setTimeout(() => {
+                    container.classList.remove('chart-fade-out');
+                }, 50); 
+            }
+
+        }, isInitialLoad ? 0 : 300); 
+    } catch (e) {
+        console.error("Chart Render Failed for", canvasId, e);
+    }
 }
 
 function processOperationsData(data) {
-    operationsMonthlyCache['all'] = new Array(10).fill(0);
-    let monthSet = new Set();
-    const monthlyAgg = {};
-    
-    data.forEach(row => {
-        if(row['MONTH']) { 
-            let m = row['MONTH'].trim().toUpperCase();
-            if(!monthlyAgg[m]) {
-                monthlyAgg[m] = { vehicular:0, roadside:0, patient:0, medical:0, standby:0, others:0, clearing:0, firetruck:0, hauling:0, ledvan:0, grandTotal:0, total1st:0, total2nd:0, total3rd:0, totalOutside:0 };
+    try {
+        operationsMonthlyCache['all'] = new Array(10).fill(0);
+        let monthSet = new Set();
+        const monthlyAgg = {};
+        
+        data.forEach(row => {
+            if(row['MONTH']) { 
+                let m = String(row['MONTH']).trim().toUpperCase();
+                if(!monthlyAgg[m]) {
+                    monthlyAgg[m] = { vehicular:0, roadside:0, patient:0, medical:0, standby:0, others:0, clearing:0, firetruck:0, hauling:0, ledvan:0, grandTotal:0, total1st:0, total2nd:0, total3rd:0, totalOutside:0 };
+                }
+                
+                monthlyAgg[m].vehicular += Number(row['VEHICULAR ACCIDENT']) || Number(row['TRAUMA (ROADCRASH INCIDENT)']) || 0;
+                monthlyAgg[m].roadside += Number(row['ROADSIDE ASSISTANCE']) || 0;
+                monthlyAgg[m].patient += Number(row['PATIENT TRANSPORT']) || 0;
+                monthlyAgg[m].medical += Number(row['MEDICAL']) || 0;
+                monthlyAgg[m].standby += Number(row['STANDBY MEDIC, MARSHAL & VIP']) || 0;
+                monthlyAgg[m].others += Number(row['OTHERS']) || 0;
+                monthlyAgg[m].clearing += Number(row['CLEARING OPERATIONS']) || 0;
+                monthlyAgg[m].firetruck += Number(row['FIRETRUCK']) || 0;
+                monthlyAgg[m].hauling += Number(row['HAULING']) || 0;
+                monthlyAgg[m].ledvan += Number(row['LEDVAN TRUCK']) || 0;
+
+                for (let key in row) {
+                    let upperKey = key.toUpperCase();
+                    if (upperKey.includes("1ST DISTRICT")) { monthlyAgg[m].total1st += Number(row[key]) || 0; }
+                    if (upperKey.includes("2ND DISTRICT")) { monthlyAgg[m].total2nd += Number(row[key]) || 0; }
+                    if (upperKey.includes("3RD DISTRICT")) { monthlyAgg[m].total3rd += Number(row[key]) || 0; }
+                    if (upperKey.includes("OUTSIDE")) { monthlyAgg[m].totalOutside += Number(row[key]) || 0; }
+                    if (upperKey === "GRAND TOTAL") { monthlyAgg[m].grandTotal += Number(row[key]) || 0; }
+                }
             }
-            
-            monthlyAgg[m].vehicular += Number(row['VEHICULAR ACCIDENT']) || Number(row['TRAUMA (ROADCRASH INCIDENT)']) || 0;
-            monthlyAgg[m].roadside += Number(row['ROADSIDE ASSISTANCE']) || 0;
-            monthlyAgg[m].patient += Number(row['PATIENT TRANSPORT']) || 0;
-            monthlyAgg[m].medical += Number(row['MEDICAL']) || 0;
-            monthlyAgg[m].standby += Number(row['STANDBY MEDIC, MARSHAL & VIP']) || 0;
-            monthlyAgg[m].others += Number(row['OTHERS']) || 0;
-            monthlyAgg[m].clearing += Number(row['CLEARING OPERATIONS']) || 0;
-            monthlyAgg[m].firetruck += Number(row['FIRETRUCK']) || 0;
-            monthlyAgg[m].hauling += Number(row['HAULING']) || 0;
-            monthlyAgg[m].ledvan += Number(row['LEDVAN TRUCK']) || 0;
-
-            for (let key in row) {
-                let upperKey = key.toUpperCase();
-                if (upperKey.includes("1ST DISTRICT")) { monthlyAgg[m].total1st += Number(row[key]) || 0; }
-                if (upperKey.includes("2ND DISTRICT")) { monthlyAgg[m].total2nd += Number(row[key]) || 0; }
-                if (upperKey.includes("3RD DISTRICT")) { monthlyAgg[m].total3rd += Number(row[key]) || 0; }
-                if (upperKey.includes("OUTSIDE")) { monthlyAgg[m].totalOutside += Number(row[key]) || 0; }
-                if (upperKey === "GRAND TOTAL") { monthlyAgg[m].grandTotal += Number(row[key]) || 0; }
-            }
-        }
-    });
-
-    const labels = [];
-    const vehicular = [], roadside = [], patient = [], medical = [], standby = [];
-    const others = [], clearing = [], firetruck = [], hauling = [], ledvan = [];
-    const monthlyTotalServices = [];
-
-    let total1st = 0, total2nd = 0, total3rd = 0, totalOutside = 0;
-    let overallGrandTotal = 0;
-
-    const monthOrder = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
-    
-    monthOrder.forEach(m => {
-        if(monthlyAgg[m]) {
-            labels.push(m);
-            monthSet.add(m);
-            
-            operationsMonthlyCache[m] = [
-                monthlyAgg[m].vehicular, monthlyAgg[m].roadside, monthlyAgg[m].patient,
-                monthlyAgg[m].medical, monthlyAgg[m].standby, monthlyAgg[m].others,
-                monthlyAgg[m].clearing, monthlyAgg[m].firetruck, monthlyAgg[m].hauling, monthlyAgg[m].ledvan
-            ];
-
-            vehicular.push(monthlyAgg[m].vehicular);
-            roadside.push(monthlyAgg[m].roadside);
-            patient.push(monthlyAgg[m].patient);
-            medical.push(monthlyAgg[m].medical);
-            standby.push(monthlyAgg[m].standby);
-            others.push(monthlyAgg[m].others);
-            clearing.push(monthlyAgg[m].clearing);
-            firetruck.push(monthlyAgg[m].firetruck);
-            hauling.push(monthlyAgg[m].hauling);
-            ledvan.push(monthlyAgg[m].ledvan);
-
-            monthlyTotalServices.push(monthlyAgg[m].grandTotal);
-            overallGrandTotal += monthlyAgg[m].grandTotal;
-            
-            total1st += monthlyAgg[m].total1st;
-            total2nd += monthlyAgg[m].total2nd;
-            total3rd += monthlyAgg[m].total3rd;
-            totalOutside += monthlyAgg[m].totalOutside;
-            
-            for(let i=0; i<10; i++) {
-                operationsMonthlyCache['all'][i] += operationsMonthlyCache[m][i];
-            }
-        }
-    });
-
-    let referenceTotal = overallGrandTotal > 0 ? overallGrandTotal : (total1st + total2nd + total3rd + totalOutside);
-
-    document.getElementById('kpi-1st').innerText = total1st;
-    document.getElementById('pct-1st').innerText = referenceTotal > 0 ? ((total1st / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
-
-    document.getElementById('kpi-2nd').innerText = total2nd;
-    document.getElementById('pct-2nd').innerText = referenceTotal > 0 ? ((total2nd / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
-
-    document.getElementById('kpi-3rd').innerText = total3rd;
-    document.getElementById('pct-3rd').innerText = referenceTotal > 0 ? ((total3rd / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
-
-    document.getElementById('kpi-outside').innerText = totalOutside;
-    document.getElementById('pct-outside').innerText = referenceTotal > 0 ? ((totalOutside / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
-
-    renderTrendFooter('trend-vehicular', vehicular, labels, true); 
-    renderTrendFooter('trend-roadside', roadside, labels, false); 
-    renderTrendFooter('trend-patient', patient, labels, true);      
-    renderTrendFooter('trend-medical', medical, labels, true);                
-    renderTrendFooter('trend-standby', standby, labels, false); 
-    
-    renderTrendFooter('trend-others', others, labels, false);
-    renderTrendFooter('trend-clearing', clearing, labels, false);
-    renderTrendFooter('trend-firetruck', firetruck, labels, false);
-    renderTrendFooter('trend-hauling', hauling, labels, false);
-    renderTrendFooter('trend-ledvan', ledvan, labels, false);
-
-    drawDonutChart('monthlyPieChart', labels, monthlyTotalServices, overallGrandTotal);
-    
-    const barColors = labels.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
-
-    // Store FULL 12-month data here for the modal
-    toggleChartData['vehicularChart'] = { labels, labelText: 'TRAUMA (ROADCRASH INCIDENT)', data: vehicular, color: barColors[0] };
-    toggleChartData['roadsideChart'] = { labels, labelText: 'Roadside Assistance', data: roadside, color: barColors[1] };
-    toggleChartData['patientChart'] = { labels, labelText: 'Patient Transport', data: patient, color: barColors[2] };
-    toggleChartData['medicalChart'] = { labels, labelText: 'MEDICAL EMERGENCIES', data: medical, color: barColors[3] };
-    toggleChartData['standbyChart'] = { labels, labelText: 'Standby Medic & VIP', data: standby, color: barColors[4] };
-    
-    toggleChartData['othersChart'] = { labels, labelText: 'SUPPORT SERVICES', data: others, color: barColors[5] };
-    toggleChartData['clearingChart'] = { labels, labelText: 'Clearing Operations', data: clearing, color: barColors[6] };
-    toggleChartData['firetruckChart'] = { labels, labelText: 'Firetruck', data: firetruck, color: barColors[7] };
-    toggleChartData['haulingChart'] = { labels, labelText: 'Hauling', data: hauling, color: barColors[8] };
-    toggleChartData['ledvanChart'] = { labels, labelText: 'Ledvan Truck', data: ledvan, color: barColors[9] };
-
-    // Render the Sparklines
-    ['vehicularChart', 'roadsideChart', 'patientChart', 'medicalChart', 'standbyChart', 'othersChart', 'clearingChart', 'firetruckChart', 'haulingChart', 'ledvanChart'].forEach(id => {
-        renderToggleableChart(id, 'line', true); 
-    });
-
-    const drop = document.getElementById('masterServiceMonthFilter');
-    if(drop) {
-        drop.innerHTML = '<option value="all">All Time</option>';
-        Array.from(monthSet).forEach(m => {
-            let opt = document.createElement('option');
-            opt.value = m; opt.innerText = m;
-            drop.appendChild(opt);
         });
+
+        const labels = [];
+        const vehicular = [], roadside = [], patient = [], medical = [], standby = [];
+        const others = [], clearing = [], firetruck = [], hauling = [], ledvan = [];
+        const monthlyTotalServices = [];
+
+        let total1st = 0, total2nd = 0, total3rd = 0, totalOutside = 0;
+        let overallGrandTotal = 0;
+
+        monthOrder.forEach(m => {
+            if(monthlyAgg[m]) {
+                labels.push(m);
+                monthSet.add(m);
+                
+                operationsMonthlyCache[m] = [
+                    monthlyAgg[m].vehicular, monthlyAgg[m].roadside, monthlyAgg[m].patient,
+                    monthlyAgg[m].medical, monthlyAgg[m].standby, monthlyAgg[m].others,
+                    monthlyAgg[m].clearing, monthlyAgg[m].firetruck, monthlyAgg[m].hauling, monthlyAgg[m].ledvan
+                ];
+
+                vehicular.push(monthlyAgg[m].vehicular);
+                roadside.push(monthlyAgg[m].roadside);
+                patient.push(monthlyAgg[m].patient);
+                medical.push(monthlyAgg[m].medical);
+                standby.push(monthlyAgg[m].standby);
+                others.push(monthlyAgg[m].others);
+                clearing.push(monthlyAgg[m].clearing);
+                firetruck.push(monthlyAgg[m].firetruck);
+                hauling.push(monthlyAgg[m].hauling);
+                ledvan.push(monthlyAgg[m].ledvan);
+
+                monthlyTotalServices.push(monthlyAgg[m].grandTotal);
+                overallGrandTotal += monthlyAgg[m].grandTotal;
+                
+                total1st += monthlyAgg[m].total1st;
+                total2nd += monthlyAgg[m].total2nd;
+                total3rd += monthlyAgg[m].total3rd;
+                totalOutside += monthlyAgg[m].totalOutside;
+                
+                for(let i=0; i<10; i++) {
+                    operationsMonthlyCache['all'][i] += operationsMonthlyCache[m][i];
+                }
+            }
+        });
+
+        let referenceTotal = overallGrandTotal > 0 ? overallGrandTotal : (total1st + total2nd + total3rd + totalOutside);
+
+        const el1st = document.getElementById('kpi-1st');
+        if(el1st) {
+            el1st.innerText = total1st;
+            document.getElementById('pct-1st').innerText = referenceTotal > 0 ? ((total1st / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
+        }
+
+        const el2nd = document.getElementById('kpi-2nd');
+        if(el2nd) {
+            el2nd.innerText = total2nd;
+            document.getElementById('pct-2nd').innerText = referenceTotal > 0 ? ((total2nd / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
+        }
+
+        const el3rd = document.getElementById('kpi-3rd');
+        if(el3rd) {
+            el3rd.innerText = total3rd;
+            document.getElementById('pct-3rd').innerText = referenceTotal > 0 ? ((total3rd / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
+        }
+
+        const elOutside = document.getElementById('kpi-outside');
+        if(elOutside) {
+            elOutside.innerText = totalOutside;
+            document.getElementById('pct-outside').innerText = referenceTotal > 0 ? ((totalOutside / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
+        }
+
+        renderTrendFooter('trend-vehicular', vehicular, labels, true); 
+        renderTrendFooter('trend-roadside', roadside, labels, false); 
+        renderTrendFooter('trend-patient', patient, labels, true);      
+        renderTrendFooter('trend-medical', medical, labels, true);                
+        renderTrendFooter('trend-standby', standby, labels, false); 
+        
+        renderTrendFooter('trend-others', others, labels, false);
+        renderTrendFooter('trend-clearing', clearing, labels, false);
+        renderTrendFooter('trend-firetruck', firetruck, labels, false);
+        renderTrendFooter('trend-hauling', hauling, labels, false);
+        renderTrendFooter('trend-ledvan', ledvan, labels, false);
+
+        drawDonutChart('monthlyPieChart', labels, monthlyTotalServices, overallGrandTotal);
+        
+        // Ensure pieColorPalette is correctly mapping
+        const barColors = pieColorPalette;
+
+        // Store FULL 12-month data here for the modal
+        toggleChartData['vehicularChart'] = { labels, labelText: 'TRAUMA (ROADCRASH INCIDENT)', data: vehicular, color: barColors[0] };
+        toggleChartData['roadsideChart'] = { labels, labelText: 'Roadside Assistance', data: roadside, color: barColors[1] };
+        toggleChartData['patientChart'] = { labels, labelText: 'Patient Transport', data: patient, color: barColors[2] };
+        toggleChartData['medicalChart'] = { labels, labelText: 'MEDICAL EMERGENCIES', data: medical, color: barColors[3] };
+        toggleChartData['standbyChart'] = { labels, labelText: 'Standby Medic & VIP', data: standby, color: barColors[4] };
+        
+        toggleChartData['othersChart'] = { labels, labelText: 'SUPPORT SERVICES', data: others, color: barColors[5] };
+        toggleChartData['clearingChart'] = { labels, labelText: 'Clearing Operations', data: clearing, color: barColors[6] };
+        toggleChartData['firetruckChart'] = { labels, labelText: 'Firetruck', data: firetruck, color: barColors[7] };
+        toggleChartData['haulingChart'] = { labels, labelText: 'Hauling', data: hauling, color: barColors[8] };
+        toggleChartData['ledvanChart'] = { labels, labelText: 'Ledvan Truck', data: ledvan, color: barColors[9] };
+
+        // Render the 3-Month Horizontal Bars
+        ['vehicularChart', 'roadsideChart', 'patientChart', 'medicalChart', 'standbyChart', 'othersChart', 'clearingChart', 'firetruckChart', 'haulingChart', 'ledvanChart'].forEach(id => {
+            renderToggleableChart(id, 'bar', true); 
+        });
+
+        const drop = document.getElementById('masterServiceMonthFilter');
+        if(drop) {
+            drop.innerHTML = '<option value="all">All Time</option>';
+            Array.from(monthSet).forEach(m => {
+                let opt = document.createElement('option');
+                opt.value = m; opt.innerText = m;
+                drop.appendChild(opt);
+            });
+        }
+        renderMasterServicePie('all');
+
+    } catch (e) {
+        console.error("FATAL ERROR in processOperationsData:", e);
     }
-    renderMasterServicePie('all');
 }
 
 function drawLineChart(canvasId, labels, dataArr) {
-    const ctx = document.getElementById(canvasId).getContext('2d');
+    const canvas = document.getElementById(canvasId);
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
     if(docLineChartInstance) docLineChartInstance.destroy();
 
     let gradient = ctx.createLinearGradient(0, 0, 0, 300);
-    // Reverted to original blue gradient
     gradient.addColorStop(0, 'rgba(37, 99, 235, 0.3)');
     gradient.addColorStop(1, 'rgba(37, 99, 235, 0.0)'); 
 
@@ -1318,7 +1869,7 @@ function drawLineChart(canvasId, labels, dataArr) {
             datasets: [{ 
                 label: 'Requests Received', 
                 data: dataArr, 
-                borderColor: '#2563eb', // Reverted line color
+                borderColor: '#2563eb',
                 backgroundColor: gradient, 
                 borderWidth: 2, 
                 pointRadius: 0, 
@@ -1362,13 +1913,14 @@ function drawLineChart(canvasId, labels, dataArr) {
 }
 
 function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
-    const ctx = document.getElementById(canvasId).getContext('2d');
+    const canvas = document.getElementById(canvasId);
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
     
     if (monthlyTotalPieInstance) {
         monthlyTotalPieInstance.destroy();
     }
 
-    // Reverted to original vibrant colors
     const vibrantColors = ['#2563eb', '#06b6d4', '#e11d48', '#ea580c', '#16a34a', '#9333ea'];
     const mappedVibrant = dataArr.map((_, i) => vibrantColors[i % vibrantColors.length]);
     
@@ -1383,9 +1935,9 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
                 data: dataArr, 
                 backgroundColor: mappedVibrant, 
                 borderWidth: 0, 
-                borderRadius: 8, // Creates the rounded corners
-                spacing: 5,      // Creates the gaps between slices
-                hoverOffset: 15 // The interactive pop-out
+                borderRadius: 8, 
+                spacing: 5,      
+                hoverOffset: 15 
             }] 
         },
         options: { 
@@ -1429,7 +1981,6 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
 // FIREBASE AUTHENTICATION LOGIC
 // ==========================================
 
-// Your exact Firebase Config
 const firebaseConfig = {
     apiKey: "AIzaSyDSCB9jQIzyn9WxGZ58sLkyJPHCj5oeEKQ", 
     authDomain: "pdrrmo-dashboard.firebaseapp.com",
@@ -1440,34 +1991,29 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-firebase.initializeApp(firebaseConfig);
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
 const auth = firebase.auth();
 
-// Check if user is logged in
 auth.onAuthStateChanged(user => {
     const loginOverlay = document.getElementById('login-overlay');
     const loader = document.getElementById('global-loader');
     
     if (user) {
-        // User is logged in -> Hide login screen
         if(loginOverlay) loginOverlay.style.display = 'none';
-        
-        // SHOW THE LOADER while data fetches
         if(loader) {
             loader.style.display = 'flex';
             loader.style.visibility = 'visible';
             loader.style.opacity = '1';
         }
-        
         loadAllData(); 
     } else {
-        // User is logged out -> Show login screen, hide loader so it doesn't block the screen
         if(loginOverlay) loginOverlay.style.display = 'flex';
         if(loader) loader.style.display = 'none';
     }
 });
 
-// Handle Login Button Click
 window.handleLogin = function() {
     const email = document.getElementById('loginEmail').value;
     const pass = document.getElementById('loginPassword').value;
@@ -1475,64 +2021,57 @@ window.handleLogin = function() {
     const btn = document.getElementById('loginBtn');
 
     if(!email || !pass) {
-        errorEl.innerText = "Please enter both email and password.";
+        if(errorEl) errorEl.innerText = "Please enter both email and password.";
         return;
     }
 
-    btn.innerText = "AUTHENTICATING...";
-    errorEl.innerText = "";
+    if(btn) btn.innerText = "AUTHENTICATING...";
+    if(errorEl) errorEl.innerText = "";
 
     auth.signInWithEmailAndPassword(email, pass)
         .then(() => {
-            btn.innerText = "SECURE LOGIN";
-            // The onAuthStateChanged listener will automatically handle showing the loader and fetching data
+            if(btn) btn.innerText = "SECURE LOGIN";
         })
         .catch(error => {
-            btn.innerText = "SECURE LOGIN";
-            errorEl.innerText = "Invalid credentials. Please try again.";
+            if(btn) btn.innerText = "SECURE LOGIN";
+            if(errorEl) errorEl.innerText = "Invalid credentials. Please try again.";
             console.error("Login failed:", error.message);
         });
 }
 
-// Handle Logout Button Click
 window.handleLogout = function() {
     auth.signOut().then(() => {
-        // Clear all arrays and charts just to be safe
         rawOperationsData = [];
         rawDocumentsData = [];
         rawTrainingsData = [];
-        location.reload(); // Refresh the page to reset the state
+        location.reload(); 
     });
 }
 
-// --- MAP MODAL LOGIC ---
 window.openMapModal = function(url, title) {
     const modal = document.getElementById('mapModal');
     const titleEl = document.getElementById('mapModalTitle');
     const bodyEl = document.getElementById('mapModalBody');
 
-    titleEl.innerText = title;
-    // Inject iframe on demand so it does not load in the background initially
-    bodyEl.innerHTML = `<iframe src="${url}" allowfullscreen></iframe>`;
-    
-    modal.classList.add('active');
+    if(titleEl) titleEl.innerText = title;
+    if(bodyEl) bodyEl.innerHTML = `<iframe src="${url}" allowfullscreen></iframe>`;
+    if(modal) modal.classList.add('active');
 }
 
 window.closeMapModal = function() {
     const modal = document.getElementById('mapModal');
     const bodyEl = document.getElementById('mapModalBody');
     
-    modal.classList.remove('active');
+    if(modal) modal.classList.remove('active');
     
-    // Clear iframe after animation completes to stop it running in the background and reset state
     setTimeout(() => {
-        bodyEl.innerHTML = '';
+        if(bodyEl) bodyEl.innerHTML = '';
     }, 300);
 }
 
-// Allow user to click anywhere in the dark background to close the map
-document.getElementById('mapModal').addEventListener('click', function(e) {
-    if(e.target === this) {
-        closeMapModal();
-    }
-});
+const mapModalEl = document.getElementById('mapModal');
+if(mapModalEl) {
+    mapModalEl.addEventListener('click', function(e) {
+        if(e.target === this) closeMapModal();
+    });
+}
