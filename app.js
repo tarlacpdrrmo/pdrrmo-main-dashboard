@@ -1392,14 +1392,16 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
                 backgroundColor: mappedColors, 
                 borderWidth: 2, 
                 borderColor: '#ffffff', 
-                hoverBorderWidth: 4 // Creates smooth pop-out effect on hover
+                hoverBorderWidth: 5 // Creates smooth pop-out effect on hover
             }] 
         },
         options: {
             responsive: true, maintainAspectRatio: false, 
-            layout: { padding: 15 }, // Gives room for hover expansion
+            rotation: -90,      // FORCES HALF-CIRCLE SHAPE
+            circumference: 180, // FORCES HALF-CIRCLE SHAPE
+            layout: { padding: 20 }, 
             scales: { r: { display: false } }, // Hides the web/grid rings
-            animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, // Smoother initial load
+            animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, 
             hover: { mode: 'index', animationDuration: 300 }, // Smooth hover transition
             onClick: (event, elements, chart) => {
                 if (chart.data.labels.length === 1 && chart.data.labels[0] === 'No Data Found') return;
@@ -1615,16 +1617,18 @@ function renderMasterServicePie(monthFilter) {
                 datasets: [{
                     data: filteredData,
                     backgroundColor: mappedColors,
-                    borderWidth: 2, // Sleeker border
+                    borderWidth: 2, 
                     borderColor: '#ffffff',
-                    hoverBorderWidth: 4 // Creates smooth pop-out effect on hover
+                    hoverBorderWidth: 5 // Creates smooth pop-out effect on hover
                 }]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                layout: { padding: 15 }, // Gives room for hover expansion
+                rotation: -90,      // FORCES HALF-CIRCLE SHAPE
+                circumference: 180, // FORCES HALF-CIRCLE SHAPE
+                layout: { padding: 20 }, 
                 scales: { r: { display: false } }, // Hides the web/grid rings
-                animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, // Smoother initial load
+                animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, 
                 hover: { mode: 'index', animationDuration: 300 }, // Smooth hover transition
                 plugins: {
                     legend: { display: false },
@@ -1714,17 +1718,19 @@ function renderToggleableChart(canvasId, type, isInitialLoad = false) {
                     datasets: [{
                         data: dataObj.data,
                         backgroundColor: mappedColors,
-                        borderWidth: 2, // Sleeker border
+                        borderWidth: 2, 
                         borderColor: '#ffffff',
-                        hoverBorderWidth: 4 // Creates smooth pop-out effect on hover
+                        hoverBorderWidth: 5 // Creates smooth pop-out effect on hover
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    layout: { padding: 15 }, // Gives room for hover expansion
+                    rotation: -90,      // FORCES HALF-CIRCLE SHAPE
+                    circumference: 180, // FORCES HALF-CIRCLE SHAPE
+                    layout: { padding: 20 }, 
                     scales: { r: { display: false } }, // Hides the web/grid rings
-                    animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, // Smoother initial load
+                    animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, 
                     hover: { mode: 'index', animationDuration: 300 }, // Smooth hover transition
                     plugins: {
                         legend: { display: false },
@@ -1971,18 +1977,20 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
             datasets: [{ 
                 data: dataArr, 
                 backgroundColor: mappedVibrant, 
-                borderWidth: 2, // Sleeker border
+                borderWidth: 2, 
                 borderColor: '#ffffff',
-                hoverBorderWidth: 4 // Creates smooth pop-out effect on hover
+                hoverBorderWidth: 5 
             }] 
         },
         options: { 
             responsive: true, 
             maintainAspectRatio: false, 
-            layout: { padding: 15 }, // Gives room for hover expansion
-            scales: { r: { display: false } }, // Hides the web/grid rings
-            animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, // Smoother initial load
-            hover: { mode: 'index', animationDuration: 300 }, // Smooth hover transition
+            rotation: -90,      // FORCES HALF-CIRCLE SHAPE
+            circumference: 180, // FORCES HALF-CIRCLE SHAPE
+            layout: { padding: 20 }, 
+            scales: { r: { display: false } }, 
+            animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, 
+            hover: { mode: 'index', animationDuration: 300 }, 
             plugins: { 
                 legend: { display: false }, 
                 datalabels: { 
