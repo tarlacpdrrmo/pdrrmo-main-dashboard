@@ -129,8 +129,8 @@ function updateRainChart(labels, dataPoints) {
             labels: labels,
             datasets: [{
                 data: dataPoints,
-                backgroundColor: 'rgba(14, 165, 233, 0.7)', // Sleek Sky Blue
-                borderColor: '#0ea5e9',
+                backgroundColor: 'rgba(49, 57, 94, 0.7)', // Sleek Navy Blue
+                borderColor: '#31395e',
                 borderWidth: 1,
                 borderRadius: 4
             }]
@@ -223,7 +223,19 @@ const serviceCategoryLabels = [
 // Reusable Month Order
 const monthOrder = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
 
-const pieColorPalette = ['#e11d48', '#06b6d4', '#2563eb', '#ea580c', '#16a34a', '#9333ea', '#f43f5e', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#d946ef', '#f97316', '#14b8a6', '#6366f1'];
+// BEAUTIFUL 10-STEP SMOOTH SUNSET GRADIENT PALETTE
+const pieColorPalette = [
+    '#31395e', // Dark Navy
+    '#612d56', // Deep Indigo
+    '#9a254f', // Burgundy
+    '#c12a4c', // Deep Crimson
+    '#d72d49', // Crimson Red
+    '#e8514f', // Soft Red
+    '#f47754', // Coral
+    '#f89258', // Light Coral
+    '#fcab5f', // Peach
+    '#fcd471'  // Soft Yellow/Peach
+];
 
 const sharedTooltipConfig = {
     backgroundColor: function(context) {
@@ -749,9 +761,9 @@ function renderTrainingOverview(monthFilter) {
     let statusLabels = Object.keys(statusCounts);
     let statusData = Object.values(statusCounts);
     let statusColors = statusLabels.map(label => {
-        if (label === 'WITH AAR') return '#10b981'; 
-        if (label === 'NO AAR') return '#f43f5e'; 
-        return '#94a3b8'; 
+        if (label === 'WITH AAR') return '#31395e'; // Theme Navy
+        if (label === 'NO AAR') return '#d72d49';   // Theme Crimson
+        return '#fcab5f'; // Theme Peach fallback
     });
     drawTrainBarChart('trainStatusChart', statusLabels, statusData, statusColors); 
 }
@@ -1017,7 +1029,7 @@ function populateRemarksModal(detailsObj) {
         let items = detailsObj[status];
         if(!items || items.length === 0) continue;
 
-        let color = status === 'WITH AAR' ? '#10b981' : (status === 'NO AAR' ? '#f43f5e' : '#64748b');
+        let color = status === 'WITH AAR' ? '#31395e' : (status === 'NO AAR' ? '#d72d49' : '#64748b');
 
         let html = `<h3 style="font-size: 0.9rem; color: ${color}; margin-top: 16px; margin-bottom: 8px; border-bottom: 2px solid #f1f5f9; padding-bottom: 6px;">${status} (${items.length})</h3>`;
         
@@ -1089,7 +1101,7 @@ function processVolunteersData(data) {
             <div style="display:flex; align-items:center; gap:12px; width:100%;">
                 <span style="width: 30px; font-weight:800;">${org.count.toLocaleString()}</span>
                 <div style="flex:1; height:6px; background:#f1f5f9; border-radius:3px; overflow:hidden;">
-                    <div style="height:100%; width:${percentage}%; background:linear-gradient(90deg, #06b6d4, #2563eb); border-radius:3px; transition: width 1s ease-in-out;"></div>
+                    <div style="height:100%; width:${percentage}%; background:linear-gradient(90deg, #d72d49, #fcab5f); border-radius:3px; transition: width 1s ease-in-out;"></div>
                 </div>
             </div>
         `;
