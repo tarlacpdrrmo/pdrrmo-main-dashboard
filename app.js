@@ -1368,9 +1368,6 @@ function renderDocPieChart() {
         docPieChartInstance.data.labels = labels;
         docPieChartInstance.data.datasets[0].data = dataValues;
         docPieChartInstance.data.datasets[0].backgroundColor = mappedColors;
-        docPieChartInstance.data.datasets[0].borderWidth = 2; // Sleeker border
-        docPieChartInstance.data.datasets[0].offset = 0;      // Removes permanent explosion
-        docPieChartInstance.data.datasets[0].hoverOffset = !hasData ? 0 : 25; // Smooth pop-out
         
         docPieChartInstance.update();
         updateCustomLegend(labels, dataValues, !hasData);
@@ -1387,7 +1384,7 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
     if (isEmptyState) mappedColors = ['#e2e8f0']; 
     
     docPieChartInstance = new Chart(ctx, {
-        type: 'doughnut',
+        type: 'polarArea', // UPDATED TO POLAR AREA
         data: { 
             labels: labels, 
             datasets: [{ 
@@ -1395,14 +1392,13 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
                 backgroundColor: mappedColors, 
                 borderWidth: 2, 
                 borderColor: '#ffffff', 
-                offset: 0, // Removes permanent explosion
-                hoverOffset: isEmptyState ? 0 : 25 // Smooth pop-out on hover
+                hoverBorderWidth: 4 // Creates smooth pop-out effect on hover
             }] 
         },
         options: {
             responsive: true, maintainAspectRatio: false, 
-            cutout: '45%', // Sleeker, more modern ring thickness
-            layout: { padding: 20 },
+            layout: { padding: 15 }, // Gives room for hover expansion
+            scales: { r: { display: false } }, // Hides the web/grid rings
             animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, // Smoother initial load
             hover: { mode: 'index', animationDuration: 300 }, // Smooth hover transition
             onClick: (event, elements, chart) => {
@@ -1610,13 +1606,10 @@ function renderMasterServicePie(monthFilter) {
         masterServicePieInstance.data.labels = filteredLabels;
         masterServicePieInstance.data.datasets[0].data = filteredData;
         masterServicePieInstance.data.datasets[0].backgroundColor = mappedColors;
-        masterServicePieInstance.data.datasets[0].borderWidth = 2; // Sleeker border
-        masterServicePieInstance.data.datasets[0].offset = 0;      // Removes permanent explosion
-        masterServicePieInstance.data.datasets[0].hoverOffset = 25; // Smooth pop-out
         masterServicePieInstance.update();
     } else {
         masterServicePieInstance = new Chart(ctx, {
-            type: 'doughnut', 
+            type: 'polarArea', // UPDATED TO POLAR AREA
             data: {
                 labels: filteredLabels,
                 datasets: [{
@@ -1624,14 +1617,13 @@ function renderMasterServicePie(monthFilter) {
                     backgroundColor: mappedColors,
                     borderWidth: 2, // Sleeker border
                     borderColor: '#ffffff',
-                    offset: 0,      // Removes permanent explosion
-                    hoverOffset: 25 // Smooth pop-out
+                    hoverBorderWidth: 4 // Creates smooth pop-out effect on hover
                 }]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                cutout: '45%', // Modern, slightly thinner ring
-                layout: { padding: 20 },
+                layout: { padding: 15 }, // Gives room for hover expansion
+                scales: { r: { display: false } }, // Hides the web/grid rings
                 animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, // Smoother initial load
                 hover: { mode: 'index', animationDuration: 300 }, // Smooth hover transition
                 plugins: {
@@ -1716,7 +1708,7 @@ function renderToggleableChart(canvasId, type, isInitialLoad = false) {
         } else {
             const mappedColors = Array.isArray(dataObj.color) ? dataObj.color : dataObj.data.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
             toggleChartInstances[canvasId] = new Chart(ctx, {
-                type: 'doughnut',
+                type: 'polarArea', // UPDATED TO POLAR AREA
                 data: {
                     labels: dataObj.labels,
                     datasets: [{
@@ -1724,15 +1716,14 @@ function renderToggleableChart(canvasId, type, isInitialLoad = false) {
                         backgroundColor: mappedColors,
                         borderWidth: 2, // Sleeker border
                         borderColor: '#ffffff',
-                        offset: 0,      // Removes permanent explosion
-                        hoverOffset: 25 // Smooth pop-out
+                        hoverBorderWidth: 4 // Creates smooth pop-out effect on hover
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutout: '45%', // Modern, slightly thinner ring
-                    layout: { padding: 20 },
+                    layout: { padding: 15 }, // Gives room for hover expansion
+                    scales: { r: { display: false } }, // Hides the web/grid rings
                     animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, // Smoother initial load
                     hover: { mode: 'index', animationDuration: 300 }, // Smooth hover transition
                     plugins: {
@@ -1974,7 +1965,7 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
     if(gtEl) gtEl.innerText = grandTotal.toLocaleString();
 
     monthlyTotalPieInstance = new Chart(ctx, {
-        type: 'doughnut', 
+        type: 'polarArea', // UPDATED TO POLAR AREA
         data: { 
             labels: labels, 
             datasets: [{ 
@@ -1982,15 +1973,14 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
                 backgroundColor: mappedVibrant, 
                 borderWidth: 2, // Sleeker border
                 borderColor: '#ffffff',
-                offset: 0,      // Removes permanent explosion
-                hoverOffset: 25 // Smooth pop-out
+                hoverBorderWidth: 4 // Creates smooth pop-out effect on hover
             }] 
         },
         options: { 
             responsive: true, 
             maintainAspectRatio: false, 
-            cutout: '45%', // Modern, slightly thinner ring
-            layout: { padding: 20 }, 
+            layout: { padding: 15 }, // Gives room for hover expansion
+            scales: { r: { display: false } }, // Hides the web/grid rings
             animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, // Smoother initial load
             hover: { mode: 'index', animationDuration: 300 }, // Smooth hover transition
             plugins: { 
