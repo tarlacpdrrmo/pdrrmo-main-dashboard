@@ -129,9 +129,8 @@ function updateRainChart(labels, dataPoints) {
             labels: labels,
             datasets: [{
                 data: dataPoints,
-                backgroundColor: 'rgba(49, 57, 94, 0.7)', // Sleek Navy Blue
-                borderColor: '#31395e',
-                borderWidth: 1,
+                backgroundColor: 'rgba(14, 165, 233, 0.7)', // Original Sleek Sky Blue
+                borderWidth: 0, // Removed border to prevent pixelated edges
                 borderRadius: 4
             }]
         },
@@ -223,18 +222,11 @@ const serviceCategoryLabels = [
 // Reusable Month Order
 const monthOrder = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
 
-// BEAUTIFUL 10-STEP SMOOTH SUNSET GRADIENT PALETTE
+// REVERTED TO THE ORIGINAL VIBRANT HIGH-CONTRAST PALETTE
 const pieColorPalette = [
-    '#31395e', // Dark Navy
-    '#612d56', // Deep Indigo
-    '#9a254f', // Burgundy
-    '#c12a4c', // Deep Crimson
-    '#d72d49', // Crimson Red
-    '#e8514f', // Soft Red
-    '#f47754', // Coral
-    '#f89258', // Light Coral
-    '#fcab5f', // Peach
-    '#fcd471'  // Soft Yellow/Peach
+    '#e11d48', '#06b6d4', '#2563eb', '#ea580c', '#16a34a', 
+    '#9333ea', '#f43f5e', '#f59e0b', '#3b82f6', '#10b981', 
+    '#8b5cf6', '#d946ef', '#f97316', '#14b8a6', '#6366f1'
 ];
 
 const sharedTooltipConfig = {
@@ -275,7 +267,7 @@ const singleBarOptions = {
     layout: { padding: { top: 15, right: 25, bottom: 10, left: 10 } }, 
     plugins: { datalabels: { display: false }, legend: { display: false }, tooltip: sharedTooltipConfig },
     scales: { x: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } }, y: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } } },
-    elements: { bar: { borderRadius: 3 } } 
+    elements: { bar: { borderRadius: 3, borderWidth: 0 } } // Smooth, no-stroke bars
 };
 
 function scrollToSection(panelId) {
@@ -761,9 +753,9 @@ function renderTrainingOverview(monthFilter) {
     let statusLabels = Object.keys(statusCounts);
     let statusData = Object.values(statusCounts);
     let statusColors = statusLabels.map(label => {
-        if (label === 'WITH AAR') return '#31395e'; // Theme Navy
-        if (label === 'NO AAR') return '#d72d49';   // Theme Crimson
-        return '#fcab5f'; // Theme Peach fallback
+        if (label === 'WITH AAR') return '#10b981'; // Reverted original green
+        if (label === 'NO AAR') return '#f43f5e';   // Reverted original red
+        return '#94a3b8'; // Original fallback
     });
     drawTrainBarChart('trainStatusChart', statusLabels, statusData, statusColors); 
 }
@@ -955,7 +947,7 @@ function drawTrainBarChart(canvasId, labels, dataArr, customColors = null) {
 
     window[canvasId + 'Inst'] = new Chart(ctx, {
         type: 'bar',
-        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: colors, borderRadius: 4, maxBarThickness: 30 }] },
+        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: colors, borderRadius: 4, borderWidth: 0, maxBarThickness: 30 }] }, // Removed borders for smooth look
         options: {
             responsive: true, maintainAspectRatio: false,
             layout: { padding: { top: 25, left: 10, right: 10, bottom: 0 } }, 
@@ -1029,7 +1021,7 @@ function populateRemarksModal(detailsObj) {
         let items = detailsObj[status];
         if(!items || items.length === 0) continue;
 
-        let color = status === 'WITH AAR' ? '#31395e' : (status === 'NO AAR' ? '#d72d49' : '#64748b');
+        let color = status === 'WITH AAR' ? '#10b981' : (status === 'NO AAR' ? '#f43f5e' : '#64748b'); // Reverted
 
         let html = `<h3 style="font-size: 0.9rem; color: ${color}; margin-top: 16px; margin-bottom: 8px; border-bottom: 2px solid #f1f5f9; padding-bottom: 6px;">${status} (${items.length})</h3>`;
         
@@ -1101,10 +1093,10 @@ function processVolunteersData(data) {
             <div style="display:flex; align-items:center; gap:12px; width:100%;">
                 <span style="width: 30px; font-weight:800;">${org.count.toLocaleString()}</span>
                 <div style="flex:1; height:6px; background:#f1f5f9; border-radius:3px; overflow:hidden;">
-                    <div style="height:100%; width:${percentage}%; background:linear-gradient(90deg, #d72d49, #fcab5f); border-radius:3px; transition: width 1s ease-in-out;"></div>
+                    <div style="height:100%; width:${percentage}%; background:linear-gradient(90deg, #06b6d4, #2563eb); border-radius:3px; transition: width 1s ease-in-out;"></div>
                 </div>
             </div>
-        `;
+        `; // Reverted to original blue gradient
         
         tr.appendChild(tdName);
         tr.appendChild(tdCount);
@@ -1714,7 +1706,9 @@ function renderToggleableChart(canvasId, type, isInitialLoad = false) {
                         label: dataObj.labelText,
                         data: dataObj.data,
                         backgroundColor: dataObj.color,
-                        maxBarThickness: 15
+                        maxBarThickness: 15,
+                        borderRadius: 3, 
+                        borderWidth: 0 // Smooth, no-stroke bars
                     }]
                 },
                 options: singleBarOptions
@@ -1913,6 +1907,7 @@ function drawLineChart(canvasId, labels, dataArr) {
     if(docLineChartInstance) docLineChartInstance.destroy();
 
     let gradient = ctx.createLinearGradient(0, 0, 0, 300);
+    // Reverted to original blue gradient
     gradient.addColorStop(0, 'rgba(37, 99, 235, 0.3)');
     gradient.addColorStop(1, 'rgba(37, 99, 235, 0.0)'); 
 
@@ -1923,7 +1918,7 @@ function drawLineChart(canvasId, labels, dataArr) {
             datasets: [{ 
                 label: 'Requests Received', 
                 data: dataArr, 
-                borderColor: '#2563eb', 
+                borderColor: '#2563eb', // Reverted line color
                 backgroundColor: gradient, 
                 borderWidth: 2, 
                 pointRadius: 0, 
@@ -1973,6 +1968,7 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
         monthlyTotalPieInstance.destroy();
     }
 
+    // Reverted to original vibrant colors
     const vibrantColors = ['#2563eb', '#06b6d4', '#e11d48', '#ea580c', '#16a34a', '#9333ea'];
     const mappedVibrant = dataArr.map((_, i) => vibrantColors[i % vibrantColors.length]);
     
