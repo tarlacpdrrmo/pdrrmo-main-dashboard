@@ -259,16 +259,77 @@ const sharedTooltipConfig = {
     caretPadding: 6
 };
 
-const singleBarOptions = {
-    indexAxis: 'y', 
-    responsive: true, 
-    maintainAspectRatio: false,
-    animation: { duration: 700, easing: 'easeOutQuart' },
-    layout: { padding: { top: 15, right: 25, bottom: 10, left: 10 } }, 
-    plugins: { datalabels: { display: false }, legend: { display: false }, tooltip: sharedTooltipConfig },
-    scales: { x: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } }, y: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 } } } },
-    elements: { bar: { borderRadius: 3, borderWidth: 0 } } // Smooth, no-stroke bars
-};
+// --- NEW EXPANDED MODAL LOGIC FOR 12-MONTH VIEW ---
+let expandedLineInstance = null;
+
+window.openExpandedLineChart = function(chartKey) {
+    const dataObj = toggleChartData[chartKey];
+    if(!dataObj) return;
+
+    document.getElementById('expandedLineTitle').innerText = dataObj.labelText + " (12-Month View)";
+    document.getElementById('expandedLineModal').classList.add('active');
+
+    const ctx = document.getElementById('expandedLineCanvas').getContext('2d');
+    if(expandedLineInstance) expandedLineInstance.destroy();
+
+    // Create a smooth gradient specific to the chart's theme color
+    let gradient = ctx.createLinearGradient(0, 0, 0, 400);
+    // Extract base color, apply alpha for gradient
+    gradient.addColorStop(0, 'rgba(37, 99, 235, 0.2)'); 
+    gradient.addColorStop(1, 'rgba(37, 99, 235, 0.0)');
+
+    expandedLineInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: dataObj.labels, // Pulls the full array of labels
+            datasets: [{
+                label: dataObj.labelText,
+                data: dataObj.data,     // Pulls the full array of data
+                borderColor: dataObj.color,
+                backgroundColor: gradient,
+                borderWidth: 3,
+                pointBackgroundColor: '#ffffff',
+                pointBorderColor: dataObj.color,
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                tension: 0.4, // Smooth curve
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 800, easing: 'easeOutQuart' },
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: false },
+                datalabels: {
+                    display: true,
+                    align: 'top',
+                    color: '#64748b',
+                    font: { weight: 'bold', family: 'Inter', size: 11 }
+                },
+                tooltip: sharedTooltipConfig
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { family: 'Inter', size: 10 }, color: '#64748b' }
+                },
+                y: {
+                    grid: { color: '#f1f5f9', drawBorder: false },
+                    beginAtZero: true,
+                    ticks: { font: { family: 'Inter', size: 11 }, color: '#94a3b8' }
+                }
+            }
+        }
+    });
+}
+
+window.closeExpandedLineChart = function() {
+    document.getElementById('expandedLineModal').classList.remove('active');
+}
 
 function scrollToSection(panelId) {
     const section = document.getElementById(panelId);
@@ -390,19 +451,6 @@ document.addEventListener("DOMContentLoaded", function() {
     if (trainTopMonthFilter) {
         trainTopMonthFilter.addEventListener('change', function(e) {
             renderTrainingOverview(e.target.value);
-        });
-    }
-
-    const masterToggle = document.getElementById('masterChartToggle');
-    if (masterToggle) {
-        masterToggle.addEventListener('change', function(e) {
-            const isPie = e.target.checked;
-            const type = isPie ? 'pie' : 'bar';
-            const chartIds = [
-                'vehicularChart', 'roadsideChart', 'patientChart', 'medicalChart', 'standbyChart',
-                'othersChart', 'clearingChart', 'firetruckChart', 'haulingChart', 'ledvanChart'
-            ];
-            chartIds.forEach(id => renderToggleableChart(id, type, false));
         });
     }
 
@@ -1583,6 +1631,73 @@ function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = fa
     `;
 }
 
+// --- MODIFIED: Rendering the new Sparklines instead of Bars ---
+function renderToggleableChart(canvasId, type, isInitialLoad = false) {
+    const canvas = document.getElementById(canvasId);
+    const container = canvas.parentElement;
+
+    if (!isInitialLoad) {
+        container.classList.add('chart-fade-out');
+    }
+
+    setTimeout(() => {
+        const ctx = canvas.getContext('2d');
+        
+        if (toggleChartInstances[canvasId]) {
+            toggleChartInstances[canvasId].destroy();
+        }
+
+        const dataObj = toggleChartData[canvasId];
+        
+        // Rolling Window Logic: Take only the last 4 items to create the sparkline
+        const wSize = 4;
+        const sparkLabels = dataObj.labels.slice(-wSize);
+        const sparkData = dataObj.data.slice(-wSize);
+        const chartColor = Array.isArray(dataObj.color) ? dataObj.color[0] : dataObj.color;
+
+        toggleChartInstances[canvasId] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: sparkLabels,
+                datasets: [{
+                    label: dataObj.labelText,
+                    data: sparkData,
+                    borderColor: chartColor,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: chartColor,
+                    pointBorderWidth: 2,
+                    pointRadius: 3,
+                    pointHoverRadius: 6,
+                    tension: 0.4, // Super smooth curves
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: { padding: { top: 10, bottom: 10, left: 10, right: 10 } },
+                plugins: {
+                    legend: { display: false },
+                    datalabels: { display: false }, // Hidden for sparkline cleanliness
+                    tooltip: sharedTooltipConfig
+                },
+                scales: {
+                    x: { display: false }, // Hide axes
+                    y: { display: false, beginAtZero: true } // Hide axes
+                }
+            }
+        });
+
+        if (!isInitialLoad) {
+            setTimeout(() => {
+                container.classList.remove('chart-fade-out');
+            }, 50); 
+        }
+
+    }, isInitialLoad ? 0 : 300); 
+}
+
 function renderMasterServicePie(monthFilter) {
     const dataArr = operationsMonthlyCache[monthFilter] || new Array(10).fill(0);
 
@@ -1678,88 +1793,6 @@ function renderMasterServicePie(monthFilter) {
         
         leg.appendChild(item);
     });
-}
-
-function renderToggleableChart(canvasId, type, isInitialLoad = false) {
-    const canvas = document.getElementById(canvasId);
-    const container = canvas.parentElement;
-
-    if (!isInitialLoad) {
-        container.classList.add('chart-fade-out');
-    }
-
-    setTimeout(() => {
-        const ctx = canvas.getContext('2d');
-        
-        if (toggleChartInstances[canvasId]) {
-            toggleChartInstances[canvasId].destroy();
-        }
-
-        const dataObj = toggleChartData[canvasId];
-
-        if (type === 'bar') {
-            toggleChartInstances[canvasId] = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: dataObj.labels,
-                    datasets: [{
-                        label: dataObj.labelText,
-                        data: dataObj.data,
-                        backgroundColor: dataObj.color,
-                        maxBarThickness: 15,
-                        borderRadius: 3, 
-                        borderWidth: 0 // Smooth, no-stroke bars
-                    }]
-                },
-                options: singleBarOptions
-            });
-        } else {
-            const mappedColors = Array.isArray(dataObj.color) ? dataObj.color : dataObj.data.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
-            toggleChartInstances[canvasId] = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: dataObj.labels,
-                    datasets: [{
-                        data: dataObj.data,
-                        backgroundColor: mappedColors,
-                        borderWidth: 0, 
-                        borderRadius: 8, // Creates the rounded corners
-                        spacing: 5,      // Creates the gaps between slices
-                        hoverOffset: 15  // The interactive pop-out
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '55%', 
-                    layout: { padding: 15 }, 
-                    animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, 
-                    hover: { mode: 'index', animationDuration: 300 }, 
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: sharedTooltipConfig,
-                        datalabels: {
-                            color: '#ffffff',
-                            font: { weight: '800', family: 'Inter', size: 9 },
-                            formatter: (value, context) => {
-                                let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                                if (sum === 0) return '';
-                                let pctFloat = (value * 100) / sum;
-                                return pctFloat >= 6 ? pctFloat.toFixed(0) + '%' : '';
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        if (!isInitialLoad) {
-            setTimeout(() => {
-                container.classList.remove('chart-fade-out');
-            }, 50); 
-        }
-
-    }, isInitialLoad ? 0 : 300); 
 }
 
 function processOperationsData(data) {
@@ -1872,22 +1905,22 @@ function processOperationsData(data) {
     
     const barColors = labels.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
 
-    toggleChartData['vehicularChart'] = { labels, labelText: 'TRAUMA (ROADCRASH INCIDENT)', data: vehicular, color: barColors };
-    toggleChartData['roadsideChart'] = { labels, labelText: 'Roadside Assistance', data: roadside, color: barColors };
-    toggleChartData['patientChart'] = { labels, labelText: 'Patient Transport', data: patient, color: barColors };
-    toggleChartData['medicalChart'] = { labels, labelText: 'MEDICAL EMERGENCIES', data: medical, color: barColors };
-    toggleChartData['standbyChart'] = { labels, labelText: 'Standby Medic & VIP', data: standby, color: barColors };
+    // Store FULL 12-month data here for the modal
+    toggleChartData['vehicularChart'] = { labels, labelText: 'TRAUMA (ROADCRASH INCIDENT)', data: vehicular, color: barColors[0] };
+    toggleChartData['roadsideChart'] = { labels, labelText: 'Roadside Assistance', data: roadside, color: barColors[1] };
+    toggleChartData['patientChart'] = { labels, labelText: 'Patient Transport', data: patient, color: barColors[2] };
+    toggleChartData['medicalChart'] = { labels, labelText: 'MEDICAL EMERGENCIES', data: medical, color: barColors[3] };
+    toggleChartData['standbyChart'] = { labels, labelText: 'Standby Medic & VIP', data: standby, color: barColors[4] };
     
-    toggleChartData['othersChart'] = { labels, labelText: 'SUPPORT SERVICES (MANPOWER, TRANSPORTATION & OTHER RESOURCES)', data: others, color: barColors };
-    toggleChartData['clearingChart'] = { labels, labelText: 'Clearing Operations', data: clearing, color: barColors };
-    toggleChartData['firetruckChart'] = { labels, labelText: 'Firetruck', data: firetruck, color: barColors };
-    toggleChartData['haulingChart'] = { labels, labelText: 'Hauling', data: hauling, color: barColors };
-    toggleChartData['ledvanChart'] = { labels, labelText: 'Ledvan Truck', data: ledvan, color: barColors };
+    toggleChartData['othersChart'] = { labels, labelText: 'SUPPORT SERVICES', data: others, color: barColors[5] };
+    toggleChartData['clearingChart'] = { labels, labelText: 'Clearing Operations', data: clearing, color: barColors[6] };
+    toggleChartData['firetruckChart'] = { labels, labelText: 'Firetruck', data: firetruck, color: barColors[7] };
+    toggleChartData['haulingChart'] = { labels, labelText: 'Hauling', data: hauling, color: barColors[8] };
+    toggleChartData['ledvanChart'] = { labels, labelText: 'Ledvan Truck', data: ledvan, color: barColors[9] };
 
-    const masterToggle = document.getElementById('masterChartToggle');
-    const isPie = masterToggle ? masterToggle.checked : false;
+    // Render the Sparklines
     ['vehicularChart', 'roadsideChart', 'patientChart', 'medicalChart', 'standbyChart', 'othersChart', 'clearingChart', 'firetruckChart', 'haulingChart', 'ledvanChart'].forEach(id => {
-        renderToggleableChart(id, isPie ? 'pie' : 'bar', true); 
+        renderToggleableChart(id, 'line', true); 
     });
 
     const drop = document.getElementById('masterServiceMonthFilter');
