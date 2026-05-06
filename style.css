@@ -1171,7 +1171,7 @@ td {
     height: 14px;
     opacity: 0.5;
     transition: opacity 0.3s;
-    color: #ffffff; /* Matches white text color perfectly */
+    color: #ffffff; 
 }
 .sidebar li:hover .popout-icon {
     opacity: 1;
@@ -1296,6 +1296,20 @@ td {
         border: none !important; 
         margin-bottom: 20px !important; 
         padding-bottom: 0 !important; 
+    }
+    
+    /* PREVENT ORPHANED HEADINGS */
+    .panel-heading,
+    .panel-header-wrapper {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+        margin-bottom: 10px !important; 
+    }
+
+    /* PREVENT BREAKS BEFORE CRITICAL LAYOUTS START */
+    .assets-layout {
+        page-break-before: avoid !important;
+        break-before: avoid !important;
     }
     
     .pie-wrapper, 
