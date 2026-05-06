@@ -1247,7 +1247,7 @@ td {
     height: 14px;
     opacity: 0.5;
     transition: opacity 0.3s;
-    filter: invert(1); /* Matches your white text perfectly */
+    color: #ffffff; /* Matches your white text perfectly via currentColor */
 }
 .sidebar li:hover .popout-icon {
     opacity: 1;
