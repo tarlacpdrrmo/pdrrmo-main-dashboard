@@ -16,7 +16,8 @@ body {
 .dashboard-container { 
     display: flex; 
     height: 100vh; 
-    width: 100vw;
+    width: 100%; /* FIX: Changed from 100vw to prevent scrollbar layout shifts */
+    overflow: hidden; /* FIX: Prevents body-level scrolling issues when zooming */
 }
 
 /* --- SIDEBAR --- */
@@ -109,6 +110,7 @@ body {
 /* --- MAIN CONTENT & HEADER --- */
 .main-content { 
     flex: 1; 
+    min-width: 0; /* CRITICAL FIX: Forces flex children to shrink during browser zoom */
     padding: 16px 24px; 
     overflow-y: auto; 
     scroll-behavior: smooth; 
@@ -228,7 +230,7 @@ body {
     position: absolute;
     top: calc(100% + 12px);
     right: 24px;
-    width: 340px; /* UPDATED WIDTH for 3-Day Forecast */
+    width: 340px; 
     background: rgba(30, 41, 59, 0.95);
     backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -291,7 +293,6 @@ body {
 .detail-label { font-size: 0.55rem; color: #94a3b8; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; }
 .detail-value { font-size: 0.8rem; color: #f8fafc; font-weight: 600; margin-top: 2px; text-transform: capitalize; }
 
-/* NEW WEATHER WIDGET EXTENSIONS (Forecast & Graphs) */
 .weather-section-title {
     font-size: 0.65rem;
     color: #94a3b8; 
@@ -457,6 +458,7 @@ body {
     padding: 14px; 
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04); 
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+    min-width: 0; /* CRITICAL FIX: Allows chart cards to shrink dynamically during zoom */
 }
 .card:hover {
     transform: translateY(-2px); 
@@ -466,7 +468,7 @@ body {
 .assets-layout { display: flex; gap: 16px; } 
 .kpi-column { display: flex; flex-direction: column; gap: 12px; width: 180px; flex-shrink: 0; }
 
-.charts-wrapper { flex: 1; display: flex; flex-direction: column; gap: 16px; }
+.charts-wrapper { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
 
 .charts-grid { 
     display: grid; 
@@ -479,6 +481,7 @@ body {
     grid-row: span 2;
     display: flex;
     flex-direction: column;
+    min-width: 0; /* FIX */
 }
 .large-pie-container {
     display: flex;
@@ -487,6 +490,7 @@ body {
     align-items: stretch;
     margin-top: 8px;
     min-height: 350px;
+    min-width: 0; /* FIX */
 }
 
 .section-divider-title {
@@ -526,6 +530,7 @@ body {
     max-height: 140px; 
     padding: 0 16px 10px 16px; 
     display: block;
+    min-width: 0; /* CRITICAL FIX: Allows inner canvases to resize correctly */
 }
 .chart-trend-footer {
     width: 100%;
@@ -620,8 +625,8 @@ body {
 
 /* --- DOCUMENT TRACKING LAYOUT --- */
 .tracking-layout { display: flex; gap: 16px; align-items: stretch; }
-.tracking-charts { flex: 3; display: flex; flex-direction: column; gap: 16px; }
-.tracking-kpis { flex: 2; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-content: start; }
+.tracking-charts { flex: 3; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.tracking-kpis { flex: 2; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-content: start; min-width: 0; }
 
 .chart-header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
 .chart-title { font-size: 0.75rem; color: #1e293b; font-weight: 800; margin: 0; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -699,8 +704,8 @@ body {
     padding: 10px;
 }
 
-.interactive-pie-container { display: flex; gap: 16px; height: 260px; align-items: stretch; margin-top: 8px; }
-.doc-pie-wrapper { flex: 1; height: 100%; position: relative; cursor: pointer; }
+.interactive-pie-container { display: flex; gap: 16px; height: 260px; align-items: stretch; margin-top: 8px; min-width: 0; }
+.doc-pie-wrapper { flex: 1; height: 100%; position: relative; cursor: pointer; min-width: 0; }
 
 /* Legend Cascade Animation */
 @keyframes legendFadeIn {
@@ -754,9 +759,9 @@ body {
     opacity: 0.4;
 }
 
-.line-wrapper { height: 180px; position: relative; margin-top: 8px; }
+.line-wrapper { height: 180px; position: relative; margin-top: 8px; min-width: 0; }
 
-.kpi-card-small { padding: 14px; display: flex; flex-direction: column; justify-content: center; min-height: 80px; }
+.kpi-card-small { padding: 14px; display: flex; flex-direction: column; justify-content: center; min-height: 80px; min-width: 0;}
 .kpi-card-small p { font-size: 0.6rem; color: #64748b; font-weight: 800; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; }
 .kpi-card-small h3 { font-size: 1.6rem; font-weight: 800; color: #0f172a; line-height: 1; text-shadow: 0 1px 2px rgba(0,0,0,0.05); } 
 .kpi-card-small h3.green { color: #059669; }
