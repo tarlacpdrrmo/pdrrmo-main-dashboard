@@ -511,24 +511,28 @@ async function loadAllData() {
     }
 
     try {
-        const opRes = await fetch(`${webAppUrl}?type=operations`);
-        const opData = await opRes.json();
-        if (!opData.error) rawOperationsData = opData;
+        const opRes = await fetch(`${webAppUrl}?type=operations`).catch(() => null);
+        if (opRes && opRes.ok) {
+            const opData = await opRes.json();
+            if (!opData.error) rawOperationsData = opData;
+        }
 
-        const docRes = await fetch(`${webAppUrl}?type=documents`);
-        const docData = await docRes.json();
-        if (!docData.error) rawDocumentsData = docData;
+        const docRes = await fetch(`${webAppUrl}?type=documents`).catch(() => null);
+        if (docRes && docRes.ok) {
+            const docData = await docRes.json();
+            if (!docData.error) rawDocumentsData = docData;
+        }
 
-        const volRes = await fetch(`${webAppUrl}?type=volunteers`);
-        const volData = await volRes.json();
-        if (!volData.error) rawVolunteersData = volData;
+        const volRes = await fetch(`${webAppUrl}?type=volunteers`).catch(() => null);
+        if (volRes && volRes.ok) {
+            const volData = await volRes.json();
+            if (!volData.error) rawVolunteersData = volData;
+        }
 
-        try {
-            const trainRes = await fetch(`${webAppUrl}?type=trainings`);
+        const trainRes = await fetch(`${webAppUrl}?type=trainings`).catch(() => null);
+        if (trainRes && trainRes.ok) {
             const trainData = await trainRes.json();
             if (!trainData.error) rawTrainingsData = trainData;
-        } catch(e) {
-            console.warn("Trainings endpoint returned an error.", e);
         }
 
         let yearsSet = new Set();
@@ -2082,3 +2086,35 @@ window.handleLogout = function() {
         location.reload(); // Refresh the page to reset the state
     });
 }
+
+// --- MAP MODAL LOGIC ---
+window.openMapModal = function(url, title) {
+    const modal = document.getElementById('mapModal');
+    const titleEl = document.getElementById('mapModalTitle');
+    const bodyEl = document.getElementById('mapModalBody');
+
+    titleEl.innerText = title;
+    // Inject iframe on demand so it does not load in the background initially
+    bodyEl.innerHTML = `<iframe src="${url}" allowfullscreen></iframe>`;
+    
+    modal.classList.add('active');
+}
+
+window.closeMapModal = function() {
+    const modal = document.getElementById('mapModal');
+    const bodyEl = document.getElementById('mapModalBody');
+    
+    modal.classList.remove('active');
+    
+    // Clear iframe after animation completes to stop it running in the background and reset state
+    setTimeout(() => {
+        bodyEl.innerHTML = '';
+    }, 300);
+}
+
+// Allow user to click anywhere in the dark background to close the map
+document.getElementById('mapModal').addEventListener('click', function(e) {
+    if(e.target === this) {
+        closeMapModal();
+    }
+});
