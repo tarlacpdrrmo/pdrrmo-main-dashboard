@@ -129,8 +129,8 @@ function updateRainChart(labels, dataPoints) {
             labels: labels,
             datasets: [{
                 data: dataPoints,
-                backgroundColor: 'rgba(14, 165, 233, 0.7)', // Original Sleek Sky Blue
-                borderWidth: 0, // Removed border to prevent pixelated edges
+                backgroundColor: 'rgba(14, 165, 233, 0.7)', 
+                borderWidth: 0, 
                 borderRadius: 4
             }]
         },
@@ -222,7 +222,7 @@ const serviceCategoryLabels = [
 // Reusable Month Order
 const monthOrder = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
 
-// REVERTED TO THE ORIGINAL VIBRANT HIGH-CONTRAST PALETTE
+// ORIGINAL VIBRANT HIGH-CONTRAST PALETTE
 const pieColorPalette = [
     '#e11d48', '#06b6d4', '#2563eb', '#ea580c', '#16a34a', 
     '#9333ea', '#f43f5e', '#f59e0b', '#3b82f6', '#10b981', 
@@ -801,9 +801,9 @@ function renderTrainingOverview(monthFilter) {
     let statusLabels = Object.keys(statusCounts);
     let statusData = Object.values(statusCounts);
     let statusColors = statusLabels.map(label => {
-        if (label === 'WITH AAR') return '#10b981'; // Reverted original green
-        if (label === 'NO AAR') return '#f43f5e';   // Reverted original red
-        return '#94a3b8'; // Original fallback
+        if (label === 'WITH AAR') return '#10b981'; 
+        if (label === 'NO AAR') return '#f43f5e';   
+        return '#94a3b8'; 
     });
     drawTrainBarChart('trainStatusChart', statusLabels, statusData, statusColors); 
 }
@@ -981,657 +981,7 @@ function buildMonthHTML(year, month, isSmallScale) {
     return html;
 }
 
-function drawTrainBarChart(canvasId, labels, dataArr, customColors = null) {
-    const ctx = document.getElementById(canvasId).getContext('2d');
-    
-    if (!labels || labels.length === 0) {
-        labels = ["No Data"];
-        dataArr = [0];
-    }
-
-    if (window[canvasId + 'Inst']) window[canvasId + 'Inst'].destroy();
-
-    let colors = customColors || labels.map((_, i) => pieColorPalette[(i + 2) % pieColorPalette.length]);
-
-    window[canvasId + 'Inst'] = new Chart(ctx, {
-        type: 'bar',
-        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: colors, borderRadius: 4, borderWidth: 0, maxBarThickness: 30 }] }, // Removed borders for smooth look
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            layout: { padding: { top: 25, left: 10, right: 10, bottom: 0 } }, 
-            plugins: { legend: { display: false }, tooltip: sharedTooltipConfig, datalabels: { display: true, align: 'top', anchor: 'end', color: '#64748b', font: { weight: 'bold' } } },
-            scales: {
-                x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 9 }, color: '#64748b' } },
-                y: { grid: { color: '#f1f5f9' }, ticks: { font: { family: 'Inter', size: 10 }, color: '#94a3b8' }, beginAtZero: true, grace: '20%' } 
-            }
-        }
-    });
-}
-
-function populateAllList(containerId, dataObj) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    container.innerHTML = '';
-    
-    let sorted = Object.keys(dataObj).map(k => ({name: k, count: dataObj[k]})).sort((a,b) => b.count - a.count);
-    
-    if (sorted.length === 0) {
-        container.innerHTML = `<div style="color: #94a3b8; font-size: 0.7rem; padding: 10px;">No Data</div>`;
-        return;
-    }
-
-    sorted.forEach((item, index) => {
-        container.innerHTML += `
-            <div class="legend-item" style="animation-delay: ${index * 0.04}s;">
-                <div class="legend-text" title="${item.name}" style="flex: 1;">${index + 1}. ${item.name}</div>
-                <div class="legend-val">${item.count}</div>
-            </div>
-        `;
-    });
-}
-
-function populateModalList(dataObj) {
-    const container = document.getElementById('modal-title-list');
-    if (!container) return;
-    container.innerHTML = '';
-    
-    let sorted = Object.keys(dataObj).map(k => ({name: k, count: dataObj[k]})).sort((a,b) => b.count - a.count);
-    
-    if (sorted.length === 0) {
-        container.innerHTML = `<div style="color: #94a3b8; font-size: 0.9rem; padding: 20px; text-align:center;">No Data Available</div>`;
-        return;
-    }
-
-    sorted.forEach((item, index) => {
-        container.innerHTML += `
-            <div class="legend-item" style="animation-delay: ${index * 0.02}s;">
-                <div class="legend-text" style="font-size: 0.85rem; padding-right: 15px;">
-                    <span style="color:#64748b; font-weight:800; margin-right:8px;">${index + 1}.</span> 
-                    ${item.name}
-                </div>
-                <div class="legend-val">${item.count}</div>
-            </div>
-        `;
-    });
-}
-
-function populateRemarksModal(detailsObj) {
-    const container = document.getElementById('modal-remarks-list');
-    if (!container) return;
-    container.innerHTML = '';
-    
-    if (!detailsObj || Object.keys(detailsObj).length === 0) {
-        container.innerHTML = `<div style="color: #94a3b8; font-size: 0.9rem; padding: 20px; text-align:center;">No Data Available</div>`;
-        return;
-    }
-
-    for (let status in detailsObj) {
-        let items = detailsObj[status];
-        if(!items || items.length === 0) continue;
-
-        let color = status === 'WITH AAR' ? '#10b981' : (status === 'NO AAR' ? '#f43f5e' : '#64748b'); // Reverted
-
-        let html = `<h3 style="font-size: 0.9rem; color: ${color}; margin-top: 16px; margin-bottom: 8px; border-bottom: 2px solid #f1f5f9; padding-bottom: 6px;">${status} (${items.length})</h3>`;
-        
-        items.forEach((item, index) => {
-            html += `
-                <div class="legend-item" style="padding: 12px 0; border-bottom: 1px solid #f8fafc; align-items: flex-start; animation-delay: ${index * 0.02}s;">
-                    <div class="legend-text" style="font-size: 0.8rem; white-space: normal; line-height: 1.4;">
-                        <span style="font-weight: 800; color: #1e293b;">${item.title}</span><br>
-                        <span style="font-size: 0.7rem; color: #64748b;">${item.agency} &nbsp;|&nbsp; ${item.dates}</span>
-                    </div>
-                </div>
-            `;
-        });
-        container.innerHTML += html;
-    }
-}
-
-function processVolunteersData(data) {
-    let totalOrgs = 0;
-    let totalIndividualsInOrgs = 0;
-    let standaloneIndividuals = 0;
-    let orgList = []; 
-
-    const tbody = document.querySelector('#volunteerTable tbody');
-    tbody.innerHTML = ''; 
-
-    data.forEach(row => {
-        let keys = Object.keys(row);
-        if (keys.length < 6) return;
-
-        let orgKey = keys.find(k => k.toUpperCase().includes('LIST OF ORGANIZATION')) || keys[5]; 
-        let countKey = keys.find(k => k.toUpperCase().includes('TOTAL COUNT VOLUNTEER')) || keys[6]; 
-        let individualKey = keys.find(k => k.toUpperCase().includes('INDIVIDUAL VOLUNTEER')) || keys[8]; 
-
-        let orgName = row[orgKey] ? row[orgKey].trim() : '';
-        let orgCount = Number(row[countKey]) || 0;
-        let standaloneCount = Number(row[individualKey]) || 0;
-
-        if (standaloneCount > 0) {
-            standaloneIndividuals += standaloneCount;
-        }
-
-        if (orgName && orgCount > 0 && !orgName.toUpperCase().includes('TOTAL')) {
-            totalOrgs++; 
-            totalIndividualsInOrgs += orgCount; 
-            orgList.push({ name: orgName, count: orgCount });
-        }
-    });
-
-    orgList.sort((a, b) => b.count - a.count);
-
-    const maxCount = orgList.length > 0 ? orgList[0].count : 1;
-
-    orgList.forEach((org, index) => {
-        let tr = document.createElement('tr');
-        tr.style.animationDelay = `${index * 0.03}s`;
-        
-        let tdName = document.createElement('td');
-        tdName.innerHTML = `
-            <div style="display:flex; align-items:center; gap:12px;">
-                <span style="color:#94a3b8; font-weight:800; font-size:0.6rem;">${index + 1}</span>
-                <span>${org.name}</span>
-            </div>
-        `;
-        
-        let tdCount = document.createElement('td');
-        let percentage = (org.count / maxCount) * 100;
-        tdCount.innerHTML = `
-            <div style="display:flex; align-items:center; gap:12px; width:100%;">
-                <span style="width: 30px; font-weight:800;">${org.count.toLocaleString()}</span>
-                <div style="flex:1; height:6px; background:#f1f5f9; border-radius:3px; overflow:hidden;">
-                    <div style="height:100%; width:${percentage}%; background:linear-gradient(90deg, #06b6d4, #2563eb); border-radius:3px; transition: width 1s ease-in-out;"></div>
-                </div>
-            </div>
-        `; // Reverted to original blue gradient
-        
-        tr.appendChild(tdName);
-        tr.appendChild(tdCount);
-        tbody.appendChild(tr);
-    });
-
-    let grandTotalHumans = totalIndividualsInOrgs + standaloneIndividuals;
-
-    document.getElementById('vol-orgs').innerText = totalOrgs.toLocaleString(); 
-    document.getElementById('vol-ind').innerText = grandTotalHumans.toLocaleString();
-}
-
-function processDocumentsData(data) {
-    let uniqueMonths = new Set();
-    
-    let dynamicKPIs = {
-        req: 0, action: 0, catered: 0, notCatered: 0, cancelled: 0, 
-        invAttended: 0, invNotAttended: 0, others: 0, noAction: 0
-    };
-
-    let explicitNoAction = 0;
-    if (rawDocumentsData && rawDocumentsData.length > 0) {
-        for (let i = 0; i < Math.min(5, rawDocumentsData.length); i++) {
-            let row = rawDocumentsData[i];
-            let keys = Object.keys(row);
-            let targetKey = keys.find(k => k.trim().toUpperCase() === 'TOTAL NO ACTION' || k.trim().toUpperCase() === 'COLUMN I');
-            if (targetKey && row[targetKey] !== undefined && String(row[targetKey]).trim() !== '') {
-                let parsedVal = parseInt(String(row[targetKey]).replace(/,/g, '').trim());
-                if (!isNaN(parsedVal)) {
-                    explicitNoAction = parsedVal;
-                    break;
-                }
-            }
-        }
-    }
-    
-    dynamicKPIs.noAction = explicitNoAction;
-
-    data.forEach(row => {
-        let keys = Object.keys(row);
-
-        let rawNature = row['Nature of Letter'] || row['NATURE OF LETTER'] || row['Column P'] || row['COLUMN P'] || '';
-        let rawCategory = row['Category of Writing Party'] || row['CATEGORY OF WRITING PARTY'] || row['Column O'] || row['COLUMN O'] || '';
-        let rawOffice = row['Received From (OFFICE)'] || row['RECEIVED FROM (OFFICE)'] || row['Received From Office'] || row['Column N'] || row['COLUMN N'] || '';
-        let rawActionTaken = row['Actions Taken'] || row['ACTIONS TAKEN'] || row['Column Q'] || row['COLUMN Q'] || '';
-        let dateStr = row['Column M'] || row['COLUMN M'] || row['Date Received'] || row['DATE RECEIVED'] || row[keys[12]] || '';
-        
-        let isSummaryRow = (row['TOTAL ACTION TAKEN (OVERALL)'] !== undefined && String(row['TOTAL ACTION TAKEN (OVERALL)']).trim() !== '') || 
-                           (row['TOTAL REQUEST CATERED'] !== undefined && String(row['TOTAL REQUEST CATERED']).trim() !== '');
-                           
-        let isBlankRow = (!rawNature || String(rawNature).trim() === '') && 
-                         (!rawCategory || String(rawCategory).trim() === '') &&
-                         (!dateStr || String(dateStr).trim() === '');
-
-        if (!isSummaryRow && !isBlankRow) {
-            
-            dynamicKPIs.req++;
-            let actionTxt = (rawActionTaken || '').toString().trim().toLowerCase();
-            let actionActuallyTaken = false;
-            
-            // STRICT LOGIC: Must explicitly contain the text "no action" in Column Q
-            if (actionTxt.includes('no action')) {
-                dynamicKPIs.noAction++;
-            } 
-            else if (actionTxt !== '' && actionTxt !== 'null') {
-                actionActuallyTaken = true;
-                dynamicKPIs.action++;
-                
-                if (actionTxt.includes('not catered')) {
-                    dynamicKPIs.notCatered++;
-                } else if (actionTxt.includes('catered') || actionTxt === 'catered') {
-                    dynamicKPIs.catered++;
-                } else if (actionTxt.includes('cancelled')) {
-                    dynamicKPIs.cancelled++;
-                } else if (actionTxt.includes('not attended')) {
-                    dynamicKPIs.invNotAttended++;
-                } else if (actionTxt.includes('attended')) {
-                    dynamicKPIs.invAttended++;
-                } else {
-                    dynamicKPIs.others++;
-                }
-            } 
-
-            let mappedNature = rawNature.trim();
-            let upperNature = mappedNature.toUpperCase();
-            
-            if (upperNature.includes('OFFER') || upperNature.includes('PROPOSAL')) {
-                mappedNature = 'Offer/Proposal';
-            } else if (upperNature.includes('REQUEST')) {
-                mappedNature = 'Request';
-            } else if (upperNature.includes('INVITATION')) {
-                mappedNature = 'Invitation';
-            } else if (upperNature.includes('FYI') || upperNature.includes('INFORMATION')) {
-                mappedNature = 'For Information';
-            } else {
-                mappedNature = 'Uncategorized';
-            }
-            
-            let subCategory = rawCategory.trim() !== '' ? rawCategory.trim() : 'Uncategorized';
-            let specificOffice = rawOffice.trim() !== '' ? rawOffice.trim() : 'Unspecified Office';
-            
-            let monthYearKey = 'all';
-            
-            if (dateStr && String(dateStr).trim() !== '') {
-                let parsedDate = parseCustomDate(dateStr);
-                if (parsedDate) {
-                    globalLineData.push({ dateObj: parsedDate, count: 1, timestamp: parsedDate.getTime() });
-                    let m = parsedDate.getMonth() + 1;
-                    let y = parsedDate.getFullYear();
-                    monthYearKey = `${y}-${m.toString().padStart(2, '0')}`;
-                    uniqueMonths.add(monthYearKey);
-                }
-            }
-
-            globalDocRecords.push({
-                dateKey: monthYearKey,
-                level1: mappedNature,     
-                level2: subCategory,      
-                level3: specificOffice,
-                hasActionTaken: actionActuallyTaken,
-                count: 1 
-            });
-        }
-    });
-
-    originalKPITotals = {
-        req: dynamicKPIs.req, 
-        action: dynamicKPIs.action, 
-        catered: dynamicKPIs.catered,     
-        notCatered: dynamicKPIs.notCatered, 
-        cancelled: dynamicKPIs.cancelled,     
-        invAttended: dynamicKPIs.invAttended, 
-        invNotAttended: dynamicKPIs.invNotAttended, 
-        others: dynamicKPIs.others,
-        noAction: dynamicKPIs.noAction 
-    };
-
-    let monthSelect = document.getElementById('docPieMonthFilter');
-    if (monthSelect) {
-        monthSelect.innerHTML = '<option value="all">All Time</option>';
-        let sortedMonths = Array.from(uniqueMonths).sort().reverse(); 
-        sortedMonths.forEach(my => {
-            if(my === 'all') return;
-            let [y, m] = my.split('-');
-            let dateObj = new Date(y, m - 1);
-            let label = dateObj.toLocaleString('en-US', { month: 'long', year: 'numeric' });
-            let opt = document.createElement('option');
-            opt.value = my;
-            opt.innerText = label;
-            monthSelect.appendChild(opt);
-        });
-    }
-
-    renderDocPieChart();
-    renderLineChartByTimeframe('daily');
-}
-
-function updateTrackingKPIDisplays() {
-    const cardReqCount = document.getElementById('doc-kpi-request').parentElement; 
-    const cardAction = document.getElementById('doc-kpi-action').parentElement; 
-    const cardCatered = document.getElementById('doc-kpi-catered').parentElement; 
-    const cardInvAtt = document.getElementById('doc-kpi-inv-att').parentElement; 
-    const cardNotCatered = document.getElementById('doc-kpi-not-catered').parentElement; 
-    const cardOthers = document.getElementById('doc-kpi-others').parentElement; 
-    const cardInvNot = document.getElementById('doc-kpi-inv-not').parentElement; 
-    const cardCancelled = document.getElementById('doc-kpi-cancelled').parentElement; 
-    const cardNoAction = document.getElementById('doc-kpi-no-action').parentElement; 
-
-    cardReqCount.style.display = '';
-
-    if (currentPieState.level === 1) {
-        [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => card.style.display = '');
-        
-        document.getElementById('doc-kpi-request').innerText = originalKPITotals.req;
-        document.getElementById('doc-kpi-action').innerText = originalKPITotals.action;
-        document.getElementById('doc-kpi-catered').innerText = originalKPITotals.catered;
-        document.getElementById('doc-kpi-inv-att').innerText = originalKPITotals.invAttended;
-        document.getElementById('doc-kpi-not-catered').innerText = originalKPITotals.notCatered;
-        document.getElementById('doc-kpi-others').innerText = originalKPITotals.others;
-        document.getElementById('doc-kpi-inv-not').innerText = originalKPITotals.invNotAttended;
-        document.getElementById('doc-kpi-cancelled').innerText = originalKPITotals.cancelled;
-        document.getElementById('doc-kpi-no-action').innerText = originalKPITotals.noAction;
-    } else {
-        let dynTotalRequestsMatched = 0;
-        let dynActionsActuallyTakenMatched = 0;
-        let targetCategory = currentPieState.level1Target;
-
-        globalDocRecords.forEach(record => {
-            if (currentPieState.filterKey === 'all' || record.dateKey === currentPieState.filterKey) {
-                if (record.level1 === targetCategory) {
-                    dynTotalRequestsMatched++;
-                    if (record.hasActionTaken) {
-                        dynActionsActuallyTakenMatched++;
-                    }
-                }
-            }
-        });
-
-        document.getElementById('doc-kpi-request').innerText = dynTotalRequestsMatched;
-        document.getElementById('doc-kpi-action').innerText = dynActionsActuallyTakenMatched;
-
-        [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => card.style.display = 'none');
-        
-        if (targetCategory === 'Request') {
-            cardCatered.style.display = '';
-            cardNotCatered.style.display = '';
-            cardCancelled.style.display = ''; 
-        } else if (targetCategory === 'Invitation') {
-            cardInvAtt.style.display = '';
-            cardInvNot.style.display = '';
-        } else if (targetCategory === 'Offer/Proposal' || targetCategory === 'For Information') {
-            cardAction.style.display = ''; 
-        } else {
-            cardAction.style.display = '';
-        }
-    }
-}
-
-function renderDocPieChart() {
-    let sourceMap = {};
-    let hasData = false;
-
-    globalDocRecords.forEach(record => {
-        if (currentPieState.filterKey === 'all' || record.dateKey === currentPieState.filterKey) {
-            if (currentPieState.level === 1) {
-                sourceMap[record.level1] = (sourceMap[record.level1] || 0) + record.count;
-                hasData = true;
-            } 
-            else if (currentPieState.level === 2 && record.level1 === currentPieState.level1Target) {
-                sourceMap[record.level2] = (sourceMap[record.level2] || 0) + record.count;
-                hasData = true;
-            } 
-            else if (currentPieState.level === 3 && record.level1 === currentPieState.level1Target && record.level2 === currentPieState.level2Target) {
-                sourceMap[record.level3] = (sourceMap[record.level3] || 0) + record.count;
-                hasData = true;
-            }
-        }
-    });
-
-    let sortedSources = [];
-    if (!hasData) {
-        sortedSources = [{ label: 'No Data Found', value: 1 }];
-    } else {
-        sortedSources = Object.keys(sourceMap).map(key => ({ label: key, value: sourceMap[key] }));
-        sortedSources.sort((a, b) => b.value - a.value);
-    }
-
-    let labels = sortedSources.map(item => item.label);
-    let dataValues = sortedSources.map(item => item.value);
-
-    const titleEl = document.getElementById('pieChartTitle');
-    const backBtn = document.getElementById('pieBackButton');
-
-    if (currentPieState.level === 1) {
-        titleEl.innerText = 'NATURE OF LETTER';
-        backBtn.style.display = 'none';
-    } 
-    else if (currentPieState.level === 2) {
-        titleEl.innerHTML = `BREAKDOWN: ${currentPieState.level1Target.toUpperCase()} <span style="color: #64748b; font-weight: 600; font-size: 0.65rem; opacity: 0.7; letter-spacing: 0.5px;">(CATEGORY OF REQUESTING/ WRITING PARTY)</span>`;
-        backBtn.style.display = 'block';
-    } 
-    else if (currentPieState.level === 3) {
-        titleEl.innerHTML = `BREAKDOWN: ${currentPieState.level2Target.toUpperCase()} <span style="color: #64748b; font-weight: 600; font-size: 0.65rem; opacity: 0.7; letter-spacing: 0.5px;">(SPECIFIC OFFICE / ENTITY)</span>`;
-        backBtn.style.display = 'block';
-    }
-
-    updateTrackingKPIDisplays();
-
-    if (docPieChartInstance) {
-        let mappedColors = labels.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
-        if (!hasData) mappedColors = ['#e2e8f0'];
-
-        docPieChartInstance.data.labels = labels;
-        docPieChartInstance.data.datasets[0].data = dataValues;
-        docPieChartInstance.data.datasets[0].backgroundColor = mappedColors;
-        
-        docPieChartInstance.update();
-        updateCustomLegend(labels, dataValues, !hasData);
-    } else {
-        drawInteractiveDonutChart('docSourcePieChart', labels, dataValues, !hasData);
-    }
-}
-
-function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = false) {
-    const ctx = document.getElementById(canvasId).getContext('2d');
-    if(docPieChartInstance) docPieChartInstance.destroy();
-    
-    let mappedColors = labels.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
-    if (isEmptyState) mappedColors = ['#e2e8f0']; 
-    
-    docPieChartInstance = new Chart(ctx, {
-        type: 'doughnut',
-        data: { 
-            labels: labels, 
-            datasets: [{ 
-                data: dataArr, 
-                backgroundColor: mappedColors, 
-                borderWidth: 0, 
-                borderRadius: 8, // Creates the rounded corners
-                spacing: 5,      // Creates the gaps between slices
-                hoverOffset: isEmptyState ? 0 : 15 // The interactive pop-out
-            }] 
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false, 
-            cutout: '55%', 
-            layout: { padding: 15 }, 
-            animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' },
-            hover: { mode: 'index', animationDuration: 300 }, 
-            onClick: (event, elements, chart) => {
-                if (chart.data.labels.length === 1 && chart.data.labels[0] === 'No Data Found') return;
-                
-                if (elements[0]) {
-                    const index = elements[0].index;
-                    const label = chart.data.labels[index];
-                    
-                    if (currentPieState.level === 1) {
-                        currentPieState.level = 2;
-                        currentPieState.level1Target = label;
-                        renderDocPieChart();
-                    } else if (currentPieState.level === 2) {
-                        currentPieState.level = 3;
-                        currentPieState.level2Target = label;
-                        renderDocPieChart();
-                    }
-                }
-            },
-            plugins: {
-                legend: { display: false },
-                datalabels: {
-                    color: (context) => (context.chart.data.labels.length === 1 && context.chart.data.labels[0] === 'No Data Found') ? '#94a3b8' : '#ffffff', 
-                    font: (context) => ({ weight: '800', family: 'Inter', size: (context.chart.data.labels.length === 1 && context.chart.data.labels[0] === 'No Data Found') ? 12 : 9 }), 
-                    anchor: 'center',
-                    align: 'center',
-                    formatter: (value, context) => { 
-                        if (context.chart.data.labels.length === 1 && context.chart.data.labels[0] === 'No Data Found') return 'No Data';
-                        
-                        let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); 
-                        if (sum === 0) return ''; 
-                        
-                        let pctStr = ((value * 100) / sum).toFixed(1);
-                        let pctFloat = parseFloat(pctStr);
-                        
-                        return pctFloat >= 8 ? pctStr + '%' : ''; 
-                    } 
-                },
-                tooltip: {
-                    filter: function(tooltipItem) { return tooltipItem.label !== 'No Data Found'; },
-                    ...sharedTooltipConfig, 
-                    callbacks: {
-                        label: function(context) {
-                            let suffix = '';
-                            if (currentPieState.level < 3) {
-                                suffix = ' (Click to zoom)';
-                            }
-                            
-                            let activeNature = (currentPieState.level === 1) ? context.label : currentPieState.level1Target;
-                            let unitStr = "Requests"; 
-                            
-                            if (activeNature === 'Invitation') unitStr = 'Invitations';
-                            else if (activeNature === 'For Information') unitStr = 'Information';
-                            else if (activeNature === 'Offer/Proposal') unitStr = 'Offers/Proposals';
-                            
-                            return `${context.raw} ${unitStr}${suffix}`;
-                        }
-                    }
-                }
-            }
-        }
-    });
-    updateCustomLegend(labels, dataArr, isEmptyState);
-}
-
-function updateCustomLegend(labels, data, isEmptyState = false) {
-    const legendContainer = document.getElementById('customLegend');
-    legendContainer.innerHTML = '';
-    labels.forEach((label, index) => {
-        let color = isEmptyState ? '#e2e8f0' : pieColorPalette[index % pieColorPalette.length];
-        let val = isEmptyState ? '-' : data[index];
-        legendContainer.innerHTML += `
-            <div class="legend-item" style="animation-delay: ${index * 0.04}s;">
-                <div class="legend-color" style="background-color: ${color}"></div>
-                <div class="legend-text" title="${label}">${label}</div>
-                <div class="legend-val">${val}</div>
-            </div>
-        `;
-    });
-}
-
-function renderLineChartByTimeframe(timeframe) {
-    let groupedObj = {};
-    let sortedData = [...globalLineData].sort((a, b) => a.timestamp - b.timestamp);
-
-    sortedData.forEach(item => {
-        let key = "";
-        if (timeframe === 'monthly') {
-            key = item.dateObj.toLocaleString('en-US', { month: 'short', year: 'numeric' });
-        } else if (timeframe === 'yearly') {
-            key = item.dateObj.getFullYear().toString();
-        } else { 
-            key = item.dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        }
-        groupedObj[key] = (groupedObj[key] || 0) + item.count;
-    });
-
-    const labels = Object.keys(groupedObj);
-    const dataValues = Object.values(groupedObj);
-    
-    if(labels.length === 0) {
-        drawLineChart('docDateLineChart', ['No Date Data Found'], [0]);
-    } else {
-        drawLineChart('docDateLineChart', labels, dataValues);
-    }
-}
-
-function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = false) {
-    const el = document.getElementById(elementId);
-    if (!el) return;
-
-    let current = 0;
-    let previous = 0;
-    let currentLabel = 'Current Month';
-    let prevLabel = 'Previous Month';
-
-    if (dataArray.length >= 2 && labelsArray.length >= 2) {
-        current = dataArray[dataArray.length - 1];
-        previous = dataArray[dataArray.length - 2];
-        currentLabel = labelsArray[labelsArray.length - 1];
-        prevLabel = labelsArray[labelsArray.length - 2];
-    } else if (dataArray.length === 1) {
-        current = dataArray[0];
-        currentLabel = labelsArray[0];
-    }
-
-    const diff = current - previous;
-    let trendHtml = '';
-    let bgColor = '#64748b'; 
-
-    if (dataArray.length < 2) {
-        trendHtml = `<span>No prior data</span>`;
-        el.style.backgroundColor = bgColor;
-        el.style.padding = '10px 16px'; 
-        el.innerHTML = `<div style="font-weight:600; font-size:0.75rem; color:#fff;">${trendHtml}</div>`;
-        return;
-    }
-
-    let symbol = '—';
-    let sign = diff > 0 ? '+' : '';
-
-    const arrowUp = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>`;
-    const arrowDown = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"></path></svg>`;
-
-    if (diff > 0) {
-        symbol = arrowUp;
-        bgColor = inverseColors ? '#ef4444' : '#10b981'; 
-    } else if (diff < 0) {
-        symbol = arrowDown;
-        bgColor = inverseColors ? '#10b981' : '#ef4444'; 
-        sign = '-'; 
-    }
-
-    let diffStr = diff > 0 ? `+${diff}` : diff;
-    let pct = previous > 0 ? Math.round((Math.abs(diff) / previous) * 100) : (diff > 0 ? 100 : 0);
-
-    let tooltipHtml = `
-        <div class="custom-tooltip">
-            <div style="color:#94a3b8; font-size:0.55rem; text-transform:uppercase; margin-bottom:6px; letter-spacing:0.5px;">Monthly Comparison</div>
-            <div style="display:flex; justify-content:space-between; gap:20px; margin-bottom:2px;"><span>${currentLabel}:</span> <strong>${current}</strong></div>
-            <div style="display:flex; justify-content:space-between; gap:20px; margin-bottom:2px;"><span>${prevLabel}:</span> <strong>${previous}</strong></div>
-            <div style="border-top:1px solid #334155; margin-top:6px; padding-top:6px; display:flex; justify-content:space-between; gap:20px;"><span>Difference:</span> <strong>${diffStr}</strong></div>
-        </div>
-    `;
-
-    el.style.backgroundColor = bgColor;
-    el.style.padding = '10px 16px'; 
-    el.style.color = '#ffffff';
-
-    el.innerHTML = `
-        <div class="has-tooltip" style="display:flex; width:100%; justify-content:space-between; align-items:center; cursor:pointer;">
-            <span style="font-weight:600; font-size:0.75rem;">${Math.abs(diff)} (${sign}${pct}%)</span>
-            <span style="display:flex; align-items:center;">${symbol}</span>
-            ${tooltipHtml}
-        </div>
-    `;
-}
-
-// --- MODIFIED: Rendering the new Sparklines instead of Bars ---
+// --- UPDATED: New configuration for the Rolling Sparklines to show values and months ---
 function renderToggleableChart(canvasId, type, isInitialLoad = false) {
     const canvas = document.getElementById(canvasId);
     const container = canvas.parentElement;
@@ -1651,7 +1001,8 @@ function renderToggleableChart(canvasId, type, isInitialLoad = false) {
         
         // Rolling Window Logic: Take only the last 4 items to create the sparkline
         const wSize = 4;
-        const sparkLabels = dataObj.labels.slice(-wSize);
+        // Abbreviate the months (e.g. "JAN", "FEB") so they fit cleanly under the line
+        const sparkLabels = dataObj.labels.slice(-wSize).map(l => l.substring(0, 3));
         const sparkData = dataObj.data.slice(-wSize);
         const chartColor = Array.isArray(dataObj.color) ? dataObj.color[0] : dataObj.color;
 
@@ -1667,24 +1018,41 @@ function renderToggleableChart(canvasId, type, isInitialLoad = false) {
                     pointBackgroundColor: '#ffffff',
                     pointBorderColor: chartColor,
                     pointBorderWidth: 2,
-                    pointRadius: 3,
+                    pointRadius: 4,     // Slightly larger so points are easily visible
                     pointHoverRadius: 6,
-                    tension: 0.4, // Super smooth curves
+                    tension: 0.4,       // Super smooth curves
                     fill: false
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                layout: { padding: { top: 10, bottom: 10, left: 10, right: 10 } },
+                // Added top padding to ensure floating data labels are not cut off
+                layout: { padding: { top: 25, bottom: 5, left: 10, right: 15 } },
                 plugins: {
                     legend: { display: false },
-                    datalabels: { display: false }, // Hidden for sparkline cleanliness
+                    datalabels: { 
+                        display: true,     // ENABLED: Show exact numbers above the line
+                        color: chartColor, // Matches the line color
+                        align: 'top',
+                        anchor: 'bottom',
+                        offset: 6,
+                        font: { weight: '800', family: 'Inter', size: 10 }
+                    },
                     tooltip: sharedTooltipConfig
                 },
                 scales: {
-                    x: { display: false }, // Hide axes
-                    y: { display: false, beginAtZero: true } // Hide axes
+                    x: { 
+                        display: true, // ENABLED: Show abbreviated months
+                        grid: { display: false, drawBorder: false },
+                        ticks: { font: { family: 'Inter', size: 9, weight: '700' }, color: '#94a3b8' },
+                        border: { display: false }
+                    },
+                    y: { 
+                        display: false, // Keep Y hidden to save horizontal space
+                        beginAtZero: true,
+                        grace: '30%'    // Adds invisible ceiling space so top numbers don't touch the roof
+                    }
                 }
             }
         });
