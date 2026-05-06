@@ -274,7 +274,6 @@ window.openExpandedLineChart = function(chartKey) {
 
     // Create a smooth gradient specific to the chart's theme color
     let gradient = ctx.createLinearGradient(0, 0, 0, 400);
-    // Extract base color, apply alpha for gradient
     gradient.addColorStop(0, 'rgba(37, 99, 235, 0.2)'); 
     gradient.addColorStop(1, 'rgba(37, 99, 235, 0.0)');
 
@@ -981,7 +980,7 @@ function buildMonthHTML(year, month, isSmallScale) {
     return html;
 }
 
-// --- UPDATED: New configuration for the Rolling Sparklines to show values and months ---
+// --- CORRECTED: Sparkline Chart Render Function ---
 function renderToggleableChart(canvasId, type, isInitialLoad = false) {
     const canvas = document.getElementById(canvasId);
     const container = canvas.parentElement;
@@ -1032,7 +1031,7 @@ function renderToggleableChart(canvasId, type, isInitialLoad = false) {
                 plugins: {
                     legend: { display: false },
                     datalabels: { 
-                        display: true,     // ENABLED: Show exact numbers above the line
+                        display: true,     // Show exact numbers above the line
                         color: chartColor, // Matches the line color
                         align: 'top',
                         anchor: 'bottom',
@@ -1043,7 +1042,7 @@ function renderToggleableChart(canvasId, type, isInitialLoad = false) {
                 },
                 scales: {
                     x: { 
-                        display: true, // ENABLED: Show abbreviated months
+                        display: true, // Show abbreviated months
                         grid: { display: false, drawBorder: false },
                         ticks: { font: { family: 'Inter', size: 9, weight: '700' }, color: '#94a3b8' },
                         border: { display: false }
