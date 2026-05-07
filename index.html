@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDRRMO Integrated Operations Dashboard</title>
     
-    <!-- Preload background images so they download immediately and stop delays -->
     <link rel="preload" href="bg.jpg" as="image">
     <link rel="preload" href="headerbg.jpg" as="image">
     
@@ -15,7 +14,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     
-    <!-- SMOOTH PREMIUM LOADER & LOGIN STYLES -->
     <style>
         /* --- SECURE LOGIN OVERLAY --- */
         .login-overlay {
@@ -229,7 +227,6 @@
 </head>
 <body>
     
-    <!-- SECURE LOGIN OVERLAY -->
     <div id="login-overlay" class="login-overlay">
         <div class="login-card">
             <img src="tarlac_official_seal.png" alt="PDRRMO Seal" class="login-logo">
@@ -244,7 +241,6 @@
         </div>
     </div>
 
-    <!-- THE PREMIUM LOADING OVERLAY WITH IMAGE -->
     <div id="global-loader">
         <div class="loader-bg"></div>
         <div class="loader-gloss"></div>
@@ -260,7 +256,6 @@
     </div>
 
     <div class="dashboard-container">
-        <!-- Sidebar Navigation -->
         <nav class="sidebar">
             
             <div class="sidebar-logo-container">
@@ -306,7 +301,6 @@
                 
                 <li class="section-title">GIS & Maps</li>
                 
-                <!-- NEW MODAL MAP TRIGGERS WITH INLINE SVG "EXTERNAL LINK" ICONS -->
                 <li onclick="openMapModal('https://tarlacpdrrmo.github.io/tarlac-ews-map/', 'Early Warning System Map')">
                     <svg class="menu-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -334,7 +328,6 @@
             </ul>
         </nav>
 
-        <!-- Main Content Area -->
         <main class="main-content" id="scroll-area">
             
             <header class="page-header">
@@ -344,9 +337,7 @@
                 </div>
                 
                 <div class="header-right-actions">
-                    <!-- INTERACTIVE EXPANDABLE WEATHER WIDGET -->
                     <div id="weather-interactive-widget" class="weather-interactive-container">
-                        <!-- Collapsed Header (Clickable) -->
                         <div class="weather-toggle" onclick="toggleWeatherPanel()">
                             <img id="weather-icon-main" src="" alt="Weather" style="display:none;">
                             <div class="weather-summary">
@@ -356,7 +347,6 @@
                             <svg class="dropdown-arrow" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                         </div>
 
-                        <!-- Expanded Panel (Hidden by default) -->
                         <div id="weather-expanded-panel" class="weather-panel">
                             <div class="weather-search-wrapper">
                                 <label for="tarlac-muni-select">Select Municipality:</label>
@@ -396,17 +386,14 @@
                                 </div>
                             </div>
 
-                            <!-- Chance of Rain Graph -->
                             <h4 class="weather-section-title">Chance of Rain (Next 12 Hrs)</h4>
                             <div class="weather-chart-wrapper">
                                 <canvas id="rainChanceChart"></canvas>
                             </div>
 
-                            <!-- 3-Day Forecast Grid -->
                             <h4 class="weather-section-title">3-Day Forecast</h4>
                             <div id="forecast-grid" class="forecast-grid">
-                                <!-- JavaScript will inject the 3 days here -->
-                            </div>
+                                </div>
                         </div>
                     </div>
 
@@ -427,7 +414,6 @@
                 </div>
             </header>
             
-            <!-- Panel 1: Assets & Personnel -->
             <section id="assets" class="panel">
                 
                 <div class="panel-header-wrapper">
@@ -476,13 +462,11 @@
                     </div>
                     
                     <div class="charts-wrapper">
-                        <!-- TOP MAIN CHARTS -->
                         <div class="charts-grid">
                             
                             <div class="card span-2x2">
                                 <div class="chart-header-actions" style="border-bottom: none; margin-bottom: 0;">
                                     <h4 class="chart-title" style="font-size: 0.85rem;">Overall Services Breakdown</h4>
-                                    <!-- RESET BUTTON WRAPPER -->
                                     <div style="display:flex; gap:8px; align-items:center;">
                                         <button id="resetMasterPieBtn" class="btn-reset" title="Show all categories">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg>
@@ -501,7 +485,6 @@
                                 </div>
                             </div>
                             
-                            <!-- 10 MINI ROLLING HORIZONTAL BAR CHARTS WITH EXPAND ICON -->
                             <div class="card chart-card flex-col p-0">
                                 <div style="display: flex; justify-content: space-between; align-items: flex-start; padding-right: 12px; z-index: 10;">
                                     <h4 class="card-inner-title" style="padding-bottom: 0;">TRAUMA (ROADCRASH INCIDENT)</h4>
@@ -561,7 +544,6 @@
 
                         <h4 class="section-divider-title">ANCILLARY SERVICES</h4>
 
-                        <!-- BOTTOM 5 COMPACT CHARTS -->
                         <div class="charts-grid">
                             
                             <div class="card chart-card flex-col p-0">
@@ -625,7 +607,6 @@
                 </div>
             </section>
 
-            <!-- Panel 2: Document Tracking -->
             <section id="tracking" class="panel">
                 
                 <h3 class="panel-heading">COMMUNICATION LETTERS RECEIVED</h3>
@@ -675,12 +656,10 @@
                 </div>
             </section>
 
-            <!-- Panel 3: Trainings Dashboard -->
             <section id="trainings" class="panel">
                 <h3 class="panel-heading">Trainings and Seminars Dashboard</h3>
                 <div class="assets-layout">
                     
-                    <!-- Left KPIs Column -->
                     <div class="kpi-column" style="width: 220px; display: flex; flex-direction: column;">
                         <div class="card kpi-card">
                             <h4>TOTAL PAX ATTENDEE</h4>
@@ -710,7 +689,6 @@
 
                     <div class="charts-wrapper" style="display: flex; flex-direction: column;">
                         
-                        <!-- OVERVIEW MONTH FILTER -->
                         <div style="display: flex; justify-content: center; margin-bottom: 8px;">
                             <div style="background: #ffffff; padding: 10px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 16px; border: 1px solid #f1f5f9;">
                                 <span style="font-size: 0.75rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Filter Month</span>
@@ -732,7 +710,6 @@
                             </div>
                         </div>
 
-                        <!-- Top Analytics Row -->
                         <div class="charts-grid">
                             
                             <div class="card chart-card flex-col p-0">
@@ -745,7 +722,6 @@
                                 <div class="chart-render-area"><canvas id="trainTypesChart"></canvas></div>
                             </div>
                             
-                            <!-- REMARKS CARD WITH EXPAND ICON -->
                             <div class="card chart-card flex-col p-0">
                                 <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid transparent; padding-right: 12px;">
                                     <h4 class="card-inner-title" style="padding-bottom: 0;">Remarks</h4>
@@ -763,7 +739,6 @@
                             
                         </div>
 
-                        <!-- Full Width Interactive Calendar -->
                         <div class="card doc-chart-card" style="margin-top: 16px; flex: 1; display: flex; flex-direction: column; min-height: 380px;">
                             <div class="chart-header-actions" style="margin-bottom: 0; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9;">
                                 <h4 class="chart-title">TRAININGS & SEMINARS CALENDAR</h4>
@@ -772,7 +747,7 @@
                                     <select id="trainCategoryFilter" class="chart-filter" style="min-width: 160px;">
                                         <option value="all">All Categories</option>
                                         <option value="TRAINING">Training Category</option>
-                                        <option value="ACTIVITY">Activity Category</option>
+                                        <option value="IEC LECTURE/ DRILL">IEC Lecture/ Drill</option>
                                     </select>
 
                                     <button id="calPrevBtn" class="btn-back" style="display:block; padding: 6px 12px;">&larr;</button>
@@ -794,7 +769,6 @@
                 </div>
             </section>
 
-            <!-- Panel 4: Volunteer's Section -->
             <section id="volunteers" class="panel">
                 
                 <h3 class="panel-heading">Volunteer's Section</h3>
@@ -814,7 +788,6 @@
         </main>
     </div>
 
-    <!-- MODAL 1: EXPANDED TITLES -->
     <div id="titlesModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -825,7 +798,6 @@
         </div>
     </div>
 
-    <!-- MODAL 2: EXPANDED REMARKS DETAILS -->
     <div id="remarksModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -836,7 +808,6 @@
         </div>
     </div>
 
-    <!-- NEW MODAL 3: EXPANDED 12-MONTH CHART -->
     <div id="expandedLineModal" class="modal-overlay">
         <div class="modal-content" style="max-width: 800px; width: 95%;">
             <div class="modal-header">
@@ -849,7 +820,6 @@
         </div>
     </div>
 
-    <!-- MAP MODAL -->
     <div id="mapModal" class="modal-overlay">
         <div class="map-modal-content">
             <div class="modal-header">
@@ -857,12 +827,10 @@
                 <button onclick="closeMapModal()" class="btn-close-modal">&times;</button>
             </div>
             <div id="mapModalBody" class="map-modal-body">
-                <!-- iframe injected here dynamically -->
-            </div>
+                </div>
         </div>
     </div>
     
-    <!-- SECURITY DETERRENTS -->
     <script>
         // Disable Right-Click
         document.addEventListener('contextmenu', event => event.preventDefault());
@@ -877,11 +845,9 @@
         }
     </script>
     
-    <!-- 1. Load Firebase FIRST so the browser knows what it is -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
 
-    <!-- 2. Load your app.js LAST so it can use the Firebase tool -->
     <script src="app.js"></script>
 </body>
 </html>
