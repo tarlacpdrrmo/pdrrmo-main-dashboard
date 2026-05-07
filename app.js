@@ -901,7 +901,7 @@ function buildMonthHTML(year, month, isSmallScale) {
             let linesHtml = '';
             let maxLines = 3; 
             for(let j=0; j<Math.min(events.length, maxLines); j++) {
-                let lineClass = events[j].category === 'ACTIVITY' ? 'cal-line-activity' : '';
+                let lineClass = events[j].category === 'IEC LECTURE/ DRILL' ? 'cal-line-activity' : '';
                 linesHtml += `<div class="cal-line ${lineClass}"></div>`;
             }
             if(events.length > maxLines) linesHtml += `<span style="font-size:0.55rem; line-height:4px; color:#64748b; font-weight: 800; margin-left: 2px;">+</span>`;
@@ -909,7 +909,7 @@ function buildMonthHTML(year, month, isSmallScale) {
             let tooltipListHtml = events.map((e, idx) => `
                 <div style="margin-bottom:${idx === events.length-1 ? '0' : '8px'}; text-align:left;">
                     <div style="display:flex; align-items:flex-start; gap:6px; margin-bottom:4px;">
-                        <div class="cal-line ${e.category === 'ACTIVITY' ? 'cal-line-activity' : ''}" style="width: 12px; height: 4px; flex: none; margin-top: 4px;"></div>
+                        <div class="cal-line ${e.category === 'IEC LECTURE/ DRILL' ? 'cal-line-activity' : ''}" style="width: 12px; height: 4px; flex: none; margin-top: 4px;"></div>
                         <span style="font-size:0.7rem; font-weight:800; color:#ffffff; line-height: 1.2;">${e.title}</span>
                     </div>
                     <div style="padding-left: 18px; font-size: 0.6rem; color: #cbd5e1; line-height: 1.5;">
@@ -1329,7 +1329,7 @@ function processOperationsData(data) {
 
         renderTrendFooter('trend-vehicular', vehicular, labels, true); 
         renderTrendFooter('trend-roadside', roadside, labels, false); 
-        renderTrendFooter('trend-patient', patient, labels, true);      
+        renderTrendFooter('trend-patient', patient, labels, true);     
         renderTrendFooter('trend-medical', medical, labels, true);                
         renderTrendFooter('trend-standby', standby, labels, false); 
         
