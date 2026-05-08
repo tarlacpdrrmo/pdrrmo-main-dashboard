@@ -174,8 +174,8 @@ let trainStatusChartInst = null;
 let trainTypesChartInst = null;
 let trainNumbersChartInst = null;
 
-// ADDED: Treemap Global Tracker
-let volTreemapInstance = null;
+// ADDED: Polar Area Global Tracker
+let volPolarInstance = null;
 
 let globalLineData = []; 
 let globalDocRecords = []; 
@@ -1126,65 +1126,72 @@ function processVolunteersData(data) {
     document.getElementById('vol-orgs').innerText = totalOrgs.toLocaleString(); 
     document.getElementById('vol-ind').innerText = grandTotalHumans.toLocaleString();
 
-    // ADDED: Initialize and Draw the Treemap Chart
-    drawVolunteerTreemap(orgList);
+    // ADDED: Initialize and Draw the Polar Area Chart
+    drawVolunteerPolarChart(orgList);
 }
 
-// ADDED: Function to handle Treemap generation
-function drawVolunteerTreemap(orgList) {
-    const canvas = document.getElementById('volunteerTreemapChart');
+// ADDED: Function to handle Polar Area generation
+function drawVolunteerPolarChart(orgList) {
+    const canvas = document.getElementById('volunteerPolarChart');
     if(!canvas) return;
     const ctx = canvas.getContext('2d');
 
-    if (volTreemapInstance) {
-        volTreemapInstance.destroy();
+    if (volPolarInstance) {
+        volPolarInstance.destroy();
     }
 
-    const validData = orgList.filter(o => o.count > 0);
-    if (validData.length === 0) return;
+    // Get Top 10 Organizations
+    const topData = orgList.slice(0, 10);
+    if (topData.length === 0) return;
 
-    const maxVal = Math.max(...validData.map(o => o.count));
+    const labels = topData.map(o => o.name);
+    const counts = topData.map(o => o.count);
 
-    volTreemapInstance = new Chart(ctx, {
-        type: 'treemap',
+    // Map theme colors with a touch of transparency for the overlapping polar effect
+    const bgColors = counts.map((_, i) => {
+        return pieColorPalette[i % pieColorPalette.length] + 'CC'; // Appends 'CC' for 80% opacity
+    });
+
+    volPolarInstance = new Chart(ctx, {
+        type: 'polarArea',
         data: {
+            labels: labels,
             datasets: [{
-                tree: validData,
-                key: 'count',
-                groups: ['name'],
-                spacing: 2,
-                borderWidth: 0,
-                backgroundColor(context) {
-                    if (context.type !== 'data') return 'transparent';
-                    const value = context.raw.v;
-                    // Generates a theme-matching cyan/blue gradient scale based on count
-                    const alpha = 0.4 + (0.6 * (value / maxVal));
-                    return `rgba(14, 165, 233, ${alpha})`; 
-                },
-                labels: {
-                    display: true,
-                    align: 'left',
-                    position: 'top',
-                    color: '#ffffff',
-                    font: { family: 'Inter', size: 11, weight: '700' },
-                    formatter(context) {
-                        if(context.type !== 'data') return '';
-                        return [context.raw.g, context.raw.v];
-                    }
-                }
+                data: counts,
+                backgroundColor: bgColors,
+                borderWidth: 2,
+                borderColor: '#ffffff'
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            layout: { padding: 10 },
+            scales: {
+                r: {
+                    ticks: { display: false }, // Hide the numbers on the rings to keep it clean
+                    grid: { color: 'rgba(148, 163, 184, 0.2)' },
+                    border: { display: false }
+                }
+            },
             plugins: {
-                legend: { display: false },
-                datalabels: { display: false }, 
+                legend: {
+                    display: true,
+                    position: 'right',
+                    labels: {
+                        color: '#1e293b',
+                        font: { family: 'Inter', size: 10, weight: '600' },
+                        boxWidth: 12,
+                        padding: 15
+                    }
+                },
+                datalabels: { display: false },
                 tooltip: {
                     ...sharedTooltipConfig,
                     callbacks: {
-                        title: (items) => items[0].raw.g,
-                        label: (item) => `Volunteers: ${item.raw.v}`
+                        label: function(context) {
+                            return ` Volunteers: ${context.raw}`;
+                        }
                     }
                 }
             }
