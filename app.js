@@ -174,6 +174,9 @@ let trainStatusChartInst = null;
 let trainTypesChartInst = null;
 let trainNumbersChartInst = null;
 
+// ADDED: Treemap Global Tracker
+let volTreemapInstance = null;
+
 let globalLineData = []; 
 let globalDocRecords = []; 
 let originalKPITotals = {};
@@ -1122,6 +1125,71 @@ function processVolunteersData(data) {
 
     document.getElementById('vol-orgs').innerText = totalOrgs.toLocaleString(); 
     document.getElementById('vol-ind').innerText = grandTotalHumans.toLocaleString();
+
+    // ADDED: Initialize and Draw the Treemap Chart
+    drawVolunteerTreemap(orgList);
+}
+
+// ADDED: Function to handle Treemap generation
+function drawVolunteerTreemap(orgList) {
+    const canvas = document.getElementById('volunteerTreemapChart');
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    if (volTreemapInstance) {
+        volTreemapInstance.destroy();
+    }
+
+    const validData = orgList.filter(o => o.count > 0);
+    if (validData.length === 0) return;
+
+    const maxVal = Math.max(...validData.map(o => o.count));
+
+    volTreemapInstance = new Chart(ctx, {
+        type: 'treemap',
+        data: {
+            datasets: [{
+                tree: validData,
+                key: 'count',
+                groups: ['name'],
+                spacing: 2,
+                borderWidth: 0,
+                backgroundColor(context) {
+                    if (context.type !== 'data') return 'transparent';
+                    const value = context.raw.v;
+                    // Generates a theme-matching cyan/blue gradient scale based on count
+                    const alpha = 0.4 + (0.6 * (value / maxVal));
+                    return `rgba(14, 165, 233, ${alpha})`; 
+                },
+                labels: {
+                    display: true,
+                    align: 'left',
+                    position: 'top',
+                    color: '#ffffff',
+                    font: { family: 'Inter', size: 11, weight: '700' },
+                    formatter(context) {
+                        if(context.type !== 'data') return '';
+                        return [context.raw.g, context.raw.v];
+                    }
+                }
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                datalabels: { display: false }, 
+                tooltip: {
+                    ...sharedTooltipConfig,
+                    callbacks: {
+                        title: (items) => items[0].raw.g,
+                        label: (item) => `Volunteers: ${item.raw.v}`
+                    }
+                }
+            }
+        }
+    });
 }
 
 // --- HELPER FUNCTIONS RESTORED ---
@@ -1500,7 +1568,7 @@ function renderMasterServicePie(monthFilter) {
                         backgroundColor: mappedColors,
                         borderWidth: 0, 
                         borderRadius: 8, 
-                        spacing: 5,      
+                        spacing: 5,     
                         hoverOffset: 15  
                     }]
                 },
@@ -1857,7 +1925,7 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
                 backgroundColor: mappedColors, 
                 borderWidth: 0, 
                 borderRadius: 8, 
-                spacing: 5,      
+                spacing: 5,     
                 hoverOffset: isEmptyState ? 0 : 15 
             }] 
         },
@@ -2034,7 +2102,7 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
                 backgroundColor: mappedVibrant, 
                 borderWidth: 0, 
                 borderRadius: 8, 
-                spacing: 5,      
+                spacing: 5,     
                 hoverOffset: 15 
             }] 
         },
