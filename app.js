@@ -174,8 +174,8 @@ let trainStatusChartInst = null;
 let trainTypesChartInst = null;
 let trainNumbersChartInst = null;
 
-// ADDED: Polar Area Global Tracker
-let volPolarInstance = null;
+// ADDED: Global tracking for parsed volunteer gender data
+let globalOrgGenderMap = {};
 
 let globalLineData = []; 
 let globalDocRecords = []; 
@@ -1061,11 +1061,13 @@ function processVolunteersData(data) {
     let totalIndividualsInOrgs = 0;
     let standaloneIndividuals = 0;
     let orgList = []; 
+    globalOrgGenderMap = {}; 
 
     const tbody = document.querySelector('#volunteerTable tbody');
     if(!tbody) return;
     tbody.innerHTML = ''; 
 
+    // First Pass: Extract Summary Logic
     data.forEach(row => {
         let keys = Object.keys(row);
         if (keys.length < 6) return;
@@ -1093,6 +1095,35 @@ function processVolunteersData(data) {
 
     const maxCount = orgList.length > 0 ? orgList[0].count : 1;
 
+    // Second Pass: Extract Gender Breakdown Logic
+    data.forEach(row => {
+        let keys = Object.keys(row);
+        let indOrgKey = keys.find(k => k.trim().toUpperCase() === 'ORGANIZATION') || keys[3];
+        let indGenderKey = keys.find(k => k.trim().toUpperCase() === 'GENDER') || keys[4];
+
+        let indOrg = row[indOrgKey] ? String(row[indOrgKey]).trim() : '';
+        let indGender = row[indGenderKey] ? String(row[indGenderKey]).trim() : '';
+
+        if (indOrg && indGender) {
+            // Find matched official name to prevent duplicate map keys from trailing spaces
+            let matchedOrgObj = orgList.find(o => o.name.toUpperCase() === indOrg.toUpperCase());
+            let finalOrgName = matchedOrgObj ? matchedOrgObj.name : indOrg;
+
+            if(!globalOrgGenderMap[finalOrgName]) {
+                globalOrgGenderMap[finalOrgName] = { Male: 0, Female: 0, Total: 0 };
+            }
+            
+            let genderUpper = indGender.toUpperCase();
+            if(genderUpper.includes('MALE') && !genderUpper.includes('FEMALE')) {
+                globalOrgGenderMap[finalOrgName].Male++;
+            } else if(genderUpper.includes('FEMALE')) {
+                globalOrgGenderMap[finalOrgName].Female++;
+            }
+            globalOrgGenderMap[finalOrgName].Total++;
+        }
+    });
+
+    // Populate Data Table
     orgList.forEach((org, index) => {
         let tr = document.createElement('tr');
         tr.style.animationDelay = `${index * 0.03}s`;
@@ -1121,83 +1152,104 @@ function processVolunteersData(data) {
         tbody.appendChild(tr);
     });
 
+    // Update the 3 Metric Boxes
     document.getElementById('vol-orgs').innerText = totalOrgs.toLocaleString(); 
     
-    // UPDATED: Now pushing data to the two specific new boxes
     const orgMembersEl = document.getElementById('vol-org-members');
     if (orgMembersEl) orgMembersEl.innerText = totalIndividualsInOrgs.toLocaleString();
     
     document.getElementById('vol-ind').innerText = standaloneIndividuals.toLocaleString();
 
-    drawVolunteerPolarChart(orgList);
+    // Populate Gender Dropdown
+    const selectEl = document.getElementById('orgGenderSelect');
+    if (selectEl) {
+        selectEl.innerHTML = '';
+        
+        let orgsWithData = Object.keys(globalOrgGenderMap).sort((a, b) => globalOrgGenderMap[b].Total - globalOrgGenderMap[a].Total);
+        
+        if (orgsWithData.length > 0) {
+            orgsWithData.forEach(orgName => {
+                let opt = document.createElement('option');
+                opt.value = orgName;
+                opt.innerText = orgName;
+                selectEl.appendChild(opt);
+            });
+            
+            selectEl.onchange = function() {
+                renderPictogram(this.value);
+            };
+            
+            // Render first option by default
+            renderPictogram(orgsWithData[0]);
+        } else {
+            selectEl.innerHTML = '<option value="">No Gender Data</option>';
+            renderPictogram('');
+        }
+    }
 }
 
-function drawVolunteerPolarChart(orgList) {
-    const canvas = document.getElementById('volunteerPolarChart');
-    if(!canvas) return;
-    const ctx = canvas.getContext('2d');
+// ADDED: Pictogram Render Function
+function renderPictogram(orgName) {
+    const container = document.getElementById('pictogramContainer');
+    if(!container) return;
 
-    if (volPolarInstance) {
-        volPolarInstance.destroy();
+    let data = globalOrgGenderMap[orgName] || { Male: 0, Female: 0, Total: 0 };
+    let total = data.Male + data.Female;
+
+    if (total === 0) {
+        container.innerHTML = `<div style="text-align:center; padding: 40px; color:#94a3b8; font-weight:600;">No gender data available for this organization.</div>`;
+        return;
     }
 
-    // Get Top 10 Organizations
-    const topData = orgList.slice(0, 10);
-    if (topData.length === 0) return;
+    let pctMale = Math.round((data.Male / total) * 100);
+    let pctFemale = Math.round((data.Female / total) * 100);
 
-    const labels = topData.map(o => o.name);
-    const counts = topData.map(o => o.count);
+    let maleIcon = `<svg viewBox="0 0 320 512" width="14" height="14" fill="currentColor" style="margin:2px;"><path d="M112 48a48 48 0 1 1 96 0 48 48 0 1 1 -96 0zm40 304V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V256.9L59.4 304.5c-9.1 15.1-28.8 20-43.9 10.9s-20-28.8-10.9-43.9l58.3-97c17.4-28.9 48.6-46.6 82.3-46.6h29.7c33.7 0 64.9 17.7 82.3 46.6l58.3 97c9.1 15.1 4.2 34.8-10.9 43.9s-34.8 4.2-43.9-10.9L232 256.9V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V352H152z"/></svg>`;
+    let femaleIcon = `<svg viewBox="0 0 320 512" width="14" height="14" fill="currentColor" style="margin:2px;"><path d="M160 48a48 48 0 1 1 0 96 48 48 0 1 1 0-96zM74.5 289.1c-7.6 13-24.5 17.3-37.5 9.8s-17.3-24.5-9.8-37.5L65.6 195C82.8 165.6 114 148 148.1 148h23.8c34.1 0 65.3 17.6 82.5 47l38.4 66.5c7.6 13 3.2 29.9-9.8 37.5s-29.9 3.2-37.5-9.8L207.2 222V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V352H176v128c0 17.7-14.3 32-32 32s-32-14.3-32-32V222L74.5 289.1z"/></svg>`;
 
-    // Map theme colors with a touch of transparency for the overlapping polar effect
-    const bgColors = counts.map((_, i) => {
-        return pieColorPalette[i % pieColorPalette.length] + 'CC'; // Appends 'CC' for 80% opacity
-    });
+    let maleIconsHtml = '';
+    // Cap to prevent browser crash on enormous lists
+    let displayMale = data.Male > 300 ? 300 : data.Male;
+    let displayFemale = data.Female > 300 ? 300 : data.Female;
+    let noteHtml = (data.Male > 300 || data.Female > 300) ? `<div style="font-size: 0.6rem; color: #94a3b8; text-align: center; margin-top: 10px;">*Icons capped at 300 for browser performance.</div>` : '';
 
-    volPolarInstance = new Chart(ctx, {
-        type: 'polarArea',
-        data: {
-            labels: labels,
-            datasets: [{
-                data: counts,
-                backgroundColor: bgColors,
-                borderWidth: 2,
-                borderColor: '#ffffff'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            layout: { padding: 10 },
-            scales: {
-                r: {
-                    ticks: { display: false }, // Hide the numbers on the rings to keep it clean
-                    grid: { color: 'rgba(148, 163, 184, 0.2)' },
-                    border: { display: false }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'right',
-                    labels: {
-                        color: '#1e293b',
-                        font: { family: 'Inter', size: 10, weight: '600' },
-                        boxWidth: 12,
-                        padding: 15
-                    }
-                },
-                datalabels: { display: false },
-                tooltip: {
-                    ...sharedTooltipConfig,
-                    callbacks: {
-                        label: function(context) {
-                            return ` Volunteers: ${context.raw}`;
-                        }
-                    }
-                }
-            }
-        }
-    });
+    for(let i=0; i<displayMale; i++) maleIconsHtml += maleIcon;
+    let femaleIconsHtml = '';
+    for(let i=0; i<displayFemale; i++) femaleIconsHtml += femaleIcon;
+
+    container.innerHTML = `
+        <div style="display:flex; justify-content:space-between; margin-bottom: 16px;">
+            <div style="background:#eff6ff; border: 1px solid #bfdbfe; border-radius:8px; padding:10px 16px; flex:1; margin-right:8px; display:flex; flex-direction:column; align-items:center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <span style="font-size:0.6rem; font-weight:800; color:#3b82f6; text-transform:uppercase; letter-spacing: 0.5px;">Male</span>
+                <span style="font-size:1.4rem; font-weight:800; color:#1e40af; margin-top:2px;">${data.Male}</span>
+                <span style="font-size:0.65rem; font-weight:700; color:#60a5fa; margin-top:2px;">${pctMale}%</span>
+            </div>
+            <div style="background:#fff1f2; border: 1px solid #fecdd3; border-radius:8px; padding:10px 16px; flex:1; margin-left:8px; display:flex; flex-direction:column; align-items:center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <span style="font-size:0.6rem; font-weight:800; color:#f43f5e; text-transform:uppercase; letter-spacing: 0.5px;">Female</span>
+                <span style="font-size:1.4rem; font-weight:800; color:#9f1239; margin-top:2px;">${data.Female}</span>
+                <span style="font-size:0.65rem; font-weight:700; color:#fb7185; margin-top:2px;">${pctFemale}%</span>
+            </div>
+        </div>
+        
+        <div style="display:flex; flex-direction:column; gap:16px;">
+            ${data.Male > 0 ? `
+            <div>
+                <div style="font-size:0.65rem; font-weight:800; color:#3b82f6; margin-bottom:4px; text-transform:uppercase;">Male Volunteers</div>
+                <div style="color:#60a5fa; display:flex; flex-wrap:wrap;">
+                    ${maleIconsHtml}
+                </div>
+            </div>` : ''}
+            
+            ${data.Female > 0 ? `
+            <div>
+                <div style="font-size:0.65rem; font-weight:800; color:#f43f5e; margin-bottom:4px; text-transform:uppercase;">Female Volunteers</div>
+                <div style="color:#fb7185; display:flex; flex-wrap:wrap;">
+                    ${femaleIconsHtml}
+                </div>
+            </div>` : ''}
+        </div>
+        ${noteHtml}
+    `;
 }
 
 // --- HELPER FUNCTIONS RESTORED ---
