@@ -149,7 +149,6 @@ function updateRainChart(labels, dataPoints) {
     });
 }
 
-// Global Click Listeners for Custom Dropdowns/Widgets
 document.addEventListener('click', function(event) {
     const weatherWidget = document.getElementById('weather-interactive-widget');
     if (weatherWidget && !weatherWidget.contains(event.target)) {
@@ -1216,6 +1215,386 @@ function renderMasterServicePie(monthFilter) {
     }
 }
 
+function processDocumentsData(data) {
+    let uniqueMonths = new Set();
+    
+    let dynamicKPIs = {
+        req: 0, action: 0, catered: 0, notCatered: 0, cancelled: 0, 
+        invAttended: 0, invNotAttended: 0, others: 0, noAction: 0
+    };
+
+    let explicitNoAction = 0;
+    if (rawDocumentsData && rawDocumentsData.length > 0) {
+        for (let i = 0; i < Math.min(5, rawDocumentsData.length); i++) {
+            let row = rawDocumentsData[i];
+            let keys = Object.keys(row);
+            let targetKey = keys.find(k => k.trim().toUpperCase() === 'TOTAL NO ACTION' || k.trim().toUpperCase() === 'COLUMN I');
+            if (targetKey && row[targetKey] !== undefined && String(row[targetKey]).trim() !== '') {
+                let parsedVal = parseInt(String(row[targetKey]).replace(/,/g, '').trim());
+                if (!isNaN(parsedVal)) {
+                    explicitNoAction = parsedVal;
+                    break;
+                }
+            }
+        }
+    }
+    
+    dynamicKPIs.noAction = explicitNoAction;
+
+    data.forEach(row => {
+        let keys = Object.keys(row);
+
+        let rawNature = row['Nature of Letter'] || row['NATURE OF LETTER'] || row['Column P'] || row['COLUMN P'] || '';
+        let rawCategory = row['Category of Writing Party'] || row['CATEGORY OF WRITING PARTY'] || row['Column O'] || row['COLUMN O'] || '';
+        let rawOffice = row['Received From (OFFICE)'] || row['RECEIVED FROM (OFFICE)'] || row['Received From Office'] || row['Column N'] || row['COLUMN N'] || '';
+        let rawActionTaken = row['Actions Taken'] || row['ACTIONS TAKEN'] || row['Column Q'] || row['COLUMN Q'] || '';
+        let dateStr = row['Column M'] || row['COLUMN M'] || row['Date Received'] || row['DATE RECEIVED'] || row[keys[12]] || '';
+        
+        let isSummaryRow = (row['TOTAL ACTION TAKEN (OVERALL)'] !== undefined && String(row['TOTAL ACTION TAKEN (OVERALL)']).trim() !== '') || 
+                           (row['TOTAL REQUEST CATERED'] !== undefined && String(row['TOTAL REQUEST CATERED']).trim() !== '');
+                           
+        let isBlankRow = (!rawNature || String(rawNature).trim() === '') && 
+                         (!rawCategory || String(rawCategory).trim() === '') &&
+                         (!dateStr || String(dateStr).trim() === '');
+
+        if (!isSummaryRow && !isBlankRow) {
+            
+            dynamicKPIs.req++;
+            let actionTxt = (rawActionTaken || '').toString().trim().toLowerCase();
+            let actionActuallyTaken = false;
+            
+            if (actionTxt.includes('no action')) {
+                dynamicKPIs.noAction++;
+            } 
+            else if (actionTxt !== '' && actionTxt !== 'null') {
+                actionActuallyTaken = true;
+                dynamicKPIs.action++;
+                
+                if (actionTxt.includes('not catered')) {
+                    dynamicKPIs.notCatered++;
+                } else if (actionTxt.includes('catered') || actionTxt === 'catered') {
+                    dynamicKPIs.catered++;
+                } else if (actionTxt.includes('cancelled')) {
+                    dynamicKPIs.cancelled++;
+                } else if (actionTxt.includes('not attended')) {
+                    dynamicKPIs.invNotAttended++;
+                } else if (actionTxt.includes('attended')) {
+                    dynamicKPIs.invAttended++;
+                } else {
+                    dynamicKPIs.others++;
+                }
+            } 
+
+            let mappedNature = rawNature.trim();
+            let upperNature = mappedNature.toUpperCase();
+            
+            if (upperNature.includes('OFFER') || upperNature.includes('PROPOSAL')) {
+                mappedNature = 'Offer/Proposal';
+            } else if (upperNature.includes('REQUEST')) {
+                mappedNature = 'Request';
+            } else if (upperNature.includes('INVITATION')) {
+                mappedNature = 'Invitation';
+            } else if (upperNature.includes('FYI') || upperNature.includes('INFORMATION')) {
+                mappedNature = 'For Information';
+            } else {
+                mappedNature = 'Uncategorized';
+            }
+            
+            let subCategory = rawCategory.trim() !== '' ? rawCategory.trim() : 'Uncategorized';
+            let specificOffice = rawOffice.trim() !== '' ? rawOffice.trim() : 'Unspecified Office';
+            
+            let monthYearKey = 'all';
+            
+            if (dateStr && String(dateStr).trim() !== '') {
+                let parsedDate = parseCustomDate(dateStr);
+                if (parsedDate) {
+                    globalLineData.push({ dateObj: parsedDate, count: 1, timestamp: parsedDate.getTime() });
+                    let m = parsedDate.getMonth() + 1;
+                    let y = parsedDate.getFullYear();
+                    monthYearKey = `${y}-${m.toString().padStart(2, '0')}`;
+                    uniqueMonths.add(monthYearKey);
+                }
+            }
+
+            globalDocRecords.push({
+                dateKey: monthYearKey,
+                level1: mappedNature,     
+                level2: subCategory,      
+                level3: specificOffice,
+                hasActionTaken: actionActuallyTaken,
+                count: 1 
+            });
+        }
+    });
+
+    originalKPITotals = {
+        req: dynamicKPIs.req, 
+        action: dynamicKPIs.action, 
+        catered: dynamicKPIs.catered,     
+        notCatered: dynamicKPIs.notCatered, 
+        cancelled: dynamicKPIs.cancelled,     
+        invAttended: dynamicKPIs.invAttended, 
+        invNotAttended: dynamicKPIs.invNotAttended, 
+        others: dynamicKPIs.others,
+        noAction: dynamicKPIs.noAction 
+    };
+
+    let monthSelect = document.getElementById('docPieMonthFilter');
+    if (monthSelect) {
+        monthSelect.innerHTML = '<option value="all">All Time</option>';
+        let sortedMonths = Array.from(uniqueMonths).sort().reverse(); 
+        sortedMonths.forEach(my => {
+            if(my === 'all') return;
+            let [y, m] = my.split('-');
+            let dateObj = new Date(y, m - 1);
+            let label = dateObj.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+            let opt = document.createElement('option');
+            opt.value = my;
+            opt.innerText = label;
+            monthSelect.appendChild(opt);
+        });
+    }
+
+    renderDocPieChart();
+    renderLineChartByTimeframe('daily');
+}
+
+function updateTrackingKPIDisplays() {
+    const cardReqCount = document.getElementById('doc-kpi-request').parentElement; 
+    const cardAction = document.getElementById('doc-kpi-action').parentElement; 
+    const cardCatered = document.getElementById('doc-kpi-catered').parentElement; 
+    const cardInvAtt = document.getElementById('doc-kpi-inv-att').parentElement; 
+    const cardNotCatered = document.getElementById('doc-kpi-not-catered').parentElement; 
+    const cardOthers = document.getElementById('doc-kpi-others').parentElement; 
+    const cardInvNot = document.getElementById('doc-kpi-inv-not').parentElement; 
+    const cardCancelled = document.getElementById('doc-kpi-cancelled').parentElement; 
+    const cardNoAction = document.getElementById('doc-kpi-no-action').parentElement; 
+
+    cardReqCount.style.display = '';
+
+    if (currentPieState.level === 1) {
+        [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => card.style.display = '');
+        
+        document.getElementById('doc-kpi-request').innerText = originalKPITotals.req;
+        document.getElementById('doc-kpi-action').innerText = originalKPITotals.action;
+        document.getElementById('doc-kpi-catered').innerText = originalKPITotals.catered;
+        document.getElementById('doc-kpi-inv-att').innerText = originalKPITotals.invAttended;
+        document.getElementById('doc-kpi-not-catered').innerText = originalKPITotals.notCatered;
+        document.getElementById('doc-kpi-others').innerText = originalKPITotals.others;
+        document.getElementById('doc-kpi-inv-not').innerText = originalKPITotals.invNotAttended;
+        document.getElementById('doc-kpi-cancelled').innerText = originalKPITotals.cancelled;
+        document.getElementById('doc-kpi-no-action').innerText = originalKPITotals.noAction;
+    } else {
+        let dynTotalRequestsMatched = 0;
+        let dynActionsActuallyTakenMatched = 0;
+        let targetCategory = currentPieState.level1Target;
+
+        globalDocRecords.forEach(record => {
+            if (currentPieState.filterKey === 'all' || record.dateKey === currentPieState.filterKey) {
+                if (record.level1 === targetCategory) {
+                    dynTotalRequestsMatched++;
+                    if (record.hasActionTaken) {
+                        dynActionsActuallyTakenMatched++;
+                    }
+                }
+            }
+        });
+
+        document.getElementById('doc-kpi-request').innerText = dynTotalRequestsMatched;
+        document.getElementById('doc-kpi-action').innerText = dynActionsActuallyTakenMatched;
+
+        [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => card.style.display = 'none');
+        
+        if (targetCategory === 'Request') {
+            cardCatered.style.display = '';
+            cardNotCatered.style.display = '';
+            cardCancelled.style.display = ''; 
+        } else if (targetCategory === 'Invitation') {
+            cardInvAtt.style.display = '';
+            cardInvNot.style.display = '';
+        } else if (targetCategory === 'Offer/Proposal' || targetCategory === 'For Information') {
+            cardAction.style.display = ''; 
+        } else {
+            cardAction.style.display = '';
+        }
+    }
+}
+
+function renderDocPieChart() {
+    let sourceMap = {};
+    let hasData = false;
+
+    globalDocRecords.forEach(record => {
+        if (currentPieState.filterKey === 'all' || record.dateKey === currentPieState.filterKey) {
+            if (currentPieState.level === 1) {
+                sourceMap[record.level1] = (sourceMap[record.level1] || 0) + record.count;
+                hasData = true;
+            } 
+            else if (currentPieState.level === 2 && record.level1 === currentPieState.level1Target) {
+                sourceMap[record.level2] = (sourceMap[record.level2] || 0) + record.count;
+                hasData = true;
+            } 
+            else if (currentPieState.level === 3 && record.level1 === currentPieState.level1Target && record.level2 === currentPieState.level2Target) {
+                sourceMap[record.level3] = (sourceMap[record.level3] || 0) + record.count;
+                hasData = true;
+            }
+        }
+    });
+
+    let sortedSources = [];
+    if (!hasData) {
+        sortedSources = [{ label: 'No Data Found', value: 1 }];
+    } else {
+        sortedSources = Object.keys(sourceMap).map(key => ({ label: key, value: sourceMap[key] }));
+        sortedSources.sort((a, b) => b.value - a.value);
+    }
+
+    let labels = sortedSources.map(item => item.label);
+    let dataValues = sortedSources.map(item => item.value);
+
+    const titleEl = document.getElementById('pieChartTitle');
+    const backBtn = document.getElementById('pieBackButton');
+
+    if (currentPieState.level === 1) {
+        titleEl.innerText = 'NATURE OF LETTER';
+        if(backBtn) backBtn.style.display = 'none';
+    } 
+    else if (currentPieState.level === 2) {
+        titleEl.innerHTML = `BREAKDOWN: ${currentPieState.level1Target.toUpperCase()} <span style="color: #64748b; font-weight: 600; font-size: 0.65rem; opacity: 0.7; letter-spacing: 0.5px;">(CATEGORY OF REQUESTING/ WRITING PARTY)</span>`;
+        if(backBtn) backBtn.style.display = 'block';
+    } 
+    else if (currentPieState.level === 3) {
+        titleEl.innerHTML = `BREAKDOWN: ${currentPieState.level2Target.toUpperCase()} <span style="color: #64748b; font-weight: 600; font-size: 0.65rem; opacity: 0.7; letter-spacing: 0.5px;">(SPECIFIC OFFICE / ENTITY)</span>`;
+        if(backBtn) backBtn.style.display = 'block';
+    }
+
+    updateTrackingKPIDisplays();
+
+    if (docPieChartInstance) {
+        let mappedColors = labels.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
+        if (!hasData) mappedColors = ['#e2e8f0'];
+
+        docPieChartInstance.data.labels = labels;
+        docPieChartInstance.data.datasets[0].data = dataValues;
+        docPieChartInstance.data.datasets[0].backgroundColor = mappedColors;
+        
+        docPieChartInstance.update();
+        updateCustomLegend(labels, dataValues, !hasData);
+    } else {
+        drawInteractiveDonutChart('docSourcePieChart', labels, dataValues, !hasData);
+    }
+}
+
+function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = false) {
+    const canvas = document.getElementById(canvasId);
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    if(docPieChartInstance) docPieChartInstance.destroy();
+    
+    let mappedColors = labels.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
+    if (isEmptyState) mappedColors = ['#e2e8f0']; 
+    
+    docPieChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: { 
+            labels: labels, 
+            datasets: [{ 
+                data: dataArr, 
+                backgroundColor: mappedColors, 
+                borderWidth: 0, 
+                borderRadius: 8, 
+                spacing: 5,     
+                hoverOffset: isEmptyState ? 0 : 15 
+            }] 
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false, 
+            cutout: '55%', 
+            layout: { padding: 15 }, 
+            animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' },
+            hover: { mode: 'index', animationDuration: 300 }, 
+            onClick: (event, elements, chart) => {
+                if (chart.data.labels.length === 1 && chart.data.labels[0] === 'No Data Found') return;
+                
+                if (elements[0]) {
+                    const index = elements[0].index;
+                    const label = chart.data.labels[index];
+                    
+                    if (currentPieState.level === 1) {
+                        currentPieState.level = 2;
+                        currentPieState.level1Target = label;
+                        renderDocPieChart();
+                    } else if (currentPieState.level === 2) {
+                        currentPieState.level = 3;
+                        currentPieState.level2Target = label;
+                        renderDocPieChart();
+                    }
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                datalabels: {
+                    color: (context) => (context.chart.data.labels.length === 1 && context.chart.data.labels[0] === 'No Data Found') ? '#94a3b8' : '#ffffff', 
+                    font: (context) => ({ weight: '800', family: 'Inter', size: (context.chart.data.labels.length === 1 && context.chart.data.labels[0] === 'No Data Found') ? 12 : 9 }), 
+                    anchor: 'center',
+                    align: 'center',
+                    formatter: (value, context) => { 
+                        if (context.chart.data.labels.length === 1 && context.chart.data.labels[0] === 'No Data Found') return 'No Data';
+                        
+                        let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); 
+                        if (sum === 0) return ''; 
+                        
+                        let pctStr = ((value * 100) / sum).toFixed(1);
+                        let pctFloat = parseFloat(pctStr);
+                        
+                        return pctFloat >= 8 ? pctStr + '%' : ''; 
+                    } 
+                },
+                tooltip: {
+                    filter: function(tooltipItem) { return tooltipItem.label !== 'No Data Found'; },
+                    ...sharedTooltipConfig, 
+                    callbacks: {
+                        label: function(context) {
+                            let suffix = '';
+                            if (currentPieState.level < 3) {
+                                suffix = ' (Click to zoom)';
+                            }
+                            
+                            let activeNature = (currentPieState.level === 1) ? context.label : currentPieState.level1Target;
+                            let unitStr = "Requests"; 
+                            
+                            if (activeNature === 'Invitation') unitStr = 'Invitations';
+                            else if (activeNature === 'For Information') unitStr = 'Information';
+                            else if (activeNature === 'Offer/Proposal') unitStr = 'Offers/Proposals';
+                            
+                            return `${context.raw} ${unitStr}${suffix}`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    updateCustomLegend(labels, dataArr, isEmptyState);
+}
+
+function updateCustomLegend(labels, data, isEmptyState = false) {
+    const legendContainer = document.getElementById('customLegend');
+    if(!legendContainer) return;
+    legendContainer.innerHTML = '';
+    labels.forEach((label, index) => {
+        let color = isEmptyState ? '#e2e8f0' : pieColorPalette[index % pieColorPalette.length];
+        let val = isEmptyState ? '-' : data[index];
+        legendContainer.innerHTML += `
+            <div class="legend-item" style="animation-delay: ${index * 0.04}s;">
+                <div class="legend-color" style="background-color: ${color}"></div>
+                <div class="legend-text" title="${label}">${label}</div>
+                <div class="legend-val">${val}</div>
+            </div>
+        `;
+    });
+}
+
 function processTrainingsData(data) {
     let workingData = Array.isArray(data) ? data : [];
     
@@ -1634,386 +2013,9 @@ function populateRemarksModal(detailsObj) {
     }
 }
 
-function processDocumentsData(data) {
-    let uniqueMonths = new Set();
-    
-    let dynamicKPIs = {
-        req: 0, action: 0, catered: 0, notCatered: 0, cancelled: 0, 
-        invAttended: 0, invNotAttended: 0, others: 0, noAction: 0
-    };
-
-    let explicitNoAction = 0;
-    if (rawDocumentsData && rawDocumentsData.length > 0) {
-        for (let i = 0; i < Math.min(5, rawDocumentsData.length); i++) {
-            let row = rawDocumentsData[i];
-            let keys = Object.keys(row);
-            let targetKey = keys.find(k => k.trim().toUpperCase() === 'TOTAL NO ACTION' || k.trim().toUpperCase() === 'COLUMN I');
-            if (targetKey && row[targetKey] !== undefined && String(row[targetKey]).trim() !== '') {
-                let parsedVal = parseInt(String(row[targetKey]).replace(/,/g, '').trim());
-                if (!isNaN(parsedVal)) {
-                    explicitNoAction = parsedVal;
-                    break;
-                }
-            }
-        }
-    }
-    
-    dynamicKPIs.noAction = explicitNoAction;
-
-    data.forEach(row => {
-        let keys = Object.keys(row);
-
-        let rawNature = row['Nature of Letter'] || row['NATURE OF LETTER'] || row['Column P'] || row['COLUMN P'] || '';
-        let rawCategory = row['Category of Writing Party'] || row['CATEGORY OF WRITING PARTY'] || row['Column O'] || row['COLUMN O'] || '';
-        let rawOffice = row['Received From (OFFICE)'] || row['RECEIVED FROM (OFFICE)'] || row['Received From Office'] || row['Column N'] || row['COLUMN N'] || '';
-        let rawActionTaken = row['Actions Taken'] || row['ACTIONS TAKEN'] || row['Column Q'] || row['COLUMN Q'] || '';
-        let dateStr = row['Column M'] || row['COLUMN M'] || row['Date Received'] || row['DATE RECEIVED'] || row[keys[12]] || '';
-        
-        let isSummaryRow = (row['TOTAL ACTION TAKEN (OVERALL)'] !== undefined && String(row['TOTAL ACTION TAKEN (OVERALL)']).trim() !== '') || 
-                           (row['TOTAL REQUEST CATERED'] !== undefined && String(row['TOTAL REQUEST CATERED']).trim() !== '');
-                           
-        let isBlankRow = (!rawNature || String(rawNature).trim() === '') && 
-                         (!rawCategory || String(rawCategory).trim() === '') &&
-                         (!dateStr || String(dateStr).trim() === '');
-
-        if (!isSummaryRow && !isBlankRow) {
-            
-            dynamicKPIs.req++;
-            let actionTxt = (rawActionTaken || '').toString().trim().toLowerCase();
-            let actionActuallyTaken = false;
-            
-            if (actionTxt.includes('no action')) {
-                dynamicKPIs.noAction++;
-            } 
-            else if (actionTxt !== '' && actionTxt !== 'null') {
-                actionActuallyTaken = true;
-                dynamicKPIs.action++;
-                
-                if (actionTxt.includes('not catered')) {
-                    dynamicKPIs.notCatered++;
-                } else if (actionTxt.includes('catered') || actionTxt === 'catered') {
-                    dynamicKPIs.catered++;
-                } else if (actionTxt.includes('cancelled')) {
-                    dynamicKPIs.cancelled++;
-                } else if (actionTxt.includes('not attended')) {
-                    dynamicKPIs.invNotAttended++;
-                } else if (actionTxt.includes('attended')) {
-                    dynamicKPIs.invAttended++;
-                } else {
-                    dynamicKPIs.others++;
-                }
-            } 
-
-            let mappedNature = rawNature.trim();
-            let upperNature = mappedNature.toUpperCase();
-            
-            if (upperNature.includes('OFFER') || upperNature.includes('PROPOSAL')) {
-                mappedNature = 'Offer/Proposal';
-            } else if (upperNature.includes('REQUEST')) {
-                mappedNature = 'Request';
-            } else if (upperNature.includes('INVITATION')) {
-                mappedNature = 'Invitation';
-            } else if (upperNature.includes('FYI') || upperNature.includes('INFORMATION')) {
-                mappedNature = 'For Information';
-            } else {
-                mappedNature = 'Uncategorized';
-            }
-            
-            let subCategory = rawCategory.trim() !== '' ? rawCategory.trim() : 'Uncategorized';
-            let specificOffice = rawOffice.trim() !== '' ? rawOffice.trim() : 'Unspecified Office';
-            
-            let monthYearKey = 'all';
-            
-            if (dateStr && String(dateStr).trim() !== '') {
-                let parsedDate = parseCustomDate(dateStr);
-                if (parsedDate) {
-                    globalLineData.push({ dateObj: parsedDate, count: 1, timestamp: parsedDate.getTime() });
-                    let m = parsedDate.getMonth() + 1;
-                    let y = parsedDate.getFullYear();
-                    monthYearKey = `${y}-${m.toString().padStart(2, '0')}`;
-                    uniqueMonths.add(monthYearKey);
-                }
-            }
-
-            globalDocRecords.push({
-                dateKey: monthYearKey,
-                level1: mappedNature,     
-                level2: subCategory,      
-                level3: specificOffice,
-                hasActionTaken: actionActuallyTaken,
-                count: 1 
-            });
-        }
-    });
-
-    originalKPITotals = {
-        req: dynamicKPIs.req, 
-        action: dynamicKPIs.action, 
-        catered: dynamicKPIs.catered,     
-        notCatered: dynamicKPIs.notCatered, 
-        cancelled: dynamicKPIs.cancelled,     
-        invAttended: dynamicKPIs.invAttended, 
-        invNotAttended: dynamicKPIs.invNotAttended, 
-        others: dynamicKPIs.others,
-        noAction: dynamicKPIs.noAction 
-    };
-
-    let monthSelect = document.getElementById('docPieMonthFilter');
-    if (monthSelect) {
-        monthSelect.innerHTML = '<option value="all">All Time</option>';
-        let sortedMonths = Array.from(uniqueMonths).sort().reverse(); 
-        sortedMonths.forEach(my => {
-            if(my === 'all') return;
-            let [y, m] = my.split('-');
-            let dateObj = new Date(y, m - 1);
-            let label = dateObj.toLocaleString('en-US', { month: 'long', year: 'numeric' });
-            let opt = document.createElement('option');
-            opt.value = my;
-            opt.innerText = label;
-            monthSelect.appendChild(opt);
-        });
-    }
-
-    renderDocPieChart();
-    renderLineChartByTimeframe('daily');
-}
-
-function updateTrackingKPIDisplays() {
-    const cardReqCount = document.getElementById('doc-kpi-request').parentElement; 
-    const cardAction = document.getElementById('doc-kpi-action').parentElement; 
-    const cardCatered = document.getElementById('doc-kpi-catered').parentElement; 
-    const cardInvAtt = document.getElementById('doc-kpi-inv-att').parentElement; 
-    const cardNotCatered = document.getElementById('doc-kpi-not-catered').parentElement; 
-    const cardOthers = document.getElementById('doc-kpi-others').parentElement; 
-    const cardInvNot = document.getElementById('doc-kpi-inv-not').parentElement; 
-    const cardCancelled = document.getElementById('doc-kpi-cancelled').parentElement; 
-    const cardNoAction = document.getElementById('doc-kpi-no-action').parentElement; 
-
-    cardReqCount.style.display = '';
-
-    if (currentPieState.level === 1) {
-        [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => card.style.display = '');
-        
-        document.getElementById('doc-kpi-request').innerText = originalKPITotals.req;
-        document.getElementById('doc-kpi-action').innerText = originalKPITotals.action;
-        document.getElementById('doc-kpi-catered').innerText = originalKPITotals.catered;
-        document.getElementById('doc-kpi-inv-att').innerText = originalKPITotals.invAttended;
-        document.getElementById('doc-kpi-not-catered').innerText = originalKPITotals.notCatered;
-        document.getElementById('doc-kpi-others').innerText = originalKPITotals.others;
-        document.getElementById('doc-kpi-inv-not').innerText = originalKPITotals.invNotAttended;
-        document.getElementById('doc-kpi-cancelled').innerText = originalKPITotals.cancelled;
-        document.getElementById('doc-kpi-no-action').innerText = originalKPITotals.noAction;
-    } else {
-        let dynTotalRequestsMatched = 0;
-        let dynActionsActuallyTakenMatched = 0;
-        let targetCategory = currentPieState.level1Target;
-
-        globalDocRecords.forEach(record => {
-            if (currentPieState.filterKey === 'all' || record.dateKey === currentPieState.filterKey) {
-                if (record.level1 === targetCategory) {
-                    dynTotalRequestsMatched++;
-                    if (record.hasActionTaken) {
-                        dynActionsActuallyTakenMatched++;
-                    }
-                }
-            }
-        });
-
-        document.getElementById('doc-kpi-request').innerText = dynTotalRequestsMatched;
-        document.getElementById('doc-kpi-action').innerText = dynActionsActuallyTakenMatched;
-
-        [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => card.style.display = 'none');
-        
-        if (targetCategory === 'Request') {
-            cardCatered.style.display = '';
-            cardNotCatered.style.display = '';
-            cardCancelled.style.display = ''; 
-        } else if (targetCategory === 'Invitation') {
-            cardInvAtt.style.display = '';
-            cardInvNot.style.display = '';
-        } else if (targetCategory === 'Offer/Proposal' || targetCategory === 'For Information') {
-            cardAction.style.display = ''; 
-        } else {
-            cardAction.style.display = '';
-        }
-    }
-}
-
-function renderDocPieChart() {
-    let sourceMap = {};
-    let hasData = false;
-
-    globalDocRecords.forEach(record => {
-        if (currentPieState.filterKey === 'all' || record.dateKey === currentPieState.filterKey) {
-            if (currentPieState.level === 1) {
-                sourceMap[record.level1] = (sourceMap[record.level1] || 0) + record.count;
-                hasData = true;
-            } 
-            else if (currentPieState.level === 2 && record.level1 === currentPieState.level1Target) {
-                sourceMap[record.level2] = (sourceMap[record.level2] || 0) + record.count;
-                hasData = true;
-            } 
-            else if (currentPieState.level === 3 && record.level1 === currentPieState.level1Target && record.level2 === currentPieState.level2Target) {
-                sourceMap[record.level3] = (sourceMap[record.level3] || 0) + record.count;
-                hasData = true;
-            }
-        }
-    });
-
-    let sortedSources = [];
-    if (!hasData) {
-        sortedSources = [{ label: 'No Data Found', value: 1 }];
-    } else {
-        sortedSources = Object.keys(sourceMap).map(key => ({ label: key, value: sourceMap[key] }));
-        sortedSources.sort((a, b) => b.value - a.value);
-    }
-
-    let labels = sortedSources.map(item => item.label);
-    let dataValues = sortedSources.map(item => item.value);
-
-    const titleEl = document.getElementById('pieChartTitle');
-    const backBtn = document.getElementById('pieBackButton');
-
-    if (currentPieState.level === 1) {
-        titleEl.innerText = 'NATURE OF LETTER';
-        if(backBtn) backBtn.style.display = 'none';
-    } 
-    else if (currentPieState.level === 2) {
-        titleEl.innerHTML = `BREAKDOWN: ${currentPieState.level1Target.toUpperCase()} <span style="color: #64748b; font-weight: 600; font-size: 0.65rem; opacity: 0.7; letter-spacing: 0.5px;">(CATEGORY OF REQUESTING/ WRITING PARTY)</span>`;
-        if(backBtn) backBtn.style.display = 'block';
-    } 
-    else if (currentPieState.level === 3) {
-        titleEl.innerHTML = `BREAKDOWN: ${currentPieState.level2Target.toUpperCase()} <span style="color: #64748b; font-weight: 600; font-size: 0.65rem; opacity: 0.7; letter-spacing: 0.5px;">(SPECIFIC OFFICE / ENTITY)</span>`;
-        if(backBtn) backBtn.style.display = 'block';
-    }
-
-    updateTrackingKPIDisplays();
-
-    if (docPieChartInstance) {
-        let mappedColors = labels.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
-        if (!hasData) mappedColors = ['#e2e8f0'];
-
-        docPieChartInstance.data.labels = labels;
-        docPieChartInstance.data.datasets[0].data = dataValues;
-        docPieChartInstance.data.datasets[0].backgroundColor = mappedColors;
-        
-        docPieChartInstance.update();
-        updateCustomLegend(labels, dataValues, !hasData);
-    } else {
-        drawInteractiveDonutChart('docSourcePieChart', labels, dataValues, !hasData);
-    }
-}
-
-function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = false) {
-    const canvas = document.getElementById(canvasId);
-    if(!canvas) return;
-    const ctx = canvas.getContext('2d');
-    
-    if(docPieChartInstance) docPieChartInstance.destroy();
-    
-    let mappedColors = labels.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
-    if (isEmptyState) mappedColors = ['#e2e8f0']; 
-    
-    docPieChartInstance = new Chart(ctx, {
-        type: 'doughnut',
-        data: { 
-            labels: labels, 
-            datasets: [{ 
-                data: dataArr, 
-                backgroundColor: mappedColors, 
-                borderWidth: 0, 
-                borderRadius: 8, 
-                spacing: 5,     
-                hoverOffset: isEmptyState ? 0 : 15 
-            }] 
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false, 
-            cutout: '55%', 
-            layout: { padding: 15 }, 
-            animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' },
-            hover: { mode: 'index', animationDuration: 300 }, 
-            onClick: (event, elements, chart) => {
-                if (chart.data.labels.length === 1 && chart.data.labels[0] === 'No Data Found') return;
-                
-                if (elements[0]) {
-                    const index = elements[0].index;
-                    const label = chart.data.labels[index];
-                    
-                    if (currentPieState.level === 1) {
-                        currentPieState.level = 2;
-                        currentPieState.level1Target = label;
-                        renderDocPieChart();
-                    } else if (currentPieState.level === 2) {
-                        currentPieState.level = 3;
-                        currentPieState.level2Target = label;
-                        renderDocPieChart();
-                    }
-                }
-            },
-            plugins: {
-                legend: { display: false },
-                datalabels: {
-                    color: (context) => (context.chart.data.labels.length === 1 && context.chart.data.labels[0] === 'No Data Found') ? '#94a3b8' : '#ffffff', 
-                    font: (context) => ({ weight: '800', family: 'Inter', size: (context.chart.data.labels.length === 1 && context.chart.data.labels[0] === 'No Data Found') ? 12 : 9 }), 
-                    anchor: 'center',
-                    align: 'center',
-                    formatter: (value, context) => { 
-                        if (context.chart.data.labels.length === 1 && context.chart.data.labels[0] === 'No Data Found') return 'No Data';
-                        
-                        let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); 
-                        if (sum === 0) return ''; 
-                        
-                        let pctStr = ((value * 100) / sum).toFixed(1);
-                        let pctFloat = parseFloat(pctStr);
-                        
-                        return pctFloat >= 8 ? pctStr + '%' : ''; 
-                    } 
-                },
-                tooltip: {
-                    filter: function(tooltipItem) { return tooltipItem.label !== 'No Data Found'; },
-                    ...sharedTooltipConfig, 
-                    callbacks: {
-                        label: function(context) {
-                            let suffix = '';
-                            if (currentPieState.level < 3) {
-                                suffix = ' (Click to zoom)';
-                            }
-                            
-                            let activeNature = (currentPieState.level === 1) ? context.label : currentPieState.level1Target;
-                            let unitStr = "Requests"; 
-                            
-                            if (activeNature === 'Invitation') unitStr = 'Invitations';
-                            else if (activeNature === 'For Information') unitStr = 'Information';
-                            else if (activeNature === 'Offer/Proposal') unitStr = 'Offers/Proposals';
-                            
-                            return `${context.raw} ${unitStr}${suffix}`;
-                        }
-                    }
-                }
-            }
-        }
-    });
-    updateCustomLegend(labels, dataArr, isEmptyState);
-}
-
-function updateCustomLegend(labels, data, isEmptyState = false) {
-    const legendContainer = document.getElementById('customLegend');
-    if(!legendContainer) return;
-    legendContainer.innerHTML = '';
-    labels.forEach((label, index) => {
-        let color = isEmptyState ? '#e2e8f0' : pieColorPalette[index % pieColorPalette.length];
-        let val = isEmptyState ? '-' : data[index];
-        legendContainer.innerHTML += `
-            <div class="legend-item" style="animation-delay: ${index * 0.04}s;">
-                <div class="legend-color" style="background-color: ${color}"></div>
-                <div class="legend-text" title="${label}">${label}</div>
-                <div class="legend-val">${val}</div>
-            </div>
-        `;
-    });
-}
-
+// -------------------------------------------------------------
+// NEW LOGIC: processVolunteersData & renderPictogram
+// -------------------------------------------------------------
 function processVolunteersData(data) {
     let totalOrgs = 0;
     let totalIndividualsInOrgs = 0;
@@ -2050,8 +2052,12 @@ function processVolunteersData(data) {
     });
 
     orgList.sort((a, b) => b.count - a.count);
-
     const maxCount = orgList.length > 0 ? orgList[0].count : 1;
+
+    // Initialize Gender Map from Official List
+    orgList.forEach(org => {
+        globalOrgGenderMap[org.name] = { Male: 0, Female: 0, TallyTotal: 0, OfficialTotal: org.count };
+    });
 
     // Second Pass: Extract Gender Breakdown Logic
     data.forEach(row => {
@@ -2063,20 +2069,24 @@ function processVolunteersData(data) {
         let indGender = row[indGenderKey] ? String(row[indGenderKey]).trim() : '';
 
         if (indOrg && indGender) {
-            let matchedOrgObj = orgList.find(o => o.name.toUpperCase() === indOrg.toUpperCase());
-            let finalOrgName = matchedOrgObj ? matchedOrgObj.name : indOrg;
-
-            if(!globalOrgGenderMap[finalOrgName]) {
-                globalOrgGenderMap[finalOrgName] = { Male: 0, Female: 0, Total: 0 };
-            }
+            let search = indOrg.toUpperCase();
             
-            let genderUpper = indGender.toUpperCase();
-            if(genderUpper.includes('MALE') && !genderUpper.includes('FEMALE')) {
-                globalOrgGenderMap[finalOrgName].Male++;
-            } else if(genderUpper.includes('FEMALE')) {
-                globalOrgGenderMap[finalOrgName].Female++;
+            // Fuzzy Match
+            let matchedOrgObj = orgList.find(o => o.name.toUpperCase() === search);
+            if (!matchedOrgObj) {
+                matchedOrgObj = orgList.find(o => o.name.toUpperCase().includes(search) || search.includes(o.name.toUpperCase()));
             }
-            globalOrgGenderMap[finalOrgName].Total++;
+
+            if (matchedOrgObj) {
+                let finalOrgName = matchedOrgObj.name;
+                let genderUpper = indGender.toUpperCase();
+                if(genderUpper.includes('MALE') && !genderUpper.includes('FEMALE')) {
+                    globalOrgGenderMap[finalOrgName].Male++;
+                } else if(genderUpper.includes('FEMALE')) {
+                    globalOrgGenderMap[finalOrgName].Female++;
+                }
+                globalOrgGenderMap[finalOrgName].TallyTotal++;
+            }
         }
     });
 
@@ -2111,45 +2121,43 @@ function processVolunteersData(data) {
 
     // Update the 3 Metric Boxes
     document.getElementById('vol-orgs').innerText = totalOrgs.toLocaleString(); 
-    
     const orgMembersEl = document.getElementById('vol-org-members');
     if (orgMembersEl) orgMembersEl.innerText = totalIndividualsInOrgs.toLocaleString();
-    
     document.getElementById('vol-ind').innerText = standaloneIndividuals.toLocaleString();
 
-    // Populate Custom Dropdown
+    // Populate Custom Dropdown Using ONLY Official orgList
     const dropdownContainer = document.getElementById('orgGenderDropdown');
     const selectedText = document.getElementById('orgGenderSelectedText');
     const optionsContainer = document.getElementById('orgGenderOptions');
 
     if (dropdownContainer && selectedText && optionsContainer) {
         optionsContainer.innerHTML = '';
-        let orgsWithData = Object.keys(globalOrgGenderMap).sort((a, b) => globalOrgGenderMap[b].Total - globalOrgGenderMap[a].Total);
         
-        if (orgsWithData.length > 0) {
-            orgsWithData.forEach((orgName, idx) => {
+        if (orgList.length > 0) {
+            orgList.forEach((org, idx) => {
                 let opt = document.createElement('div');
                 opt.className = 'custom-dropdown-option';
                 if(idx === 0) opt.classList.add('selected');
-                opt.innerText = orgName;
+                opt.innerText = org.name;
                 opt.onclick = function() {
                     Array.from(optionsContainer.children).forEach(c => c.classList.remove('selected'));
                     this.classList.add('selected');
-                    selectedText.innerText = orgName;
+                    selectedText.innerText = org.name;
                     dropdownContainer.classList.remove('active');
-                    renderPictogram(orgName);
+                    renderPictogram(org.name);
                 };
                 optionsContainer.appendChild(opt);
             });
             
-            selectedText.innerText = orgsWithData[0];
-            renderPictogram(orgsWithData[0]);
+            selectedText.innerText = orgList[0].name;
+            renderPictogram(orgList[0].name);
         } else {
-            optionsContainer.innerHTML = '<div class="custom-dropdown-option">No Gender Data</div>';
+            optionsContainer.innerHTML = '<div class="custom-dropdown-option">No Data</div>';
             selectedText.innerText = "No Data";
             renderPictogram('');
         }
 
+        // re-bind click listener
         const selectedBox = document.getElementById('orgGenderSelected');
         let newBox = selectedBox.cloneNode(true);
         selectedBox.parentNode.replaceChild(newBox, selectedBox);
@@ -2165,46 +2173,64 @@ function renderPictogram(orgName) {
     const container = document.getElementById('pictogramContainer');
     if(!container) return;
 
-    let data = globalOrgGenderMap[orgName] || { Male: 0, Female: 0, Total: 0 };
-    let total = data.Male + data.Female;
-
-    if (total === 0) {
-        container.innerHTML = `<div style="text-align:center; padding: 40px; color:#94a3b8; font-weight:600;">No gender data available for this organization.</div>`;
+    let data = globalOrgGenderMap[orgName];
+    if (!data || data.OfficialTotal === 0) {
+        container.innerHTML = `<div style="text-align:center; padding: 40px; color:#94a3b8; font-weight:600;">No data available for this organization.</div>`;
         return;
     }
 
-    let pctMale = Math.round((data.Male / total) * 100);
-    let pctFemale = Math.round((data.Female / total) * 100);
+    let displayMale = 0;
+    let displayFemale = 0;
+    let pctMale = 0;
+    let pctFemale = 0;
+
+    if (data.TallyTotal > 0) {
+        let ratioMale = data.Male / data.TallyTotal;
+        displayMale = Math.round(data.OfficialTotal * ratioMale);
+        displayFemale = data.OfficialTotal - displayMale;
+        
+        pctMale = Math.round(ratioMale * 100);
+        pctFemale = 100 - pctMale;
+    } else {
+        // No gender breakdown available, but we have total count
+        container.innerHTML = `
+            <div style="text-align:center; padding: 40px; color:#94a3b8;">
+                <div style="font-size: 2rem; font-weight: 800; color: #1e293b;">${data.OfficialTotal}</div>
+                <div style="font-weight:600; text-transform: uppercase; font-size: 0.7rem; margin-top: 5px;">Total Volunteers</div>
+                <div style="font-size: 0.65rem; margin-top: 10px;">Gender breakdown not specified in individual records.</div>
+            </div>
+        `;
+        return;
+    }
 
     let maleIcon = `<svg viewBox="0 0 320 512" width="14" height="14" fill="currentColor" style="margin:2px;"><path d="M112 48a48 48 0 1 1 96 0 48 48 0 1 1 -96 0zm40 304V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V256.9L59.4 304.5c-9.1 15.1-28.8 20-43.9 10.9s-20-28.8-10.9-43.9l58.3-97c17.4-28.9 48.6-46.6 82.3-46.6h29.7c33.7 0 64.9 17.7 82.3 46.6l58.3 97c9.1 15.1 4.2 34.8-10.9 43.9s-34.8 4.2-43.9-10.9L232 256.9V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V352H152z"/></svg>`;
     let femaleIcon = `<svg viewBox="0 0 320 512" width="14" height="14" fill="currentColor" style="margin:2px;"><path d="M160 48a48 48 0 1 1 0 96 48 48 0 1 1 0-96zM74.5 289.1c-7.6 13-24.5 17.3-37.5 9.8s-17.3-24.5-9.8-37.5L65.6 195C82.8 165.6 114 148 148.1 148h23.8c34.1 0 65.3 17.6 82.5 47l38.4 66.5c7.6 13 3.2 29.9-9.8 37.5s-29.9 3.2-37.5-9.8L207.2 222V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V352H176v128c0 17.7-14.3 32-32 32s-32-14.3-32-32V222L74.5 289.1z"/></svg>`;
 
     let maleIconsHtml = '';
-    // Cap to prevent browser crash on enormous lists
-    let displayMale = data.Male > 300 ? 300 : data.Male;
-    let displayFemale = data.Female > 300 ? 300 : data.Female;
-    let noteHtml = (data.Male > 300 || data.Female > 300) ? `<div style="font-size: 0.6rem; color: #94a3b8; text-align: center; margin-top: 10px;">*Icons capped at 300 for browser performance.</div>` : '';
+    let renderMaleCount = displayMale > 300 ? 300 : displayMale;
+    let renderFemaleCount = displayFemale > 300 ? 300 : displayFemale;
+    let noteHtml = (displayMale > 300 || displayFemale > 300) ? `<div style="font-size: 0.6rem; color: #94a3b8; text-align: center; margin-top: 10px;">*Icons capped at 300 for browser performance.</div>` : '';
 
-    for(let i=0; i<displayMale; i++) maleIconsHtml += maleIcon;
+    for(let i=0; i<renderMaleCount; i++) maleIconsHtml += maleIcon;
     let femaleIconsHtml = '';
-    for(let i=0; i<displayFemale; i++) femaleIconsHtml += femaleIcon;
+    for(let i=0; i<renderFemaleCount; i++) femaleIconsHtml += femaleIcon;
 
     container.innerHTML = `
         <div style="display:flex; justify-content:space-between; margin-bottom: 16px;">
             <div style="background:#eff6ff; border: 1px solid #bfdbfe; border-radius:8px; padding:10px 16px; flex:1; margin-right:8px; display:flex; flex-direction:column; align-items:center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
                 <span style="font-size:0.6rem; font-weight:800; color:#3b82f6; text-transform:uppercase; letter-spacing: 0.5px;">Male</span>
-                <span style="font-size:1.4rem; font-weight:800; color:#1e40af; margin-top:2px;">${data.Male}</span>
+                <span style="font-size:1.4rem; font-weight:800; color:#1e40af; margin-top:2px;">${displayMale}</span>
                 <span style="font-size:0.65rem; font-weight:700; color:#60a5fa; margin-top:2px;">${pctMale}%</span>
             </div>
             <div style="background:#fff1f2; border: 1px solid #fecdd3; border-radius:8px; padding:10px 16px; flex:1; margin-left:8px; display:flex; flex-direction:column; align-items:center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
                 <span style="font-size:0.6rem; font-weight:800; color:#f43f5e; text-transform:uppercase; letter-spacing: 0.5px;">Female</span>
-                <span style="font-size:1.4rem; font-weight:800; color:#9f1239; margin-top:2px;">${data.Female}</span>
+                <span style="font-size:1.4rem; font-weight:800; color:#9f1239; margin-top:2px;">${displayFemale}</span>
                 <span style="font-size:0.65rem; font-weight:700; color:#fb7185; margin-top:2px;">${pctFemale}%</span>
             </div>
         </div>
         
         <div style="display:flex; flex-direction:column; gap:16px;">
-            ${data.Male > 0 ? `
+            ${displayMale > 0 ? `
             <div>
                 <div style="font-size:0.65rem; font-weight:800; color:#3b82f6; margin-bottom:4px; text-transform:uppercase;">Male Volunteers</div>
                 <div style="color:#60a5fa; display:flex; flex-wrap:wrap;">
@@ -2212,7 +2238,7 @@ function renderPictogram(orgName) {
                 </div>
             </div>` : ''}
             
-            ${data.Female > 0 ? `
+            ${displayFemale > 0 ? `
             <div>
                 <div style="font-size:0.65rem; font-weight:800; color:#f43f5e; margin-bottom:4px; text-transform:uppercase;">Female Volunteers</div>
                 <div style="color:#fb7185; display:flex; flex-wrap:wrap;">
