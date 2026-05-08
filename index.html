@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-treemap@3"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     
     <style>
@@ -203,6 +204,89 @@
             position: relative;
             z-index: 3;
         }
+
+        /* --- CUSTOM SLEEK DROPDOWN STYLES --- */
+        .custom-dropdown-container {
+            position: relative;
+            width: 250px;
+            font-family: 'Inter', sans-serif;
+        }
+        .custom-dropdown-selected {
+            background-color: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #1e293b;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .custom-dropdown-selected:hover {
+            border-color: #93c5fd;
+            background-color: #ffffff;
+            box-shadow: 0 4px 6px rgba(37,99,235,0.1);
+        }
+        .custom-dropdown-selected svg {
+            width: 14px; height: 14px;
+            color: #2563eb;
+            transition: transform 0.3s ease;
+            flex-shrink: 0;
+            margin-left: 8px;
+        }
+        .custom-dropdown-container.active .custom-dropdown-selected {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+        }
+        .custom-dropdown-container.active .custom-dropdown-selected svg {
+            transform: rotate(180deg);
+        }
+        .custom-dropdown-options {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            max-height: 250px;
+            overflow-y: auto;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+        .custom-dropdown-container.active .custom-dropdown-options {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        .custom-dropdown-option {
+            padding: 10px 16px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #475569;
+            cursor: pointer;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .custom-dropdown-option:last-child {
+            border-bottom: none;
+        }
+        .custom-dropdown-option:hover, .custom-dropdown-option.selected {
+            background-color: #eff6ff;
+            color: #2563eb;
+        }
+        /* Custom Dropdown Scrollbar */
+        .custom-dropdown-options::-webkit-scrollbar { width: 6px; }
+        .custom-dropdown-options::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+        .custom-dropdown-options::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
         @keyframes spin-smooth {
             0% { transform: rotate(0deg); }
@@ -802,7 +886,16 @@
                     <div class="card" style="flex: 1.5; display: flex; flex-direction: column; padding: 0; min-width: 0;">
                         <div class="chart-header-actions" style="padding: 16px; border-bottom: 1px solid #f1f5f9; margin-bottom: 0; display:flex; justify-content:space-between; align-items:center;">
                             <h4 class="chart-title" style="margin-bottom:0;">Gender Distribution</h4>
-                            <select id="orgGenderSelect" class="chart-filter" style="min-width: 140px; max-width: 200px;"></select>
+                            
+                            <div class="custom-dropdown-container" id="orgGenderDropdown">
+                                <div class="custom-dropdown-selected" id="orgGenderSelected">
+                                    <span id="orgGenderSelectedText" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;">Select Organization</span>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                </div>
+                                <div class="custom-dropdown-options" id="orgGenderOptions">
+                                    </div>
+                            </div>
+
                         </div>
                         <div id="pictogramContainer" style="flex: 1; padding: 16px; overflow-y: auto; background-color: #f8fafc; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
                             </div>
