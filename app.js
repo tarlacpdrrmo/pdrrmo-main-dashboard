@@ -180,7 +180,6 @@ let trainStatusChartInst = null;
 let trainTypesChartInst = null;
 let trainNumbersChartInst = null;
 
-// Global tracking for parsed volunteer gender data
 let globalOrgGenderMap = {}; 
 
 let globalLineData = []; 
@@ -644,7 +643,237 @@ const getRobustValue = (row, searchTerms, fallbackKeys) => {
     return '';
 };
 
-// --- CRITICALLY RESTORED: processOperationsData ---
+// ==========================================
+// RESTORED CHART HELPER FUNCTIONS
+// ==========================================
+
+function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = false) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+
+    let current = 0;
+    let previous = 0;
+    let currentLabel = 'Current Month';
+    let prevLabel = 'Previous Month';
+
+    if (dataArray.length >= 2 && labelsArray.length >= 2) {
+        current = dataArray[dataArray.length - 1];
+        previous = dataArray[dataArray.length - 2];
+        currentLabel = labelsArray[labelsArray.length - 1];
+        prevLabel = labelsArray[labelsArray.length - 2];
+    } else if (dataArray.length === 1) {
+        current = dataArray[0];
+        currentLabel = labelsArray[0];
+    }
+
+    const diff = current - previous;
+    let trendHtml = '';
+    let bgColor = '#64748b'; 
+
+    if (dataArray.length < 2) {
+        trendHtml = `<span>No prior data</span>`;
+        el.style.backgroundColor = bgColor;
+        el.style.padding = '10px 16px'; 
+        el.innerHTML = `<div style="font-weight:600; font-size:0.75rem; color:#fff;">${trendHtml}</div>`;
+        return;
+    }
+
+    let symbol = '—';
+    let sign = diff > 0 ? '+' : '';
+
+    const arrowUp = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>`;
+    const arrowDown = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"></path></svg>`;
+
+    if (diff > 0) {
+        symbol = arrowUp;
+        bgColor = inverseColors ? '#ef4444' : '#10b981'; 
+    } else if (diff < 0) {
+        symbol = arrowDown;
+        bgColor = inverseColors ? '#10b981' : '#ef4444'; 
+        sign = '-'; 
+    }
+
+    let diffStr = diff > 0 ? `+${diff}` : diff;
+    let pct = previous > 0 ? Math.round((Math.abs(diff) / previous) * 100) : (diff > 0 ? 100 : 0);
+
+    let tooltipHtml = `
+        <div class="custom-tooltip">
+            <div style="color:#94a3b8; font-size:0.55rem; text-transform:uppercase; margin-bottom:6px; letter-spacing:0.5px;">Monthly Comparison</div>
+            <div style="display:flex; justify-content:space-between; gap:20px; margin-bottom:2px;"><span>${currentLabel}:</span> <strong>${current}</strong></div>
+            <div style="display:flex; justify-content:space-between; gap:20px; margin-bottom:2px;"><span>${prevLabel}:</span> <strong>${previous}</strong></div>
+            <div style="border-top:1px solid #334155; margin-top:6px; padding-top:6px; display:flex; justify-content:space-between; gap:20px;"><span>Difference:</span> <strong>${diffStr}</strong></div>
+        </div>
+    `;
+
+    el.style.backgroundColor = bgColor;
+    el.style.padding = '10px 16px'; 
+    el.style.color = '#ffffff';
+
+    el.innerHTML = `
+        <div class="has-tooltip" style="display:flex; width:100%; justify-content:space-between; align-items:center; cursor:pointer;">
+            <span style="font-weight:600; font-size:0.75rem;">${Math.abs(diff)} (${sign}${pct}%)</span>
+            <span style="display:flex; align-items:center;">${symbol}</span>
+            ${tooltipHtml}
+        </div>
+    `;
+}
+
+function renderLineChartByTimeframe(timeframe) {
+    let groupedObj = {};
+    let sortedData = [...globalLineData].sort((a, b) => a.timestamp - b.timestamp);
+
+    sortedData.forEach(item => {
+        let key = "";
+        if (timeframe === 'monthly') {
+            key = item.dateObj.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+        } else if (timeframe === 'yearly') {
+            key = item.dateObj.getFullYear().toString();
+        } else { 
+            key = item.dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+        groupedObj[key] = (groupedObj[key] || 0) + item.count;
+    });
+
+    const labels = Object.keys(groupedObj);
+    const dataValues = Object.values(groupedObj);
+    
+    if(labels.length === 0) {
+        drawLineChart('docDateLineChart', ['No Date Data Found'], [0]);
+    } else {
+        drawLineChart('docDateLineChart', labels, dataValues);
+    }
+}
+
+function drawLineChart(canvasId, labels, dataArr) {
+    const canvas = document.getElementById(canvasId);
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    if(docLineChartInstance) docLineChartInstance.destroy();
+
+    let gradient = ctx.createLinearGradient(0, 0, 0, 300);
+    gradient.addColorStop(0, 'rgba(37, 99, 235, 0.3)');
+    gradient.addColorStop(1, 'rgba(37, 99, 235, 0.0)'); 
+
+    docLineChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: { 
+            labels: labels, 
+            datasets: [{ 
+                label: 'Requests Received', 
+                data: dataArr, 
+                borderColor: '#2563eb', 
+                backgroundColor: gradient, 
+                borderWidth: 2, 
+                pointRadius: 0, 
+                pointHoverRadius: 5,
+                pointBackgroundColor: '#ffffff',
+                pointBorderColor: '#2563eb',
+                pointBorderWidth: 2,
+                tension: 0.4, 
+                fill: true
+            }] 
+        },
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            animation: { duration: 1000, easing: 'easeOutQuart' },
+            interaction: { mode: 'index', intersect: false },
+            plugins: { 
+                datalabels: { display: false }, 
+                legend: { display: false }, 
+                tooltip: sharedTooltipConfig 
+            }, 
+            scales: { 
+                x: { 
+                    grid: { display: false }, 
+                    ticks: { font: { family: 'Inter', size: 9 }, color: '#64748b', maxTicksLimit: 12 } 
+                }, 
+                y: { 
+                    title: {
+                        display: true,
+                        text: 'Received From (OFFICE)',
+                        font: { family: 'Inter', size: 12, weight: '600', style: 'italic' },
+                        color: '#475569'
+                    },
+                    grid: { color: '#f1f5f9', drawBorder: false }, 
+                    beginAtZero: true, 
+                    ticks: { font: { family: 'Inter', size: 10 }, color: '#64748b' } 
+                } 
+            } 
+        }
+    });
+}
+
+function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
+    const canvas = document.getElementById(canvasId);
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    if (monthlyTotalPieInstance) {
+        monthlyTotalPieInstance.destroy();
+    }
+
+    const vibrantColors = ['#2563eb', '#06b6d4', '#e11d48', '#ea580c', '#16a34a', '#9333ea'];
+    const mappedVibrant = dataArr.map((_, i) => vibrantColors[i % vibrantColors.length]);
+    
+    const gtEl = document.getElementById('pie-grand-total');
+    if(gtEl) gtEl.innerText = grandTotal.toLocaleString();
+
+    monthlyTotalPieInstance = new Chart(ctx, {
+        type: 'doughnut', 
+        data: { 
+            labels: labels, 
+            datasets: [{ 
+                data: dataArr, 
+                backgroundColor: mappedVibrant, 
+                borderWidth: 0, 
+                borderRadius: 8, 
+                spacing: 5,     
+                hoverOffset: 15 
+            }] 
+        },
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            cutout: '55%', 
+            layout: { padding: 15 }, 
+            animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, 
+            hover: { mode: 'index', animationDuration: 300 }, 
+            plugins: { 
+                legend: { display: false }, 
+                datalabels: { 
+                    color: '#ffffff', 
+                    font: { weight: '800', family: 'Inter', size: 9 }, 
+                    anchor: 'center',
+                    align: 'center',
+                    formatter: (value, context) => { 
+                        let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); 
+                        if (sum === 0) return ''; 
+                        let pctStr = ((value * 100) / sum).toFixed(1);
+                        let pctFloat = parseFloat(pctStr);
+                        return pctFloat >= 8 ? pctStr + '%' : ''; 
+                    } 
+                },
+                tooltip: {
+                    ...sharedTooltipConfig, 
+                    callbacks: {
+                        label: function(context) {
+                            let val = context.raw;
+                            let pct = grandTotal > 0 ? ((val / grandTotal) * 100).toFixed(1) : 0;
+                            return [`${val} Services Catered`, `vs Grand Total: ${pct}%`];
+                        }
+                    }
+                }
+            } 
+        }
+    });
+}
+
+// ==========================================
+// CORE PROCESSING FUNCTIONS
+// ==========================================
+
 function processOperationsData(data) {
     try {
         operationsMonthlyCache['all'] = new Array(10).fill(0);
@@ -798,7 +1027,6 @@ function processOperationsData(data) {
     }
 }
 
-// --- CRITICALLY RESTORED: renderToggleableChart ---
 function renderToggleableChart(canvasId, type, isInitialLoad = false) {
     try {
         const canvas = document.getElementById(canvasId);
@@ -873,7 +1101,6 @@ function renderToggleableChart(canvasId, type, isInitialLoad = false) {
     }
 }
 
-// --- CRITICALLY RESTORED: renderMasterServicePie ---
 function renderMasterServicePie(monthFilter) {
     try {
         const dataArr = operationsMonthlyCache[monthFilter] || new Array(10).fill(0);
@@ -1299,7 +1526,114 @@ function buildMonthHTML(year, month, isSmallScale) {
     return html;
 }
 
-// --- CRITICALLY RESTORED: processDocumentsData ---
+function drawTrainBarChart(canvasId, labels, dataArr, customColors = null) {
+    const canvas = document.getElementById(canvasId);
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    if (!labels || labels.length === 0) {
+        labels = ["No Data"];
+        dataArr = [0];
+    }
+
+    if (window[canvasId + 'Inst']) window[canvasId + 'Inst'].destroy();
+
+    let colors = customColors || labels.map((_, i) => pieColorPalette[(i + 2) % pieColorPalette.length]);
+
+    window[canvasId + 'Inst'] = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: colors, borderRadius: 4, borderWidth: 0, maxBarThickness: 30 }] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            layout: { padding: { top: 25, left: 10, right: 10, bottom: 0 } }, 
+            plugins: { legend: { display: false }, tooltip: sharedTooltipConfig, datalabels: { display: true, align: 'top', anchor: 'end', color: '#64748b', font: { weight: 'bold' } } },
+            scales: {
+                x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 9 }, color: '#64748b' }, border: {display: false} },
+                y: { grid: { color: '#f1f5f9', drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 }, color: '#94a3b8' }, beginAtZero: true, grace: '20%', border: {display: false} } 
+            }
+        }
+    });
+}
+
+function populateAllList(containerId, dataObj) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+    
+    let sorted = Object.keys(dataObj).map(k => ({name: k, count: dataObj[k]})).sort((a,b) => b.count - a.count);
+    
+    if (sorted.length === 0) {
+        container.innerHTML = `<div style="color: #94a3b8; font-size: 0.7rem; padding: 10px;">No Data</div>`;
+        return;
+    }
+
+    sorted.forEach((item, index) => {
+        container.innerHTML += `
+            <div class="legend-item" style="animation-delay: ${index * 0.04}s;">
+                <div class="legend-text" title="${item.name}" style="flex: 1;">${index + 1}. ${item.name}</div>
+                <div class="legend-val">${item.count}</div>
+            </div>
+        `;
+    });
+}
+
+function populateModalList(dataObj) {
+    const container = document.getElementById('modal-title-list');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    let sorted = Object.keys(dataObj).map(k => ({name: k, count: dataObj[k]})).sort((a,b) => b.count - a.count);
+    
+    if (sorted.length === 0) {
+        container.innerHTML = `<div style="color: #94a3b8; font-size: 0.9rem; padding: 20px; text-align:center;">No Data Available</div>`;
+        return;
+    }
+
+    sorted.forEach((item, index) => {
+        container.innerHTML += `
+            <div class="legend-item" style="animation-delay: ${index * 0.02}s;">
+                <div class="legend-text" style="font-size: 0.85rem; padding-right: 15px;">
+                    <span style="color:#64748b; font-weight:800; margin-right:8px;">${index + 1}.</span> 
+                    ${item.name}
+                </div>
+                <div class="legend-val">${item.count}</div>
+            </div>
+        `;
+    });
+}
+
+function populateRemarksModal(detailsObj) {
+    const container = document.getElementById('modal-remarks-list');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    if (!detailsObj || Object.keys(detailsObj).length === 0) {
+        container.innerHTML = `<div style="color: #94a3b8; font-size: 0.9rem; padding: 20px; text-align:center;">No Data Available</div>`;
+        return;
+    }
+
+    for (let status in detailsObj) {
+        let items = detailsObj[status];
+        if(!items || items.length === 0) continue;
+
+        let color = status === 'WITH AAR' ? '#10b981' : (status === 'NO AAR' ? '#f43f5e' : '#64748b'); 
+
+        let html = `<h3 style="font-size: 0.9rem; color: ${color}; margin-top: 16px; margin-bottom: 8px; border-bottom: 2px solid #f1f5f9; padding-bottom: 6px;">${status} (${items.length})</h3>`;
+        
+        items.forEach((item, index) => {
+            html += `
+                <div class="legend-item" style="padding: 12px 0; border-bottom: 1px solid #f8fafc; align-items: flex-start; animation-delay: ${index * 0.02}s;">
+                    <div class="legend-text" style="font-size: 0.8rem; white-space: normal; line-height: 1.4;">
+                        <span style="font-weight: 800; color: #1e293b;">${item.title}</span><br>
+                        <span style="font-size: 0.7rem; color: #64748b;">${item.agency} &nbsp;|&nbsp; ${item.dates}</span>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML += html;
+    }
+}
+
 function processDocumentsData(data) {
     let uniqueMonths = new Set();
     
@@ -1444,7 +1778,6 @@ function processDocumentsData(data) {
     renderLineChartByTimeframe('daily');
 }
 
-// --- CRITICALLY RESTORED: updateTrackingKPIDisplays ---
 function updateTrackingKPIDisplays() {
     const cardReqCount = document.getElementById('doc-kpi-request').parentElement; 
     const cardAction = document.getElementById('doc-kpi-action').parentElement; 
@@ -1506,7 +1839,6 @@ function updateTrackingKPIDisplays() {
     }
 }
 
-// --- CRITICALLY RESTORED: renderDocPieChart ---
 function renderDocPieChart() {
     let sourceMap = {};
     let hasData = false;
@@ -1572,7 +1904,6 @@ function renderDocPieChart() {
     }
 }
 
-// --- CRITICALLY RESTORED: drawInteractiveDonutChart ---
 function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = false) {
     const canvas = document.getElementById(canvasId);
     if(!canvas) return;
@@ -1666,7 +1997,6 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
     updateCustomLegend(labels, dataArr, isEmptyState);
 }
 
-// --- CRITICALLY RESTORED: updateCustomLegend ---
 function updateCustomLegend(labels, data, isEmptyState = false) {
     const legendContainer = document.getElementById('customLegend');
     if(!legendContainer) return;
@@ -1684,137 +2014,6 @@ function updateCustomLegend(labels, data, isEmptyState = false) {
     });
 }
 
-// --- CRITICALLY RESTORED: drawLineChart ---
-function drawLineChart(canvasId, labels, dataArr) {
-    const canvas = document.getElementById(canvasId);
-    if(!canvas) return;
-    const ctx = canvas.getContext('2d');
-    
-    if(docLineChartInstance) docLineChartInstance.destroy();
-
-    let gradient = ctx.createLinearGradient(0, 0, 0, 300);
-    gradient.addColorStop(0, 'rgba(37, 99, 235, 0.3)');
-    gradient.addColorStop(1, 'rgba(37, 99, 235, 0.0)'); 
-
-    docLineChartInstance = new Chart(ctx, {
-        type: 'line',
-        data: { 
-            labels: labels, 
-            datasets: [{ 
-                label: 'Requests Received', 
-                data: dataArr, 
-                borderColor: '#2563eb', 
-                backgroundColor: gradient, 
-                borderWidth: 2, 
-                pointRadius: 0, 
-                pointHoverRadius: 5,
-                pointBackgroundColor: '#ffffff',
-                pointBorderColor: '#2563eb',
-                pointBorderWidth: 2,
-                tension: 0.4, 
-                fill: true
-            }] 
-        },
-        options: { 
-            responsive: true, 
-            maintainAspectRatio: false, 
-            animation: { duration: 1000, easing: 'easeOutQuart' },
-            interaction: { mode: 'index', intersect: false },
-            plugins: { 
-                datalabels: { display: false }, 
-                legend: { display: false }, 
-                tooltip: sharedTooltipConfig 
-            }, 
-            scales: { 
-                x: { 
-                    grid: { display: false }, 
-                    ticks: { font: { family: 'Inter', size: 9 }, color: '#64748b', maxTicksLimit: 12 } 
-                }, 
-                y: { 
-                    title: {
-                        display: true,
-                        text: 'Received From (OFFICE)',
-                        font: { family: 'Inter', size: 12, weight: '600', style: 'italic' },
-                        color: '#475569'
-                    },
-                    grid: { color: '#f1f5f9', drawBorder: false }, 
-                    beginAtZero: true, 
-                    ticks: { font: { family: 'Inter', size: 10 }, color: '#64748b' } 
-                } 
-            } 
-        }
-    });
-}
-
-// --- CRITICALLY RESTORED: drawDonutChart ---
-function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
-    const canvas = document.getElementById(canvasId);
-    if(!canvas) return;
-    const ctx = canvas.getContext('2d');
-    
-    if (monthlyTotalPieInstance) {
-        monthlyTotalPieInstance.destroy();
-    }
-
-    const vibrantColors = ['#2563eb', '#06b6d4', '#e11d48', '#ea580c', '#16a34a', '#9333ea'];
-    const mappedVibrant = dataArr.map((_, i) => vibrantColors[i % vibrantColors.length]);
-    
-    const gtEl = document.getElementById('pie-grand-total');
-    if(gtEl) gtEl.innerText = grandTotal.toLocaleString();
-
-    monthlyTotalPieInstance = new Chart(ctx, {
-        type: 'doughnut', 
-        data: { 
-            labels: labels, 
-            datasets: [{ 
-                data: dataArr, 
-                backgroundColor: mappedVibrant, 
-                borderWidth: 0, 
-                borderRadius: 8, 
-                spacing: 5,     
-                hoverOffset: 15 
-            }] 
-        },
-        options: { 
-            responsive: true, 
-            maintainAspectRatio: false, 
-            cutout: '55%', 
-            layout: { padding: 15 }, 
-            animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, 
-            hover: { mode: 'index', animationDuration: 300 }, 
-            plugins: { 
-                legend: { display: false }, 
-                datalabels: { 
-                    color: '#ffffff', 
-                    font: { weight: '800', family: 'Inter', size: 9 }, 
-                    anchor: 'center',
-                    align: 'center',
-                    formatter: (value, context) => { 
-                        let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); 
-                        if (sum === 0) return ''; 
-                        let pctStr = ((value * 100) / sum).toFixed(1);
-                        let pctFloat = parseFloat(pctStr);
-                        return pctFloat >= 8 ? pctStr + '%' : ''; 
-                    } 
-                },
-                tooltip: {
-                    ...sharedTooltipConfig, 
-                    callbacks: {
-                        label: function(context) {
-                            let val = context.raw;
-                            let pct = grandTotal > 0 ? ((val / grandTotal) * 100).toFixed(1) : 0;
-                            return [`${val} Services Catered`, `vs Grand Total: ${pct}%`];
-                        }
-                    }
-                }
-            } 
-        }
-    });
-}
-
-// -------------------------------------------------------------
-// NEW LOGIC: processVolunteersData & renderPictogram
-// -------------------------------------------------------------
 function processVolunteersData(data) {
     let totalOrgs = 0;
     let totalIndividualsInOrgs = 0;
