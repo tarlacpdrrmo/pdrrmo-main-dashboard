@@ -149,10 +149,16 @@ function updateRainChart(labels, dataPoints) {
     });
 }
 
+// Global Click Listeners for Custom Dropdowns/Widgets
 document.addEventListener('click', function(event) {
-    const widget = document.getElementById('weather-interactive-widget');
-    if (widget && !widget.contains(event.target)) {
-        widget.classList.remove('active');
+    const weatherWidget = document.getElementById('weather-interactive-widget');
+    if (weatherWidget && !weatherWidget.contains(event.target)) {
+        weatherWidget.classList.remove('active');
+    }
+
+    const orgDrop = document.getElementById('orgGenderDropdown');
+    if (orgDrop && !orgDrop.contains(event.target)) {
+        orgDrop.classList.remove('active');
     }
 });
 
@@ -174,8 +180,8 @@ let trainStatusChartInst = null;
 let trainTypesChartInst = null;
 let trainNumbersChartInst = null;
 
-// ADDED: Global tracking for parsed volunteer gender data
-let globalOrgGenderMap = {};
+// Global tracking for parsed volunteer gender data
+let globalOrgGenderMap = {}; 
 
 let globalLineData = []; 
 let globalDocRecords = []; 
@@ -638,6 +644,351 @@ const getRobustValue = (row, searchTerms, fallbackKeys) => {
     return '';
 };
 
+// --- CRITICALLY RESTORED: processOperationsData ---
+function processOperationsData(data) {
+    try {
+        operationsMonthlyCache['all'] = new Array(10).fill(0);
+        let monthSet = new Set();
+        const monthlyAgg = {};
+        
+        data.forEach(row => {
+            if(row['MONTH']) { 
+                let m = String(row['MONTH']).trim().toUpperCase();
+                if(!monthlyAgg[m]) {
+                    monthlyAgg[m] = { vehicular:0, roadside:0, patient:0, medical:0, standby:0, others:0, clearing:0, firetruck:0, hauling:0, ledvan:0, grandTotal:0, total1st:0, total2nd:0, total3rd:0, totalOutside:0 };
+                }
+                
+                monthlyAgg[m].vehicular += Number(row['VEHICULAR ACCIDENT']) || Number(row['TRAUMA (ROADCRASH INCIDENT)']) || 0;
+                monthlyAgg[m].roadside += Number(row['ROADSIDE ASSISTANCE']) || 0;
+                monthlyAgg[m].patient += Number(row['PATIENT TRANSPORT']) || 0;
+                monthlyAgg[m].medical += Number(row['MEDICAL']) || 0;
+                monthlyAgg[m].standby += Number(row['STANDBY MEDIC, MARSHAL & VIP']) || 0;
+                monthlyAgg[m].others += Number(row['OTHERS']) || 0;
+                monthlyAgg[m].clearing += Number(row['CLEARING OPERATIONS']) || 0;
+                monthlyAgg[m].firetruck += Number(row['FIRETRUCK']) || 0;
+                monthlyAgg[m].hauling += Number(row['HAULING']) || 0;
+                monthlyAgg[m].ledvan += Number(row['LEDVAN TRUCK']) || 0;
+
+                for (let key in row) {
+                    let upperKey = key.toUpperCase();
+                    if (upperKey.includes("1ST DISTRICT")) { monthlyAgg[m].total1st += Number(row[key]) || 0; }
+                    if (upperKey.includes("2ND DISTRICT")) { monthlyAgg[m].total2nd += Number(row[key]) || 0; }
+                    if (upperKey.includes("3RD DISTRICT")) { monthlyAgg[m].total3rd += Number(row[key]) || 0; }
+                    if (upperKey.includes("OUTSIDE")) { monthlyAgg[m].totalOutside += Number(row[key]) || 0; }
+                    if (upperKey === "GRAND TOTAL") { monthlyAgg[m].grandTotal += Number(row[key]) || 0; }
+                }
+            }
+        });
+
+        const labels = [];
+        const vehicular = [], roadside = [], patient = [], medical = [], standby = [];
+        const others = [], clearing = [], firetruck = [], hauling = [], ledvan = [];
+        const monthlyTotalServices = [];
+
+        let total1st = 0, total2nd = 0, total3rd = 0, totalOutside = 0;
+        let overallGrandTotal = 0;
+
+        monthOrder.forEach(m => {
+            if(monthlyAgg[m]) {
+                labels.push(m);
+                monthSet.add(m);
+                
+                operationsMonthlyCache[m] = [
+                    monthlyAgg[m].vehicular, monthlyAgg[m].roadside, monthlyAgg[m].patient,
+                    monthlyAgg[m].medical, monthlyAgg[m].standby, monthlyAgg[m].others,
+                    monthlyAgg[m].clearing, monthlyAgg[m].firetruck, monthlyAgg[m].hauling, monthlyAgg[m].ledvan
+                ];
+
+                vehicular.push(monthlyAgg[m].vehicular);
+                roadside.push(monthlyAgg[m].roadside);
+                patient.push(monthlyAgg[m].patient);
+                medical.push(monthlyAgg[m].medical);
+                standby.push(monthlyAgg[m].standby);
+                others.push(monthlyAgg[m].others);
+                clearing.push(monthlyAgg[m].clearing);
+                firetruck.push(monthlyAgg[m].firetruck);
+                hauling.push(monthlyAgg[m].hauling);
+                ledvan.push(monthlyAgg[m].ledvan);
+
+                monthlyTotalServices.push(monthlyAgg[m].grandTotal);
+                overallGrandTotal += monthlyAgg[m].grandTotal;
+                
+                total1st += monthlyAgg[m].total1st;
+                total2nd += monthlyAgg[m].total2nd;
+                total3rd += monthlyAgg[m].total3rd;
+                totalOutside += monthlyAgg[m].totalOutside;
+                
+                for(let i=0; i<10; i++) {
+                    operationsMonthlyCache['all'][i] += operationsMonthlyCache[m][i];
+                }
+            }
+        });
+
+        let referenceTotal = overallGrandTotal > 0 ? overallGrandTotal : (total1st + total2nd + total3rd + totalOutside);
+
+        const el1st = document.getElementById('kpi-1st');
+        if(el1st) {
+            el1st.innerText = total1st;
+            document.getElementById('pct-1st').innerText = referenceTotal > 0 ? ((total1st / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
+        }
+
+        const el2nd = document.getElementById('kpi-2nd');
+        if(el2nd) {
+            el2nd.innerText = total2nd;
+            document.getElementById('pct-2nd').innerText = referenceTotal > 0 ? ((total2nd / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
+        }
+
+        const el3rd = document.getElementById('kpi-3rd');
+        if(el3rd) {
+            el3rd.innerText = total3rd;
+            document.getElementById('pct-3rd').innerText = referenceTotal > 0 ? ((total3rd / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
+        }
+
+        const elOutside = document.getElementById('kpi-outside');
+        if(elOutside) {
+            elOutside.innerText = totalOutside;
+            document.getElementById('pct-outside').innerText = referenceTotal > 0 ? ((totalOutside / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
+        }
+
+        renderTrendFooter('trend-vehicular', vehicular, labels, true); 
+        renderTrendFooter('trend-roadside', roadside, labels, false); 
+        renderTrendFooter('trend-patient', patient, labels, true);     
+        renderTrendFooter('trend-medical', medical, labels, true);                
+        renderTrendFooter('trend-standby', standby, labels, false); 
+        
+        renderTrendFooter('trend-others', others, labels, false);
+        renderTrendFooter('trend-clearing', clearing, labels, false);
+        renderTrendFooter('trend-firetruck', firetruck, labels, false);
+        renderTrendFooter('trend-hauling', hauling, labels, false);
+        renderTrendFooter('trend-ledvan', ledvan, labels, false);
+
+        drawDonutChart('monthlyPieChart', labels, monthlyTotalServices, overallGrandTotal);
+        
+        const barColors = pieColorPalette;
+
+        toggleChartData['vehicularChart'] = { labels, labelText: 'TRAUMA (ROADCRASH INCIDENT)', data: vehicular, color: barColors[0] };
+        toggleChartData['roadsideChart'] = { labels, labelText: 'Roadside Assistance', data: roadside, color: barColors[1] };
+        toggleChartData['patientChart'] = { labels, labelText: 'Patient Transport', data: patient, color: barColors[2] };
+        toggleChartData['medicalChart'] = { labels, labelText: 'MEDICAL EMERGENCIES', data: medical, color: barColors[3] };
+        toggleChartData['standbyChart'] = { labels, labelText: 'Standby Medic & VIP', data: standby, color: barColors[4] };
+        
+        toggleChartData['othersChart'] = { labels, labelText: 'SUPPORT SERVICES', data: others, color: barColors[5] };
+        toggleChartData['clearingChart'] = { labels, labelText: 'Clearing Operations', data: clearing, color: barColors[6] };
+        toggleChartData['firetruckChart'] = { labels, labelText: 'Firetruck', data: firetruck, color: barColors[7] };
+        toggleChartData['haulingChart'] = { labels, labelText: 'Hauling', data: hauling, color: barColors[8] };
+        toggleChartData['ledvanChart'] = { labels, labelText: 'Ledvan Truck', data: ledvan, color: barColors[9] };
+
+        ['vehicularChart', 'roadsideChart', 'patientChart', 'medicalChart', 'standbyChart', 'othersChart', 'clearingChart', 'firetruckChart', 'haulingChart', 'ledvanChart'].forEach(id => {
+            renderToggleableChart(id, 'bar', true); 
+        });
+
+        const drop = document.getElementById('masterServiceMonthFilter');
+        if(drop) {
+            drop.innerHTML = '<option value="all">All Time</option>';
+            Array.from(monthSet).forEach(m => {
+                let opt = document.createElement('option');
+                opt.value = m; opt.innerText = m;
+                drop.appendChild(opt);
+            });
+        }
+        renderMasterServicePie('all');
+
+    } catch (e) {
+        console.error("FATAL ERROR in processOperationsData:", e);
+    }
+}
+
+// --- CRITICALLY RESTORED: renderToggleableChart ---
+function renderToggleableChart(canvasId, type, isInitialLoad = false) {
+    try {
+        const canvas = document.getElementById(canvasId);
+        if(!canvas) return;
+        const container = canvas.parentElement;
+
+        if (!isInitialLoad) {
+            container.classList.add('chart-fade-out');
+        }
+
+        setTimeout(() => {
+            const ctx = canvas.getContext('2d');
+            if (toggleChartInstances[canvasId]) {
+                toggleChartInstances[canvasId].destroy();
+            }
+
+            const dataObj = toggleChartData[canvasId];
+            if(!dataObj || !dataObj.labels) return;
+
+            const wSize = 3;
+            const recentLabels = dataObj.labels.slice(-wSize).map(l => String(l).substring(0, 3));
+            const recentData = dataObj.data.slice(-wSize);
+
+            let chartColor = dataObj.color;
+            if (Array.isArray(chartColor)) chartColor = chartColor[0];
+
+            toggleChartInstances[canvasId] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: recentLabels,
+                    datasets: [{
+                        label: dataObj.labelText,
+                        data: recentData,
+                        backgroundColor: chartColor,
+                        maxBarThickness: 15,
+                        borderRadius: 3, 
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    animation: { duration: 700, easing: 'easeOutQuart' },
+                    layout: { padding: { top: 5, right: 35, bottom: 5, left: 10 } }, 
+                    plugins: { 
+                        datalabels: { 
+                            display: true,
+                            color: '#1e293b', 
+                            align: 'right',
+                            anchor: 'end',
+                            font: { weight: '800', family: 'Inter', size: 10 }
+                        }, 
+                        legend: { display: false }, 
+                        tooltip: sharedTooltipConfig 
+                    },
+                    scales: { 
+                        x: { display: false, beginAtZero: true, grace: '20%' }, 
+                        y: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10, weight: '700' }, color: '#64748b' }, border: {display: false} } 
+                    }
+                }
+            });
+
+            if (!isInitialLoad) {
+                setTimeout(() => {
+                    container.classList.remove('chart-fade-out');
+                }, 50); 
+            }
+        }, isInitialLoad ? 0 : 300); 
+    } catch (e) {
+        console.error("Chart Render Failed for", canvasId, e);
+    }
+}
+
+// --- CRITICALLY RESTORED: renderMasterServicePie ---
+function renderMasterServicePie(monthFilter) {
+    try {
+        const dataArr = operationsMonthlyCache[monthFilter] || new Array(10).fill(0);
+
+        let filteredLabels = [];
+        let filteredData = [];
+        let mappedColors = [];
+
+        for(let i=0; i<10; i++) {
+            if(dataArr[i] > 0) {
+                filteredLabels.push(serviceCategoryLabels[i]);
+                filteredData.push(dataArr[i]);
+                mappedColors.push(pieColorPalette[i % pieColorPalette.length]);
+            }
+        }
+
+        if(filteredLabels.length === 0) {
+            filteredLabels = ["No Data"];
+            filteredData = [1];
+            mappedColors = ["#e2e8f0"];
+        } else {
+            let combined = filteredLabels.map((l, i) => ({l, d: filteredData[i], c: mappedColors[i]}));
+            combined.sort((a,b) => b.d - a.d);
+            filteredLabels = combined.map(x => x.l);
+            filteredData = combined.map(x => x.d);
+            mappedColors = combined.map(x => x.c);
+        }
+
+        const canvas = document.getElementById('masterServicePieChart');
+        if(!canvas) return;
+        const ctx = canvas.getContext('2d');
+        
+        if(masterServicePieInstance) {
+            masterServicePieInstance.data.labels = filteredLabels;
+            masterServicePieInstance.data.datasets[0].data = filteredData;
+            masterServicePieInstance.data.datasets[0].backgroundColor = mappedColors;
+            masterServicePieInstance.update();
+        } else {
+            masterServicePieInstance = new Chart(ctx, {
+                type: 'doughnut', 
+                data: {
+                    labels: filteredLabels,
+                    datasets: [{
+                        data: filteredData,
+                        backgroundColor: mappedColors,
+                        borderWidth: 0, 
+                        borderRadius: 8, 
+                        spacing: 5,     
+                        hoverOffset: 15  
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    cutout: '55%', 
+                    layout: { padding: 15 }, 
+                    animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, 
+                    hover: { mode: 'index', animationDuration: 300 }, 
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: sharedTooltipConfig,
+                        datalabels: {
+                            color: '#ffffff', font: { weight: '800', family: 'Inter', size: 10 },
+                            formatter: (value, context) => {
+                                if(context.chart.data.labels[0] === "No Data") return "";
+                                let sum = context.chart.data.datasets[0].data.reduce((a,b)=>a+b,0);
+                                let p = (value/sum*100);
+                                return p >= 5 ? p.toFixed(1)+'%' : '';
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        const leg = document.getElementById('masterServiceLegend');
+        if(leg) {
+            leg.innerHTML = '';
+            
+            if(filteredLabels[0] !== "No Data") {
+                filteredLabels.forEach((lbl, i) => {
+                    let item = document.createElement('div');
+                    item.className = 'legend-item interactive-legend-item';
+                    item.style.padding = '8px 0';
+                    item.style.animationDelay = `${i * 0.04}s`;
+                    
+                    item.innerHTML = `
+                        <div class="legend-color" style="background-color: ${mappedColors[i]};"></div>
+                        <div class="legend-text" title="${lbl}">${lbl}</div>
+                        <div class="legend-val">${filteredData[i]}</div>
+                    `;
+                    
+                    item.onclick = function() {
+                        if (masterServicePieInstance) {
+                            masterServicePieInstance.toggleDataVisibility(i);
+                            masterServicePieInstance.update();
+                            
+                            if (masterServicePieInstance.getDataVisibility(i)) {
+                                item.classList.remove('hidden-slice');
+                            } else {
+                                item.classList.add('hidden-slice');
+                            }
+                        }
+                    };
+                    
+                    leg.appendChild(item);
+                });
+            } else {
+                leg.innerHTML = `<div style="padding:20px; color:#94a3b8; font-size:0.8rem;">No Data Available</div>`;
+            }
+        }
+    } catch (e) {
+        console.error("Master Pie Chart Crash:", e);
+    }
+}
+
 function processTrainingsData(data) {
     let workingData = Array.isArray(data) ? data : [];
     
@@ -948,754 +1299,7 @@ function buildMonthHTML(year, month, isSmallScale) {
     return html;
 }
 
-function drawTrainBarChart(canvasId, labels, dataArr, customColors = null) {
-    const canvas = document.getElementById(canvasId);
-    if(!canvas) return;
-    const ctx = canvas.getContext('2d');
-    
-    if (!labels || labels.length === 0) {
-        labels = ["No Data"];
-        dataArr = [0];
-    }
-
-    if (window[canvasId + 'Inst']) window[canvasId + 'Inst'].destroy();
-
-    let colors = customColors || labels.map((_, i) => pieColorPalette[(i + 2) % pieColorPalette.length]);
-
-    window[canvasId + 'Inst'] = new Chart(ctx, {
-        type: 'bar',
-        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: colors, borderRadius: 4, borderWidth: 0, maxBarThickness: 30 }] },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            layout: { padding: { top: 25, left: 10, right: 10, bottom: 0 } }, 
-            plugins: { legend: { display: false }, tooltip: sharedTooltipConfig, datalabels: { display: true, align: 'top', anchor: 'end', color: '#64748b', font: { weight: 'bold' } } },
-            scales: {
-                x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 9 }, color: '#64748b' }, border: {display: false} },
-                y: { grid: { color: '#f1f5f9', drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 }, color: '#94a3b8' }, beginAtZero: true, grace: '20%', border: {display: false} } 
-            }
-        }
-    });
-}
-
-function populateAllList(containerId, dataObj) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    container.innerHTML = '';
-    
-    let sorted = Object.keys(dataObj).map(k => ({name: k, count: dataObj[k]})).sort((a,b) => b.count - a.count);
-    
-    if (sorted.length === 0) {
-        container.innerHTML = `<div style="color: #94a3b8; font-size: 0.7rem; padding: 10px;">No Data</div>`;
-        return;
-    }
-
-    sorted.forEach((item, index) => {
-        container.innerHTML += `
-            <div class="legend-item" style="animation-delay: ${index * 0.04}s;">
-                <div class="legend-text" title="${item.name}" style="flex: 1;">${index + 1}. ${item.name}</div>
-                <div class="legend-val">${item.count}</div>
-            </div>
-        `;
-    });
-}
-
-function populateModalList(dataObj) {
-    const container = document.getElementById('modal-title-list');
-    if (!container) return;
-    container.innerHTML = '';
-    
-    let sorted = Object.keys(dataObj).map(k => ({name: k, count: dataObj[k]})).sort((a,b) => b.count - a.count);
-    
-    if (sorted.length === 0) {
-        container.innerHTML = `<div style="color: #94a3b8; font-size: 0.9rem; padding: 20px; text-align:center;">No Data Available</div>`;
-        return;
-    }
-
-    sorted.forEach((item, index) => {
-        container.innerHTML += `
-            <div class="legend-item" style="animation-delay: ${index * 0.02}s;">
-                <div class="legend-text" style="font-size: 0.85rem; padding-right: 15px;">
-                    <span style="color:#64748b; font-weight:800; margin-right:8px;">${index + 1}.</span> 
-                    ${item.name}
-                </div>
-                <div class="legend-val">${item.count}</div>
-            </div>
-        `;
-    });
-}
-
-function populateRemarksModal(detailsObj) {
-    const container = document.getElementById('modal-remarks-list');
-    if (!container) return;
-    container.innerHTML = '';
-    
-    if (!detailsObj || Object.keys(detailsObj).length === 0) {
-        container.innerHTML = `<div style="color: #94a3b8; font-size: 0.9rem; padding: 20px; text-align:center;">No Data Available</div>`;
-        return;
-    }
-
-    for (let status in detailsObj) {
-        let items = detailsObj[status];
-        if(!items || items.length === 0) continue;
-
-        let color = status === 'WITH AAR' ? '#10b981' : (status === 'NO AAR' ? '#f43f5e' : '#64748b'); 
-
-        let html = `<h3 style="font-size: 0.9rem; color: ${color}; margin-top: 16px; margin-bottom: 8px; border-bottom: 2px solid #f1f5f9; padding-bottom: 6px;">${status} (${items.length})</h3>`;
-        
-        items.forEach((item, index) => {
-            html += `
-                <div class="legend-item" style="padding: 12px 0; border-bottom: 1px solid #f8fafc; align-items: flex-start; animation-delay: ${index * 0.02}s;">
-                    <div class="legend-text" style="font-size: 0.8rem; white-space: normal; line-height: 1.4;">
-                        <span style="font-weight: 800; color: #1e293b;">${item.title}</span><br>
-                        <span style="font-size: 0.7rem; color: #64748b;">${item.agency} &nbsp;|&nbsp; ${item.dates}</span>
-                    </div>
-                </div>
-            `;
-        });
-        container.innerHTML += html;
-    }
-}
-
-function processVolunteersData(data) {
-    let totalOrgs = 0;
-    let totalIndividualsInOrgs = 0;
-    let standaloneIndividuals = 0;
-    let orgList = []; 
-    globalOrgGenderMap = {}; 
-
-    const tbody = document.querySelector('#volunteerTable tbody');
-    if(!tbody) return;
-    tbody.innerHTML = ''; 
-
-    // First Pass: Extract Summary Logic
-    data.forEach(row => {
-        let keys = Object.keys(row);
-        if (keys.length < 6) return;
-
-        let orgKey = keys.find(k => k.toUpperCase().includes('LIST OF ORGANIZATION')) || keys[5]; 
-        let countKey = keys.find(k => k.toUpperCase().includes('TOTAL COUNT VOLUNTEER')) || keys[6]; 
-        let individualKey = keys.find(k => k.toUpperCase().includes('INDIVIDUAL VOLUNTEER')) || keys[8]; 
-
-        let orgName = row[orgKey] ? row[orgKey].trim() : '';
-        let orgCount = Number(row[countKey]) || 0;
-        let standaloneCount = Number(row[individualKey]) || 0;
-
-        if (standaloneCount > 0) {
-            standaloneIndividuals += standaloneCount;
-        }
-
-        if (orgName && orgCount > 0 && !orgName.toUpperCase().includes('TOTAL')) {
-            totalOrgs++; 
-            totalIndividualsInOrgs += orgCount; 
-            orgList.push({ name: orgName, count: orgCount });
-        }
-    });
-
-    orgList.sort((a, b) => b.count - a.count);
-
-    const maxCount = orgList.length > 0 ? orgList[0].count : 1;
-
-    // Second Pass: Extract Gender Breakdown Logic
-    data.forEach(row => {
-        let keys = Object.keys(row);
-        let indOrgKey = keys.find(k => k.trim().toUpperCase() === 'ORGANIZATION') || keys[3];
-        let indGenderKey = keys.find(k => k.trim().toUpperCase() === 'GENDER') || keys[4];
-
-        let indOrg = row[indOrgKey] ? String(row[indOrgKey]).trim() : '';
-        let indGender = row[indGenderKey] ? String(row[indGenderKey]).trim() : '';
-
-        if (indOrg && indGender) {
-            // Find matched official name to prevent duplicate map keys from trailing spaces
-            let matchedOrgObj = orgList.find(o => o.name.toUpperCase() === indOrg.toUpperCase());
-            let finalOrgName = matchedOrgObj ? matchedOrgObj.name : indOrg;
-
-            if(!globalOrgGenderMap[finalOrgName]) {
-                globalOrgGenderMap[finalOrgName] = { Male: 0, Female: 0, Total: 0 };
-            }
-            
-            let genderUpper = indGender.toUpperCase();
-            if(genderUpper.includes('MALE') && !genderUpper.includes('FEMALE')) {
-                globalOrgGenderMap[finalOrgName].Male++;
-            } else if(genderUpper.includes('FEMALE')) {
-                globalOrgGenderMap[finalOrgName].Female++;
-            }
-            globalOrgGenderMap[finalOrgName].Total++;
-        }
-    });
-
-    // Populate Data Table
-    orgList.forEach((org, index) => {
-        let tr = document.createElement('tr');
-        tr.style.animationDelay = `${index * 0.03}s`;
-        
-        let tdName = document.createElement('td');
-        tdName.innerHTML = `
-            <div style="display:flex; align-items:center; gap:12px;">
-                <span style="color:#94a3b8; font-weight:800; font-size:0.6rem;">${index + 1}</span>
-                <span>${org.name}</span>
-            </div>
-        `;
-        
-        let tdCount = document.createElement('td');
-        let percentage = (org.count / maxCount) * 100;
-        tdCount.innerHTML = `
-            <div style="display:flex; align-items:center; gap:12px; width:100%;">
-                <span style="width: 30px; font-weight:800;">${org.count.toLocaleString()}</span>
-                <div style="flex:1; height:6px; background:#f1f5f9; border-radius:3px; overflow:hidden;">
-                    <div style="height:100%; width:${percentage}%; background:linear-gradient(90deg, #06b6d4, #2563eb); border-radius:3px; transition: width 1s ease-in-out;"></div>
-                </div>
-            </div>
-        `; 
-        
-        tr.appendChild(tdName);
-        tr.appendChild(tdCount);
-        tbody.appendChild(tr);
-    });
-
-    // Update the 3 Metric Boxes
-    document.getElementById('vol-orgs').innerText = totalOrgs.toLocaleString(); 
-    
-    const orgMembersEl = document.getElementById('vol-org-members');
-    if (orgMembersEl) orgMembersEl.innerText = totalIndividualsInOrgs.toLocaleString();
-    
-    document.getElementById('vol-ind').innerText = standaloneIndividuals.toLocaleString();
-
-    // Populate Gender Dropdown
-    const selectEl = document.getElementById('orgGenderSelect');
-    if (selectEl) {
-        selectEl.innerHTML = '';
-        
-        let orgsWithData = Object.keys(globalOrgGenderMap).sort((a, b) => globalOrgGenderMap[b].Total - globalOrgGenderMap[a].Total);
-        
-        if (orgsWithData.length > 0) {
-            orgsWithData.forEach(orgName => {
-                let opt = document.createElement('option');
-                opt.value = orgName;
-                opt.innerText = orgName;
-                selectEl.appendChild(opt);
-            });
-            
-            selectEl.onchange = function() {
-                renderPictogram(this.value);
-            };
-            
-            // Render first option by default
-            renderPictogram(orgsWithData[0]);
-        } else {
-            selectEl.innerHTML = '<option value="">No Gender Data</option>';
-            renderPictogram('');
-        }
-    }
-}
-
-// ADDED: Pictogram Render Function
-function renderPictogram(orgName) {
-    const container = document.getElementById('pictogramContainer');
-    if(!container) return;
-
-    let data = globalOrgGenderMap[orgName] || { Male: 0, Female: 0, Total: 0 };
-    let total = data.Male + data.Female;
-
-    if (total === 0) {
-        container.innerHTML = `<div style="text-align:center; padding: 40px; color:#94a3b8; font-weight:600;">No gender data available for this organization.</div>`;
-        return;
-    }
-
-    let pctMale = Math.round((data.Male / total) * 100);
-    let pctFemale = Math.round((data.Female / total) * 100);
-
-    let maleIcon = `<svg viewBox="0 0 320 512" width="14" height="14" fill="currentColor" style="margin:2px;"><path d="M112 48a48 48 0 1 1 96 0 48 48 0 1 1 -96 0zm40 304V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V256.9L59.4 304.5c-9.1 15.1-28.8 20-43.9 10.9s-20-28.8-10.9-43.9l58.3-97c17.4-28.9 48.6-46.6 82.3-46.6h29.7c33.7 0 64.9 17.7 82.3 46.6l58.3 97c9.1 15.1 4.2 34.8-10.9 43.9s-34.8 4.2-43.9-10.9L232 256.9V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V352H152z"/></svg>`;
-    let femaleIcon = `<svg viewBox="0 0 320 512" width="14" height="14" fill="currentColor" style="margin:2px;"><path d="M160 48a48 48 0 1 1 0 96 48 48 0 1 1 0-96zM74.5 289.1c-7.6 13-24.5 17.3-37.5 9.8s-17.3-24.5-9.8-37.5L65.6 195C82.8 165.6 114 148 148.1 148h23.8c34.1 0 65.3 17.6 82.5 47l38.4 66.5c7.6 13 3.2 29.9-9.8 37.5s-29.9 3.2-37.5-9.8L207.2 222V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V352H176v128c0 17.7-14.3 32-32 32s-32-14.3-32-32V222L74.5 289.1z"/></svg>`;
-
-    let maleIconsHtml = '';
-    // Cap to prevent browser crash on enormous lists
-    let displayMale = data.Male > 300 ? 300 : data.Male;
-    let displayFemale = data.Female > 300 ? 300 : data.Female;
-    let noteHtml = (data.Male > 300 || data.Female > 300) ? `<div style="font-size: 0.6rem; color: #94a3b8; text-align: center; margin-top: 10px;">*Icons capped at 300 for browser performance.</div>` : '';
-
-    for(let i=0; i<displayMale; i++) maleIconsHtml += maleIcon;
-    let femaleIconsHtml = '';
-    for(let i=0; i<displayFemale; i++) femaleIconsHtml += femaleIcon;
-
-    container.innerHTML = `
-        <div style="display:flex; justify-content:space-between; margin-bottom: 16px;">
-            <div style="background:#eff6ff; border: 1px solid #bfdbfe; border-radius:8px; padding:10px 16px; flex:1; margin-right:8px; display:flex; flex-direction:column; align-items:center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                <span style="font-size:0.6rem; font-weight:800; color:#3b82f6; text-transform:uppercase; letter-spacing: 0.5px;">Male</span>
-                <span style="font-size:1.4rem; font-weight:800; color:#1e40af; margin-top:2px;">${data.Male}</span>
-                <span style="font-size:0.65rem; font-weight:700; color:#60a5fa; margin-top:2px;">${pctMale}%</span>
-            </div>
-            <div style="background:#fff1f2; border: 1px solid #fecdd3; border-radius:8px; padding:10px 16px; flex:1; margin-left:8px; display:flex; flex-direction:column; align-items:center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                <span style="font-size:0.6rem; font-weight:800; color:#f43f5e; text-transform:uppercase; letter-spacing: 0.5px;">Female</span>
-                <span style="font-size:1.4rem; font-weight:800; color:#9f1239; margin-top:2px;">${data.Female}</span>
-                <span style="font-size:0.65rem; font-weight:700; color:#fb7185; margin-top:2px;">${pctFemale}%</span>
-            </div>
-        </div>
-        
-        <div style="display:flex; flex-direction:column; gap:16px;">
-            ${data.Male > 0 ? `
-            <div>
-                <div style="font-size:0.65rem; font-weight:800; color:#3b82f6; margin-bottom:4px; text-transform:uppercase;">Male Volunteers</div>
-                <div style="color:#60a5fa; display:flex; flex-wrap:wrap;">
-                    ${maleIconsHtml}
-                </div>
-            </div>` : ''}
-            
-            ${data.Female > 0 ? `
-            <div>
-                <div style="font-size:0.65rem; font-weight:800; color:#f43f5e; margin-bottom:4px; text-transform:uppercase;">Female Volunteers</div>
-                <div style="color:#fb7185; display:flex; flex-wrap:wrap;">
-                    ${femaleIconsHtml}
-                </div>
-            </div>` : ''}
-        </div>
-        ${noteHtml}
-    `;
-}
-
-// --- HELPER FUNCTIONS RESTORED ---
-function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = false) {
-    const el = document.getElementById(elementId);
-    if (!el) return;
-
-    let current = 0;
-    let previous = 0;
-    let currentLabel = 'Current Month';
-    let prevLabel = 'Previous Month';
-
-    if (dataArray.length >= 2 && labelsArray.length >= 2) {
-        current = dataArray[dataArray.length - 1];
-        previous = dataArray[dataArray.length - 2];
-        currentLabel = labelsArray[labelsArray.length - 1];
-        prevLabel = labelsArray[labelsArray.length - 2];
-    } else if (dataArray.length === 1) {
-        current = dataArray[0];
-        currentLabel = labelsArray[0];
-    }
-
-    const diff = current - previous;
-    let trendHtml = '';
-    let bgColor = '#64748b'; 
-
-    if (dataArray.length < 2) {
-        trendHtml = `<span>No prior data</span>`;
-        el.style.backgroundColor = bgColor;
-        el.style.padding = '10px 16px'; 
-        el.innerHTML = `<div style="font-weight:600; font-size:0.75rem; color:#fff;">${trendHtml}</div>`;
-        return;
-    }
-
-    let symbol = '—';
-    let sign = diff > 0 ? '+' : '';
-
-    const arrowUp = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>`;
-    const arrowDown = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"></path></svg>`;
-
-    if (diff > 0) {
-        symbol = arrowUp;
-        bgColor = inverseColors ? '#ef4444' : '#10b981'; 
-    } else if (diff < 0) {
-        symbol = arrowDown;
-        bgColor = inverseColors ? '#10b981' : '#ef4444'; 
-        sign = '-'; 
-    }
-
-    let diffStr = diff > 0 ? `+${diff}` : diff;
-    let pct = previous > 0 ? Math.round((Math.abs(diff) / previous) * 100) : (diff > 0 ? 100 : 0);
-
-    let tooltipHtml = `
-        <div class="custom-tooltip">
-            <div style="color:#94a3b8; font-size:0.55rem; text-transform:uppercase; margin-bottom:6px; letter-spacing:0.5px;">Monthly Comparison</div>
-            <div style="display:flex; justify-content:space-between; gap:20px; margin-bottom:2px;"><span>${currentLabel}:</span> <strong>${current}</strong></div>
-            <div style="display:flex; justify-content:space-between; gap:20px; margin-bottom:2px;"><span>${prevLabel}:</span> <strong>${previous}</strong></div>
-            <div style="border-top:1px solid #334155; margin-top:6px; padding-top:6px; display:flex; justify-content:space-between; gap:20px;"><span>Difference:</span> <strong>${diffStr}</strong></div>
-        </div>
-    `;
-
-    el.style.backgroundColor = bgColor;
-    el.style.padding = '10px 16px'; 
-    el.style.color = '#ffffff';
-
-    el.innerHTML = `
-        <div class="has-tooltip" style="display:flex; width:100%; justify-content:space-between; align-items:center; cursor:pointer;">
-            <span style="font-weight:600; font-size:0.75rem;">${Math.abs(diff)} (${sign}${pct}%)</span>
-            <span style="display:flex; align-items:center;">${symbol}</span>
-            ${tooltipHtml}
-        </div>
-    `;
-}
-
-function renderLineChartByTimeframe(timeframe) {
-    let groupedObj = {};
-    let sortedData = [...globalLineData].sort((a, b) => a.timestamp - b.timestamp);
-
-    sortedData.forEach(item => {
-        let key = "";
-        if (timeframe === 'monthly') {
-            key = item.dateObj.toLocaleString('en-US', { month: 'short', year: 'numeric' });
-        } else if (timeframe === 'yearly') {
-            key = item.dateObj.getFullYear().toString();
-        } else { 
-            key = item.dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        }
-        groupedObj[key] = (groupedObj[key] || 0) + item.count;
-    });
-
-    const labels = Object.keys(groupedObj);
-    const dataValues = Object.values(groupedObj);
-    
-    if(labels.length === 0) {
-        drawLineChart('docDateLineChart', ['No Date Data Found'], [0]);
-    } else {
-        drawLineChart('docDateLineChart', labels, dataValues);
-    }
-}
-
-function processOperationsData(data) {
-    try {
-        operationsMonthlyCache['all'] = new Array(10).fill(0);
-        let monthSet = new Set();
-        const monthlyAgg = {};
-        
-        data.forEach(row => {
-            if(row['MONTH']) { 
-                let m = String(row['MONTH']).trim().toUpperCase();
-                if(!monthlyAgg[m]) {
-                    monthlyAgg[m] = { vehicular:0, roadside:0, patient:0, medical:0, standby:0, others:0, clearing:0, firetruck:0, hauling:0, ledvan:0, grandTotal:0, total1st:0, total2nd:0, total3rd:0, totalOutside:0 };
-                }
-                
-                monthlyAgg[m].vehicular += Number(row['VEHICULAR ACCIDENT']) || Number(row['TRAUMA (ROADCRASH INCIDENT)']) || 0;
-                monthlyAgg[m].roadside += Number(row['ROADSIDE ASSISTANCE']) || 0;
-                monthlyAgg[m].patient += Number(row['PATIENT TRANSPORT']) || 0;
-                monthlyAgg[m].medical += Number(row['MEDICAL']) || 0;
-                monthlyAgg[m].standby += Number(row['STANDBY MEDIC, MARSHAL & VIP']) || 0;
-                monthlyAgg[m].others += Number(row['OTHERS']) || 0;
-                monthlyAgg[m].clearing += Number(row['CLEARING OPERATIONS']) || 0;
-                monthlyAgg[m].firetruck += Number(row['FIRETRUCK']) || 0;
-                monthlyAgg[m].hauling += Number(row['HAULING']) || 0;
-                monthlyAgg[m].ledvan += Number(row['LEDVAN TRUCK']) || 0;
-
-                for (let key in row) {
-                    let upperKey = key.toUpperCase();
-                    if (upperKey.includes("1ST DISTRICT")) { monthlyAgg[m].total1st += Number(row[key]) || 0; }
-                    if (upperKey.includes("2ND DISTRICT")) { monthlyAgg[m].total2nd += Number(row[key]) || 0; }
-                    if (upperKey.includes("3RD DISTRICT")) { monthlyAgg[m].total3rd += Number(row[key]) || 0; }
-                    if (upperKey.includes("OUTSIDE")) { monthlyAgg[m].totalOutside += Number(row[key]) || 0; }
-                    if (upperKey === "GRAND TOTAL") { monthlyAgg[m].grandTotal += Number(row[key]) || 0; }
-                }
-            }
-        });
-
-        const labels = [];
-        const vehicular = [], roadside = [], patient = [], medical = [], standby = [];
-        const others = [], clearing = [], firetruck = [], hauling = [], ledvan = [];
-        const monthlyTotalServices = [];
-
-        let total1st = 0, total2nd = 0, total3rd = 0, totalOutside = 0;
-        let overallGrandTotal = 0;
-
-        monthOrder.forEach(m => {
-            if(monthlyAgg[m]) {
-                labels.push(m);
-                monthSet.add(m);
-                
-                operationsMonthlyCache[m] = [
-                    monthlyAgg[m].vehicular, monthlyAgg[m].roadside, monthlyAgg[m].patient,
-                    monthlyAgg[m].medical, monthlyAgg[m].standby, monthlyAgg[m].others,
-                    monthlyAgg[m].clearing, monthlyAgg[m].firetruck, monthlyAgg[m].hauling, monthlyAgg[m].ledvan
-                ];
-
-                vehicular.push(monthlyAgg[m].vehicular);
-                roadside.push(monthlyAgg[m].roadside);
-                patient.push(monthlyAgg[m].patient);
-                medical.push(monthlyAgg[m].medical);
-                standby.push(monthlyAgg[m].standby);
-                others.push(monthlyAgg[m].others);
-                clearing.push(monthlyAgg[m].clearing);
-                firetruck.push(monthlyAgg[m].firetruck);
-                hauling.push(monthlyAgg[m].hauling);
-                ledvan.push(monthlyAgg[m].ledvan);
-
-                monthlyTotalServices.push(monthlyAgg[m].grandTotal);
-                overallGrandTotal += monthlyAgg[m].grandTotal;
-                
-                total1st += monthlyAgg[m].total1st;
-                total2nd += monthlyAgg[m].total2nd;
-                total3rd += monthlyAgg[m].total3rd;
-                totalOutside += monthlyAgg[m].totalOutside;
-                
-                for(let i=0; i<10; i++) {
-                    operationsMonthlyCache['all'][i] += operationsMonthlyCache[m][i];
-                }
-            }
-        });
-
-        let referenceTotal = overallGrandTotal > 0 ? overallGrandTotal : (total1st + total2nd + total3rd + totalOutside);
-
-        const el1st = document.getElementById('kpi-1st');
-        if(el1st) {
-            el1st.innerText = total1st;
-            document.getElementById('pct-1st').innerText = referenceTotal > 0 ? ((total1st / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
-        }
-
-        const el2nd = document.getElementById('kpi-2nd');
-        if(el2nd) {
-            el2nd.innerText = total2nd;
-            document.getElementById('pct-2nd').innerText = referenceTotal > 0 ? ((total2nd / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
-        }
-
-        const el3rd = document.getElementById('kpi-3rd');
-        if(el3rd) {
-            el3rd.innerText = total3rd;
-            document.getElementById('pct-3rd').innerText = referenceTotal > 0 ? ((total3rd / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
-        }
-
-        const elOutside = document.getElementById('kpi-outside');
-        if(elOutside) {
-            elOutside.innerText = totalOutside;
-            document.getElementById('pct-outside').innerText = referenceTotal > 0 ? ((totalOutside / referenceTotal) * 100).toFixed(1) + '% of Grand Total' : '0%';
-        }
-
-        renderTrendFooter('trend-vehicular', vehicular, labels, true); 
-        renderTrendFooter('trend-roadside', roadside, labels, false); 
-        renderTrendFooter('trend-patient', patient, labels, true);     
-        renderTrendFooter('trend-medical', medical, labels, true);                
-        renderTrendFooter('trend-standby', standby, labels, false); 
-        
-        renderTrendFooter('trend-others', others, labels, false);
-        renderTrendFooter('trend-clearing', clearing, labels, false);
-        renderTrendFooter('trend-firetruck', firetruck, labels, false);
-        renderTrendFooter('trend-hauling', hauling, labels, false);
-        renderTrendFooter('trend-ledvan', ledvan, labels, false);
-
-        drawDonutChart('monthlyPieChart', labels, monthlyTotalServices, overallGrandTotal);
-        
-        const barColors = pieColorPalette;
-
-        toggleChartData['vehicularChart'] = { labels, labelText: 'TRAUMA (ROADCRASH INCIDENT)', data: vehicular, color: barColors[0] };
-        toggleChartData['roadsideChart'] = { labels, labelText: 'Roadside Assistance', data: roadside, color: barColors[1] };
-        toggleChartData['patientChart'] = { labels, labelText: 'Patient Transport', data: patient, color: barColors[2] };
-        toggleChartData['medicalChart'] = { labels, labelText: 'MEDICAL EMERGENCIES', data: medical, color: barColors[3] };
-        toggleChartData['standbyChart'] = { labels, labelText: 'Standby Medic & VIP', data: standby, color: barColors[4] };
-        
-        toggleChartData['othersChart'] = { labels, labelText: 'SUPPORT SERVICES', data: others, color: barColors[5] };
-        toggleChartData['clearingChart'] = { labels, labelText: 'Clearing Operations', data: clearing, color: barColors[6] };
-        toggleChartData['firetruckChart'] = { labels, labelText: 'Firetruck', data: firetruck, color: barColors[7] };
-        toggleChartData['haulingChart'] = { labels, labelText: 'Hauling', data: hauling, color: barColors[8] };
-        toggleChartData['ledvanChart'] = { labels, labelText: 'Ledvan Truck', data: ledvan, color: barColors[9] };
-
-        // Render the 3-Month Horizontal Bars directly
-        ['vehicularChart', 'roadsideChart', 'patientChart', 'medicalChart', 'standbyChart', 'othersChart', 'clearingChart', 'firetruckChart', 'haulingChart', 'ledvanChart'].forEach(id => {
-            renderToggleableChart(id, 'bar', true); 
-        });
-
-        const drop = document.getElementById('masterServiceMonthFilter');
-        if(drop) {
-            drop.innerHTML = '<option value="all">All Time</option>';
-            Array.from(monthSet).forEach(m => {
-                let opt = document.createElement('option');
-                opt.value = m; opt.innerText = m;
-                drop.appendChild(opt);
-            });
-        }
-        renderMasterServicePie('all');
-
-    } catch (e) {
-        console.error("FATAL ERROR in processOperationsData:", e);
-    }
-}
-
-// --- RENDERING ONLY HORIZONTAL 3-MONTH BARS ---
-function renderToggleableChart(canvasId, type, isInitialLoad = false) {
-    try {
-        const canvas = document.getElementById(canvasId);
-        if(!canvas) return;
-        const container = canvas.parentElement;
-
-        if (!isInitialLoad) {
-            container.classList.add('chart-fade-out');
-        }
-
-        setTimeout(() => {
-            const ctx = canvas.getContext('2d');
-            if (toggleChartInstances[canvasId]) {
-                toggleChartInstances[canvasId].destroy();
-            }
-
-            const dataObj = toggleChartData[canvasId];
-            if(!dataObj || !dataObj.labels) return;
-
-            // ONLY LAST 3 MONTHS
-            const wSize = 3;
-            // Shorten to 3 letters for compactness on y-axis
-            const recentLabels = dataObj.labels.slice(-wSize).map(l => String(l).substring(0, 3));
-            const recentData = dataObj.data.slice(-wSize);
-
-            let chartColor = dataObj.color;
-            if (Array.isArray(chartColor)) chartColor = chartColor[0];
-
-            toggleChartInstances[canvasId] = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: recentLabels,
-                    datasets: [{
-                        label: dataObj.labelText,
-                        data: recentData,
-                        backgroundColor: chartColor,
-                        maxBarThickness: 15,
-                        borderRadius: 3, 
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    indexAxis: 'y', // HORIZONTAL BAR
-                    responsive: true, 
-                    maintainAspectRatio: false,
-                    animation: { duration: 700, easing: 'easeOutQuart' },
-                    layout: { padding: { top: 5, right: 35, bottom: 5, left: 10 } }, 
-                    plugins: { 
-                        datalabels: { 
-                            display: true,
-                            color: '#1e293b', 
-                            align: 'right',
-                            anchor: 'end',
-                            font: { weight: '800', family: 'Inter', size: 10 }
-                        }, 
-                        legend: { display: false }, 
-                        tooltip: sharedTooltipConfig 
-                    },
-                    scales: { 
-                        x: { display: false, beginAtZero: true, grace: '20%' }, 
-                        y: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter', size: 10, weight: '700' }, color: '#64748b' }, border: {display: false} } 
-                    }
-                }
-            });
-
-            if (!isInitialLoad) {
-                setTimeout(() => {
-                    container.classList.remove('chart-fade-out');
-                }, 50); 
-            }
-        }, isInitialLoad ? 0 : 300); 
-    } catch (e) {
-        console.error("Chart Render Failed for", canvasId, e);
-    }
-}
-
-function renderMasterServicePie(monthFilter) {
-    try {
-        const dataArr = operationsMonthlyCache[monthFilter] || new Array(10).fill(0);
-
-        let filteredLabels = [];
-        let filteredData = [];
-        let mappedColors = [];
-
-        for(let i=0; i<10; i++) {
-            if(dataArr[i] > 0) {
-                filteredLabels.push(serviceCategoryLabels[i]);
-                filteredData.push(dataArr[i]);
-                mappedColors.push(pieColorPalette[i % pieColorPalette.length]);
-            }
-        }
-
-        if(filteredLabels.length === 0) {
-            filteredLabels = ["No Data"];
-            filteredData = [1];
-            mappedColors = ["#e2e8f0"];
-        } else {
-            let combined = filteredLabels.map((l, i) => ({l, d: filteredData[i], c: mappedColors[i]}));
-            combined.sort((a,b) => b.d - a.d);
-            filteredLabels = combined.map(x => x.l);
-            filteredData = combined.map(x => x.d);
-            mappedColors = combined.map(x => x.c);
-        }
-
-        const canvas = document.getElementById('masterServicePieChart');
-        if(!canvas) return;
-        const ctx = canvas.getContext('2d');
-        
-        if(masterServicePieInstance) {
-            masterServicePieInstance.data.labels = filteredLabels;
-            masterServicePieInstance.data.datasets[0].data = filteredData;
-            masterServicePieInstance.data.datasets[0].backgroundColor = mappedColors;
-            masterServicePieInstance.update();
-        } else {
-            masterServicePieInstance = new Chart(ctx, {
-                type: 'doughnut', 
-                data: {
-                    labels: filteredLabels,
-                    datasets: [{
-                        data: filteredData,
-                        backgroundColor: mappedColors,
-                        borderWidth: 0, 
-                        borderRadius: 8, 
-                        spacing: 5,     
-                        hoverOffset: 15  
-                    }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    cutout: '55%', 
-                    layout: { padding: 15 }, 
-                    animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, 
-                    hover: { mode: 'index', animationDuration: 300 }, 
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: sharedTooltipConfig,
-                        datalabels: {
-                            color: '#ffffff', font: { weight: '800', family: 'Inter', size: 10 },
-                            formatter: (value, context) => {
-                                if(context.chart.data.labels[0] === "No Data") return "";
-                                let sum = context.chart.data.datasets[0].data.reduce((a,b)=>a+b,0);
-                                let p = (value/sum*100);
-                                return p >= 5 ? p.toFixed(1)+'%' : '';
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        const leg = document.getElementById('masterServiceLegend');
-        if(leg) {
-            leg.innerHTML = '';
-            
-            if(filteredLabels[0] !== "No Data") {
-                filteredLabels.forEach((lbl, i) => {
-                    let item = document.createElement('div');
-                    item.className = 'legend-item interactive-legend-item';
-                    item.style.padding = '8px 0';
-                    item.style.animationDelay = `${i * 0.04}s`;
-                    
-                    item.innerHTML = `
-                        <div class="legend-color" style="background-color: ${mappedColors[i]};"></div>
-                        <div class="legend-text" title="${lbl}">${lbl}</div>
-                        <div class="legend-val">${filteredData[i]}</div>
-                    `;
-                    
-                    item.onclick = function() {
-                        if (masterServicePieInstance) {
-                            masterServicePieInstance.toggleDataVisibility(i);
-                            masterServicePieInstance.update();
-                            
-                            if (masterServicePieInstance.getDataVisibility(i)) {
-                                item.classList.remove('hidden-slice');
-                            } else {
-                                item.classList.add('hidden-slice');
-                            }
-                        }
-                    };
-                    
-                    leg.appendChild(item);
-                });
-            } else {
-                leg.innerHTML = `<div style="padding:20px; color:#94a3b8; font-size:0.8rem;">No Data Available</div>`;
-            }
-        }
-    } catch (e) {
-        console.error("Master Pie Chart Crash:", e);
-    }
-}
-
+// --- CRITICALLY RESTORED: processDocumentsData ---
 function processDocumentsData(data) {
     let uniqueMonths = new Set();
     
@@ -1840,6 +1444,7 @@ function processDocumentsData(data) {
     renderLineChartByTimeframe('daily');
 }
 
+// --- CRITICALLY RESTORED: updateTrackingKPIDisplays ---
 function updateTrackingKPIDisplays() {
     const cardReqCount = document.getElementById('doc-kpi-request').parentElement; 
     const cardAction = document.getElementById('doc-kpi-action').parentElement; 
@@ -1901,6 +1506,7 @@ function updateTrackingKPIDisplays() {
     }
 }
 
+// --- CRITICALLY RESTORED: renderDocPieChart ---
 function renderDocPieChart() {
     let sourceMap = {};
     let hasData = false;
@@ -1966,6 +1572,7 @@ function renderDocPieChart() {
     }
 }
 
+// --- CRITICALLY RESTORED: drawInteractiveDonutChart ---
 function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = false) {
     const canvas = document.getElementById(canvasId);
     if(!canvas) return;
@@ -2059,6 +1666,7 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
     updateCustomLegend(labels, dataArr, isEmptyState);
 }
 
+// --- CRITICALLY RESTORED: updateCustomLegend ---
 function updateCustomLegend(labels, data, isEmptyState = false) {
     const legendContainer = document.getElementById('customLegend');
     if(!legendContainer) return;
@@ -2076,12 +1684,12 @@ function updateCustomLegend(labels, data, isEmptyState = false) {
     });
 }
 
+// --- CRITICALLY RESTORED: drawLineChart ---
 function drawLineChart(canvasId, labels, dataArr) {
     const canvas = document.getElementById(canvasId);
     if(!canvas) return;
     const ctx = canvas.getContext('2d');
     
-    // RESTORED rendering function for line charts to prevent crash
     if(docLineChartInstance) docLineChartInstance.destroy();
 
     let gradient = ctx.createLinearGradient(0, 0, 0, 300);
@@ -2138,6 +1746,7 @@ function drawLineChart(canvasId, labels, dataArr) {
     });
 }
 
+// --- CRITICALLY RESTORED: drawDonutChart ---
 function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
     const canvas = document.getElementById(canvasId);
     if(!canvas) return;
@@ -2203,6 +1812,222 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
     });
 }
 
+// -------------------------------------------------------------
+// NEW LOGIC: processVolunteersData & renderPictogram
+// -------------------------------------------------------------
+function processVolunteersData(data) {
+    let totalOrgs = 0;
+    let totalIndividualsInOrgs = 0;
+    let standaloneIndividuals = 0;
+    let orgList = []; 
+    globalOrgGenderMap = {}; 
+
+    const tbody = document.querySelector('#volunteerTable tbody');
+    if(!tbody) return;
+    tbody.innerHTML = ''; 
+
+    // First Pass: Extract Summary Logic
+    data.forEach(row => {
+        let keys = Object.keys(row);
+        if (keys.length < 6) return;
+
+        let orgKey = keys.find(k => k.toUpperCase().includes('LIST OF ORGANIZATION')) || keys[5]; 
+        let countKey = keys.find(k => k.toUpperCase().includes('TOTAL COUNT VOLUNTEER')) || keys[6]; 
+        let individualKey = keys.find(k => k.toUpperCase().includes('INDIVIDUAL VOLUNTEER')) || keys[8]; 
+
+        let orgName = row[orgKey] ? row[orgKey].trim() : '';
+        let orgCount = Number(row[countKey]) || 0;
+        let standaloneCount = Number(row[individualKey]) || 0;
+
+        if (standaloneCount > 0) {
+            standaloneIndividuals += standaloneCount;
+        }
+
+        if (orgName && orgCount > 0 && !orgName.toUpperCase().includes('TOTAL')) {
+            totalOrgs++; 
+            totalIndividualsInOrgs += orgCount; 
+            orgList.push({ name: orgName, count: orgCount });
+        }
+    });
+
+    orgList.sort((a, b) => b.count - a.count);
+
+    const maxCount = orgList.length > 0 ? orgList[0].count : 1;
+
+    // Second Pass: Extract Gender Breakdown Logic
+    data.forEach(row => {
+        let keys = Object.keys(row);
+        let indOrgKey = keys.find(k => k.trim().toUpperCase() === 'ORGANIZATION') || keys[3];
+        let indGenderKey = keys.find(k => k.trim().toUpperCase() === 'GENDER') || keys[4];
+
+        let indOrg = row[indOrgKey] ? String(row[indOrgKey]).trim() : '';
+        let indGender = row[indGenderKey] ? String(row[indGenderKey]).trim() : '';
+
+        if (indOrg && indGender) {
+            let matchedOrgObj = orgList.find(o => o.name.toUpperCase() === indOrg.toUpperCase());
+            let finalOrgName = matchedOrgObj ? matchedOrgObj.name : indOrg;
+
+            if(!globalOrgGenderMap[finalOrgName]) {
+                globalOrgGenderMap[finalOrgName] = { Male: 0, Female: 0, Total: 0 };
+            }
+            
+            let genderUpper = indGender.toUpperCase();
+            if(genderUpper.includes('MALE') && !genderUpper.includes('FEMALE')) {
+                globalOrgGenderMap[finalOrgName].Male++;
+            } else if(genderUpper.includes('FEMALE')) {
+                globalOrgGenderMap[finalOrgName].Female++;
+            }
+            globalOrgGenderMap[finalOrgName].Total++;
+        }
+    });
+
+    // Populate Data Table
+    orgList.forEach((org, index) => {
+        let tr = document.createElement('tr');
+        tr.style.animationDelay = `${index * 0.03}s`;
+        
+        let tdName = document.createElement('td');
+        tdName.innerHTML = `
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span style="color:#94a3b8; font-weight:800; font-size:0.6rem;">${index + 1}</span>
+                <span>${org.name}</span>
+            </div>
+        `;
+        
+        let tdCount = document.createElement('td');
+        let percentage = (org.count / maxCount) * 100;
+        tdCount.innerHTML = `
+            <div style="display:flex; align-items:center; gap:12px; width:100%;">
+                <span style="width: 30px; font-weight:800;">${org.count.toLocaleString()}</span>
+                <div style="flex:1; height:6px; background:#f1f5f9; border-radius:3px; overflow:hidden;">
+                    <div style="height:100%; width:${percentage}%; background:linear-gradient(90deg, #06b6d4, #2563eb); border-radius:3px; transition: width 1s ease-in-out;"></div>
+                </div>
+            </div>
+        `; 
+        
+        tr.appendChild(tdName);
+        tr.appendChild(tdCount);
+        tbody.appendChild(tr);
+    });
+
+    // Update the 3 Metric Boxes
+    document.getElementById('vol-orgs').innerText = totalOrgs.toLocaleString(); 
+    
+    const orgMembersEl = document.getElementById('vol-org-members');
+    if (orgMembersEl) orgMembersEl.innerText = totalIndividualsInOrgs.toLocaleString();
+    
+    document.getElementById('vol-ind').innerText = standaloneIndividuals.toLocaleString();
+
+    // Populate Custom Dropdown
+    const dropdownContainer = document.getElementById('orgGenderDropdown');
+    const selectedText = document.getElementById('orgGenderSelectedText');
+    const optionsContainer = document.getElementById('orgGenderOptions');
+
+    if (dropdownContainer && selectedText && optionsContainer) {
+        optionsContainer.innerHTML = '';
+        let orgsWithData = Object.keys(globalOrgGenderMap).sort((a, b) => globalOrgGenderMap[b].Total - globalOrgGenderMap[a].Total);
+        
+        if (orgsWithData.length > 0) {
+            orgsWithData.forEach((orgName, idx) => {
+                let opt = document.createElement('div');
+                opt.className = 'custom-dropdown-option';
+                if(idx === 0) opt.classList.add('selected');
+                opt.innerText = orgName;
+                opt.onclick = function() {
+                    Array.from(optionsContainer.children).forEach(c => c.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedText.innerText = orgName;
+                    dropdownContainer.classList.remove('active');
+                    renderPictogram(orgName);
+                };
+                optionsContainer.appendChild(opt);
+            });
+            
+            selectedText.innerText = orgsWithData[0];
+            renderPictogram(orgsWithData[0]);
+        } else {
+            optionsContainer.innerHTML = '<div class="custom-dropdown-option">No Gender Data</div>';
+            selectedText.innerText = "No Data";
+            renderPictogram('');
+        }
+
+        const selectedBox = document.getElementById('orgGenderSelected');
+        let newBox = selectedBox.cloneNode(true);
+        selectedBox.parentNode.replaceChild(newBox, selectedBox);
+        
+        newBox.addEventListener('click', function(e) {
+            e.stopPropagation();
+            dropdownContainer.classList.toggle('active');
+        });
+    }
+}
+
+function renderPictogram(orgName) {
+    const container = document.getElementById('pictogramContainer');
+    if(!container) return;
+
+    let data = globalOrgGenderMap[orgName] || { Male: 0, Female: 0, Total: 0 };
+    let total = data.Male + data.Female;
+
+    if (total === 0) {
+        container.innerHTML = `<div style="text-align:center; padding: 40px; color:#94a3b8; font-weight:600;">No gender data available for this organization.</div>`;
+        return;
+    }
+
+    let pctMale = Math.round((data.Male / total) * 100);
+    let pctFemale = Math.round((data.Female / total) * 100);
+
+    let maleIcon = `<svg viewBox="0 0 320 512" width="14" height="14" fill="currentColor" style="margin:2px;"><path d="M112 48a48 48 0 1 1 96 0 48 48 0 1 1 -96 0zm40 304V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V256.9L59.4 304.5c-9.1 15.1-28.8 20-43.9 10.9s-20-28.8-10.9-43.9l58.3-97c17.4-28.9 48.6-46.6 82.3-46.6h29.7c33.7 0 64.9 17.7 82.3 46.6l58.3 97c9.1 15.1 4.2 34.8-10.9 43.9s-34.8 4.2-43.9-10.9L232 256.9V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V352H152z"/></svg>`;
+    let femaleIcon = `<svg viewBox="0 0 320 512" width="14" height="14" fill="currentColor" style="margin:2px;"><path d="M160 48a48 48 0 1 1 0 96 48 48 0 1 1 0-96zM74.5 289.1c-7.6 13-24.5 17.3-37.5 9.8s-17.3-24.5-9.8-37.5L65.6 195C82.8 165.6 114 148 148.1 148h23.8c34.1 0 65.3 17.6 82.5 47l38.4 66.5c7.6 13 3.2 29.9-9.8 37.5s-29.9 3.2-37.5-9.8L207.2 222V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V352H176v128c0 17.7-14.3 32-32 32s-32-14.3-32-32V222L74.5 289.1z"/></svg>`;
+
+    let maleIconsHtml = '';
+    // Cap to prevent browser crash on enormous lists
+    let displayMale = data.Male > 300 ? 300 : data.Male;
+    let displayFemale = data.Female > 300 ? 300 : data.Female;
+    let noteHtml = (data.Male > 300 || data.Female > 300) ? `<div style="font-size: 0.6rem; color: #94a3b8; text-align: center; margin-top: 10px;">*Icons capped at 300 for browser performance.</div>` : '';
+
+    for(let i=0; i<displayMale; i++) maleIconsHtml += maleIcon;
+    let femaleIconsHtml = '';
+    for(let i=0; i<displayFemale; i++) femaleIconsHtml += femaleIcon;
+
+    container.innerHTML = `
+        <div style="display:flex; justify-content:space-between; margin-bottom: 16px;">
+            <div style="background:#eff6ff; border: 1px solid #bfdbfe; border-radius:8px; padding:10px 16px; flex:1; margin-right:8px; display:flex; flex-direction:column; align-items:center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <span style="font-size:0.6rem; font-weight:800; color:#3b82f6; text-transform:uppercase; letter-spacing: 0.5px;">Male</span>
+                <span style="font-size:1.4rem; font-weight:800; color:#1e40af; margin-top:2px;">${data.Male}</span>
+                <span style="font-size:0.65rem; font-weight:700; color:#60a5fa; margin-top:2px;">${pctMale}%</span>
+            </div>
+            <div style="background:#fff1f2; border: 1px solid #fecdd3; border-radius:8px; padding:10px 16px; flex:1; margin-left:8px; display:flex; flex-direction:column; align-items:center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <span style="font-size:0.6rem; font-weight:800; color:#f43f5e; text-transform:uppercase; letter-spacing: 0.5px;">Female</span>
+                <span style="font-size:1.4rem; font-weight:800; color:#9f1239; margin-top:2px;">${data.Female}</span>
+                <span style="font-size:0.65rem; font-weight:700; color:#fb7185; margin-top:2px;">${pctFemale}%</span>
+            </div>
+        </div>
+        
+        <div style="display:flex; flex-direction:column; gap:16px;">
+            ${data.Male > 0 ? `
+            <div>
+                <div style="font-size:0.65rem; font-weight:800; color:#3b82f6; margin-bottom:4px; text-transform:uppercase;">Male Volunteers</div>
+                <div style="color:#60a5fa; display:flex; flex-wrap:wrap;">
+                    ${maleIconsHtml}
+                </div>
+            </div>` : ''}
+            
+            ${data.Female > 0 ? `
+            <div>
+                <div style="font-size:0.65rem; font-weight:800; color:#f43f5e; margin-bottom:4px; text-transform:uppercase;">Female Volunteers</div>
+                <div style="color:#fb7185; display:flex; flex-wrap:wrap;">
+                    ${femaleIconsHtml}
+                </div>
+            </div>` : ''}
+        </div>
+        ${noteHtml}
+    `;
+}
+
+// -------------------------------------------------------------
+// FIREBASE AUTHENTICATION
+// -------------------------------------------------------------
 const firebaseConfig = {
     apiKey: "AIzaSyDSCB9jQIzyn9WxGZ58sLkyJPHCj5oeEKQ", 
     authDomain: "pdrrmo-dashboard.firebaseapp.com",
