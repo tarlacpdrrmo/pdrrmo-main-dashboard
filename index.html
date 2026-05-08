@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-treemap@3"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     
     <style>
@@ -782,18 +783,30 @@
             </section>
 
             <section id="volunteers" class="panel">
-                
                 <h3 class="panel-heading">Volunteer's Section</h3>
                 
-                <div class="assets-layout top-summary">
-                    <div class="card summary-card"><p>Total Volunteer Organizations</p><h3 id="vol-orgs">0</h3></div>
-                    <div class="card summary-card"><p>Individual Volunteers</p><h3 class="orange" id="vol-ind">0</h3></div>
-                </div>
-                <div class="card table-card mt-2" style="max-height: 400px; overflow-y: auto;">
-                    <table id="volunteerTable">
-                        <thead><tr><th>List of Organization</th><th>Total Count</th></tr></thead>
-                        <tbody></tbody>
-                    </table>
+                <div style="display: flex; gap: 16px; align-items: stretch; min-height: 500px;">
+                    <div style="flex: 1; display: flex; flex-direction: column;">
+                        <div class="assets-layout top-summary">
+                            <div class="card summary-card" style="flex:1;"><p>Total Volunteer Organizations</p><h3 id="vol-orgs">0</h3></div>
+                            <div class="card summary-card" style="flex:1;"><p>Individual Volunteers</p><h3 class="orange" id="vol-ind">0</h3></div>
+                        </div>
+                        <div class="card table-card mt-2" style="flex: 1; max-height: none; overflow-y: auto;">
+                            <table id="volunteerTable">
+                                <thead><tr><th>List of Organization</th><th>Total Count</th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="flex: 1.5; display: flex; flex-direction: column; padding: 0;">
+                        <div class="chart-header-actions" style="padding: 16px; border-bottom: 1px solid #f1f5f9; margin-bottom: 0;">
+                            <h4 class="chart-title">Volunteer Distribution</h4>
+                        </div>
+                        <div style="flex: 1; padding: 16px; position: relative;">
+                            <canvas id="volunteerTreemapChart"></canvas>
+                        </div>
+                    </div>
                 </div>
             </section>
             
