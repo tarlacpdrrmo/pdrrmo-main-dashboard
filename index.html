@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-treemap@3"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     
     <style>
@@ -788,7 +789,8 @@
                     <div style="flex: 1; display: flex; flex-direction: column; min-width: 0;">
                         <div class="assets-layout top-summary" style="margin-bottom: 0;">
                             <div class="card summary-card" style="flex:1;"><p>Total Volunteer Organizations</p><h3 id="vol-orgs">0</h3></div>
-                            <div class="card summary-card" style="flex:1;"><p>Individual Volunteers</p><h3 class="orange" id="vol-ind">0</h3></div>
+                            <div class="card summary-card" style="flex:1;"><p>Total Volunteers (with Organization)</p><h3 style="color: #2563eb;" id="vol-org-members">0</h3></div>
+                            <div class="card summary-card" style="flex:1;"><p>Total Individual Volunteers</p><h3 class="orange" id="vol-ind">0</h3></div>
                         </div>
                         <div class="card table-card mt-2" style="flex: 1; overflow-y: auto; height: 100%; min-height: 0;">
                             <table id="volunteerTable">
