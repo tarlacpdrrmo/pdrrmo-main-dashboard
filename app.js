@@ -1121,16 +1121,17 @@ function processVolunteersData(data) {
         tbody.appendChild(tr);
     });
 
-    let grandTotalHumans = totalIndividualsInOrgs + standaloneIndividuals;
-
     document.getElementById('vol-orgs').innerText = totalOrgs.toLocaleString(); 
-    document.getElementById('vol-ind').innerText = grandTotalHumans.toLocaleString();
+    
+    // UPDATED: Now pushing data to the two specific new boxes
+    const orgMembersEl = document.getElementById('vol-org-members');
+    if (orgMembersEl) orgMembersEl.innerText = totalIndividualsInOrgs.toLocaleString();
+    
+    document.getElementById('vol-ind').innerText = standaloneIndividuals.toLocaleString();
 
-    // ADDED: Initialize and Draw the Polar Area Chart
     drawVolunteerPolarChart(orgList);
 }
 
-// ADDED: Function to handle Polar Area generation
 function drawVolunteerPolarChart(orgList) {
     const canvas = document.getElementById('volunteerPolarChart');
     if(!canvas) return;
