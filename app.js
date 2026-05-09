@@ -2294,11 +2294,6 @@ auth.onAuthStateChanged(user => {
     } else {
         if(loginOverlay) loginOverlay.style.display = 'flex';
         if(loader) loader.style.display = 'none';
-        
-        const emailInput = document.getElementById('loginEmail');
-        const passInput = document.getElementById('loginPassword');
-        if (emailInput) emailInput.value = '';
-        if (passInput) passInput.value = '';
     }
 });
 
@@ -2323,11 +2318,7 @@ window.handleLogin = function() {
 }
 
 window.handleLogout = function() {
-    auth.signOut().then(() => { 
-        document.getElementById('loginEmail').value = '';
-        document.getElementById('loginPassword').value = '';
-        rawOperationsData = []; rawDocumentsData = []; rawTrainingsData = []; location.reload(); 
-    });
+    auth.signOut().then(() => { rawOperationsData = []; rawDocumentsData = []; rawTrainingsData = []; location.reload(); });
 }
 
 // ==========================================
