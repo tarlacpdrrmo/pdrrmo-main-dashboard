@@ -1233,38 +1233,19 @@ function processDocumentsData(data) {
         invAttended: 0, invNotAttended: 0, others: 0, noAction: 0
     };
 
-    let explicitNoAction = 0;
-    if (rawDocumentsData && rawDocumentsData.length > 0) {
-        for (let i = 0; i < Math.min(5, rawDocumentsData.length); i++) {
-            let row = rawDocumentsData[i];
-            let keys = Object.keys(row);
-            let targetKey = keys.find(k => k.trim().toUpperCase() === 'TOTAL NO ACTION' || k.trim().toUpperCase() === 'COLUMN I');
-            if (targetKey && row[targetKey] !== undefined && String(row[targetKey]).trim() !== '') {
-                let parsedVal = parseInt(String(row[targetKey]).replace(/,/g, '').trim());
-                if (!isNaN(parsedVal)) {
-                    explicitNoAction = parsedVal;
-                    break;
-                }
-            }
-        }
-    }
-    
-    dynamicKPIs.noAction = explicitNoAction;
-
     data.forEach(row => {
         let keys = Object.keys(row);
 
-        let rawNature = row['Nature of Letter'] || row['NATURE OF LETTER'] || row['Column P'] || row['COLUMN P'] || '';
-        let rawCategory = row['Category of Writing Party'] || row['CATEGORY OF WRITING PARTY'] || row['Column O'] || row['COLUMN O'] || '';
-        let rawOffice = row['Received From (OFFICE)'] || row['RECEIVED FROM (OFFICE)'] || row['Received From Office'] || row['Column N'] || row['COLUMN N'] || '';
+        // Fetching the base data
+        let rawNature = row['Nature of Letter'] || row['NATURE OF LETTER'] || row['Column P'] || '';
+        let rawCategory = row['Category of Writing Party'] || row['CATEGORY OF WRITING PARTY'] || row['Column O'] || '';
+        let rawOffice = row['Received From (OFFICE)'] || row['RECEIVED FROM (OFFICE)'] || row['Column N'] || '';
+        let dateStr = row['Date Received'] || row['DATE RECEIVED'] || row['Column M'] || row[keys[12]] || '';
         
-        // ---> THE FIX: Added 'STATUS' to target Column V from your sheet <---
-        let rawActionTaken = row['STATUS'] || row['Status'] || row['Actions Taken'] || row['ACTIONS TAKEN'] || row['Column Q'] || row['COLUMN Q'] || '';
+        // ---> THE FIX: Target the "STATUS" column from Sheet1 <---
+        let rawActionTaken = row['STATUS'] || row['Status'] || row['Actions Taken'] || row['ACTIONS TAKEN'] || '';
         
-        let dateStr = row['Column M'] || row['COLUMN M'] || row['Date Received'] || row['DATE RECEIVED'] || row[keys[12]] || '';
-        
-        let isSummaryRow = (row['TOTAL ACTION TAKEN (OVERALL)'] !== undefined && String(row['TOTAL ACTION TAKEN (OVERALL)']).trim() !== '') || 
-                           (row['TOTAL REQUEST CATERED'] !== undefined && String(row['TOTAL REQUEST CATERED']).trim() !== '');
+        let isSummaryRow = (row['TOTAL ACTION TAKEN (OVERALL)'] !== undefined && String(row['TOTAL ACTION TAKEN (OVERALL)']).trim() !== '');
                            
         let isBlankRow = (!rawNature || String(rawNature).trim() === '') && 
                          (!rawCategory || String(rawCategory).trim() === '') &&
@@ -1273,9 +1254,12 @@ function processDocumentsData(data) {
         if (!isSummaryRow && !isBlankRow) {
             
             dynamicKPIs.req++;
-            let actionTxt = (rawActionTaken || '').toString().trim().toLowerCase();
+            
+            // Standardize text to lowercase for the baseline if/else logic
+            let actionTxt = String(rawActionTaken).trim().toLowerCase();
             let actionActuallyTaken = false;
             
+            // Dynamic Tallying - This is what makes the 2025 filter work!
             if (actionTxt.includes('no action')) {
                 dynamicKPIs.noAction++;
             } 
@@ -1285,7 +1269,7 @@ function processDocumentsData(data) {
                 
                 if (actionTxt.includes('not catered')) {
                     dynamicKPIs.notCatered++;
-                } else if (actionTxt.includes('catered') || actionTxt === 'catered') {
+                } else if (actionTxt.includes('catered')) {
                     dynamicKPIs.catered++;
                 } else if (actionTxt.includes('cancelled')) {
                     dynamicKPIs.cancelled++;
@@ -1293,11 +1277,12 @@ function processDocumentsData(data) {
                     dynamicKPIs.invNotAttended++;
                 } else if (actionTxt.includes('attended')) {
                     dynamicKPIs.invAttended++;
-                } else {
+                } else if (actionTxt.includes('other')) {
                     dynamicKPIs.others++;
                 }
             } 
 
+            // Standardize Nature for Pie Chart
             let mappedNature = rawNature.trim();
             let upperNature = mappedNature.toUpperCase();
             
@@ -1316,8 +1301,8 @@ function processDocumentsData(data) {
             let subCategory = rawCategory.trim() !== '' ? rawCategory.trim() : 'Uncategorized';
             let specificOffice = rawOffice.trim() !== '' ? rawOffice.trim() : 'Unspecified Office';
             
+            // Date parsing for Line Chart and Year Filters
             let monthYearKey = 'all';
-            
             if (dateStr && String(dateStr).trim() !== '') {
                 let parsedDate = parseCustomDate(dateStr);
                 if (parsedDate) {
@@ -1340,6 +1325,7 @@ function processDocumentsData(data) {
         }
     });
 
+    // Apply the dynamic counts to the original globals
     originalKPITotals = {
         req: dynamicKPIs.req, 
         action: dynamicKPIs.action, 
@@ -1352,6 +1338,7 @@ function processDocumentsData(data) {
         noAction: dynamicKPIs.noAction 
     };
 
+    // Update Dropdowns
     let monthSelect = document.getElementById('docPieMonthFilter');
     if (monthSelect) {
         monthSelect.innerHTML = '<option value="all">All Time</option>';
