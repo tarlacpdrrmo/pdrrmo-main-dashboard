@@ -1232,46 +1232,54 @@ function processDocumentsData(data) {
         invAttended: 0, invNotAttended: 0, others: 0, noAction: 0
     };
 
-    let hasExplicitSummary = false;
+    // --- 1. INDESTRUCTIBLE EXPLICIT COLUMN SCANNER ---
+    let explicitKPIs = { req: 0, action: 0, catered: 0, notCatered: 0, cancelled: 0, invAttended: 0, invNotAttended: 0, others: 0, noAction: 0 };
+    let foundExplicit = false;
 
-    // 1. EXACT COLUMN TARGETING (Space-Insensitive)
-    for (let i = 0; i < data.length; i++) {
+    // Scan the first 10 rows aggressively to find those exact columns
+    for (let i = 0; i < Math.min(data.length, 10); i++) {
         let row = data[i];
+        let keys = Object.keys(row);
         
-        // Helper to find column regardless of double spaces or casing
-        const getVal = (targetKeys) => {
-            let actualKeys = Object.keys(row);
-            for (let tk of targetKeys) {
-                let strippedTarget = tk.replace(/\s+/g, '').toUpperCase();
-                let match = actualKeys.find(k => k.replace(/\s+/g, '').toUpperCase() === strippedTarget);
+        keys.forEach(key => {
+            // Scenario A: The App Script turned your headers into Object Keys
+            let cleanKey = key.toUpperCase().replace(/[^A-Z]/g, ''); // Strips all spaces and symbols
+            let val = parseInt(String(row[key]).replace(/,/g, '').trim());
+            
+            if (!isNaN(val)) {
+                if (cleanKey.includes('TOTALRECEIVEDFROMOFFICE') || cleanKey.includes('TOTALCOMMUNICATIONRECEIVED')) { explicitKPIs.req = Math.max(explicitKPIs.req, val); foundExplicit = true; }
+                if (cleanKey.includes('REQUESTCATERED') && !cleanKey.includes('NOT')) { explicitKPIs.catered = Math.max(explicitKPIs.catered, val); foundExplicit = true; }
+                if (cleanKey.includes('TOTALCANCELLED')) { explicitKPIs.cancelled = Math.max(explicitKPIs.cancelled, val); foundExplicit = true; }
+                if (cleanKey.includes('INVITATIONATTENDED') && !cleanKey.includes('NOT')) { explicitKPIs.invAttended = Math.max(explicitKPIs.invAttended, val); foundExplicit = true; }
+                if (cleanKey.includes('INVITATIONNOTATTENDED')) { explicitKPIs.invNotAttended = Math.max(explicitKPIs.invNotAttended, val); foundExplicit = true; }
+                if (cleanKey.includes('REQUESTNOTCATERED')) { explicitKPIs.notCatered = Math.max(explicitKPIs.notCatered, val); foundExplicit = true; }
+                if (cleanKey.includes('TOTALNOACTION') || cleanKey === 'NOACTION') { explicitKPIs.noAction = Math.max(explicitKPIs.noAction, val); foundExplicit = true; }
+                if (cleanKey.includes('OTHERSSPECIFY') || cleanKey === 'OTHERS') { explicitKPIs.others = Math.max(explicitKPIs.others, val); foundExplicit = true; }
+                if (cleanKey.includes('ACTIONTAKENOVERALL') || cleanKey === 'TOTALACTIONTAKEN') { explicitKPIs.action = Math.max(explicitKPIs.action, val); foundExplicit = true; }
+            }
+
+            // Scenario B: The headers are cell values in Row 1, and the numbers are below them in Row 2
+            if (i < data.length - 1) {
+                let nextRow = data[i+1];
+                let cellValue = String(row[key]).toUpperCase().replace(/[^A-Z]/g, '');
+                let nextVal = parseInt(String(nextRow[key]).replace(/,/g, '').trim());
                 
-                if (match && row[match] !== undefined && String(row[match]).trim() !== '') {
-                    return parseInt(String(row[match]).replace(/,/g, '').trim()) || 0;
+                if (cellValue && !isNaN(nextVal)) {
+                    if (cellValue.includes('TOTALRECEIVEDFROMOFFICE') || cellValue.includes('TOTALCOMMUNICATIONRECEIVED')) { explicitKPIs.req = Math.max(explicitKPIs.req, nextVal); foundExplicit = true; }
+                    if (cellValue.includes('REQUESTCATERED') && !cellValue.includes('NOT')) { explicitKPIs.catered = Math.max(explicitKPIs.catered, nextVal); foundExplicit = true; }
+                    if (cellValue.includes('TOTALCANCELLED')) { explicitKPIs.cancelled = Math.max(explicitKPIs.cancelled, nextVal); foundExplicit = true; }
+                    if (cellValue.includes('INVITATIONATTENDED') && !cellValue.includes('NOT')) { explicitKPIs.invAttended = Math.max(explicitKPIs.invAttended, nextVal); foundExplicit = true; }
+                    if (cellValue.includes('INVITATIONNOTATTENDED')) { explicitKPIs.invNotAttended = Math.max(explicitKPIs.invNotAttended, nextVal); foundExplicit = true; }
+                    if (cellValue.includes('REQUESTNOTCATERED')) { explicitKPIs.notCatered = Math.max(explicitKPIs.notCatered, nextVal); foundExplicit = true; }
+                    if (cellValue.includes('TOTALNOACTION') || cellValue === 'NOACTION') { explicitKPIs.noAction = Math.max(explicitKPIs.noAction, nextVal); foundExplicit = true; }
+                    if (cellValue.includes('OTHERSSPECIFY') || cellValue === 'OTHERS') { explicitKPIs.others = Math.max(explicitKPIs.others, nextVal); foundExplicit = true; }
+                    if (cellValue.includes('ACTIONTAKENOVERALL') || cellValue === 'TOTALACTIONTAKEN') { explicitKPIs.action = Math.max(explicitKPIs.action, nextVal); foundExplicit = true; }
                 }
             }
-            return null;
-        };
-
-        let reqCount = getVal(['TOTAL RECEIVED FROM OFFICE', 'TOTAL COMMUNICATION RECEIVED']);
-        
-        // If we found the row with your specific columns, lock them in!
-        if (reqCount !== null) {
-            dynamicKPIs.req = reqCount;
-            dynamicKPIs.catered = getVal(['TOTAL REQUEST CATERED']) || 0;
-            dynamicKPIs.cancelled = getVal(['TOTAL CANCELLED']) || 0;
-            dynamicKPIs.invAttended = getVal(['TOTAL INVITATION ATTENDED']) || 0;
-            dynamicKPIs.invNotAttended = getVal(['TOTAL INVITATION NOT ATTENDED']) || 0;
-            dynamicKPIs.notCatered = getVal(['TOTAL REQUEST NOT CATERED']) || 0;
-            dynamicKPIs.noAction = getVal(['TOTAL NO ACTION']) || 0;
-            dynamicKPIs.others = getVal(['OTHERS, SPECIFY:', 'OTHERS, SPECIFY']) || 0;
-            dynamicKPIs.action = getVal(['TOTAL ACTION TAKEN (OVERALL)', 'TOTAL ACTION TAKEN']) || 0;
-            
-            hasExplicitSummary = true;
-            break; // Stop looping, we got the exact numbers
-        }
+        });
     }
 
-    // 2. BUILD CHARTS (Timeline & Pie Chart)
+    // --- 2. DYNAMIC TIMELINE & PIE CHART DATA GENERATOR ---
     data.forEach(row => {
         let keys = Object.keys(row);
 
@@ -1280,8 +1288,7 @@ function processDocumentsData(data) {
         let rawOffice = row['Received From (OFFICE)'] || row['RECEIVED FROM (OFFICE)'] || row['Received From Office'] || row['Column N'] || row['COLUMN N'] || '';
         let dateStr = row['Column M'] || row['COLUMN M'] || row['Date Received'] || row['DATE RECEIVED'] || row[keys[12]] || '';
         
-        // Check if this is the summary row so we don't plot it on the chart
-        let isSummaryRow = Object.keys(row).some(k => k.replace(/\s+/g, '').toUpperCase() === 'TOTALACTIONTAKEN(OVERALL)' && String(row[k]).trim() !== '');
+        let isSummaryRow = Object.keys(row).some(k => k.replace(/[^A-Z]/gi, '').toUpperCase() === 'TOTALACTIONTAKENOVERALL' && String(row[k]).trim() !== '');
         
         let isBlankRow = (!rawNature || String(rawNature).trim() === '') && 
                          (!rawCategory || String(rawCategory).trim() === '') &&
@@ -1289,25 +1296,33 @@ function processDocumentsData(data) {
 
         if (!isSummaryRow && !isBlankRow) {
             
-            // IF the summary columns weren't found for some reason, count manually as fallback
-            if (!hasExplicitSummary) {
-                dynamicKPIs.req++;
-                let rawActionTaken = row['Actions Taken'] || row['ACTIONS TAKEN'] || row['Column Q'] || row['COLUMN Q'] || '';
-                let actionTxt = (rawActionTaken || '').toString().trim().toUpperCase();
-                
-                if (actionTxt && actionTxt !== 'NULL') {
-                    if (actionTxt.includes('NO ACTION')) dynamicKPIs.noAction++;
-                    else if (actionTxt.includes('NOT CATERED')) { dynamicKPIs.notCatered++; dynamicKPIs.action++; }
-                    else if (actionTxt.includes('CATERED')) { dynamicKPIs.catered++; dynamicKPIs.action++; }
-                    else if (actionTxt.includes('CANCELLED')) { dynamicKPIs.cancelled++; dynamicKPIs.action++; }
-                    else if (actionTxt.includes('NOT ATTENDED')) { dynamicKPIs.invNotAttended++; dynamicKPIs.action++; }
-                    else if (actionTxt.includes('ATTENDED')) { dynamicKPIs.invAttended++; dynamicKPIs.action++; }
-                    else if (actionTxt.includes('OTHER')) { dynamicKPIs.others++; dynamicKPIs.action++; }
-                    else dynamicKPIs.action++; 
+            // Backup manual counting (just in case the explicit columns are ever deleted)
+            dynamicKPIs.req++;
+            let actionActuallyTaken = false;
+            let rawActionTaken = row['Actions Taken'] || row['ACTIONS TAKEN'] || row['Column Q'] || row['COLUMN Q'] || '';
+            let actionTxt = (rawActionTaken || '').toString().trim().toUpperCase();
+            
+            if (!actionTxt || actionTxt === 'NULL') {
+                let rowValues = Object.values(row).map(v => String(v).trim().toUpperCase());
+                for (let val of rowValues) {
+                    if (val.includes('CATERED') || val.includes('CANCELLED') || val.includes('ATTENDED') || val.includes('NO ACTION') || val.includes('OTHER')) {
+                        actionTxt = val;
+                        break;
+                    }
                 }
             }
 
-            // Categorize for Pie Charts
+            if (actionTxt && actionTxt !== 'NULL') {
+                if (actionTxt.includes('NO ACTION')) { dynamicKPIs.noAction++; }
+                else if (actionTxt.includes('NOT CATERED')) { dynamicKPIs.notCatered++; actionActuallyTaken = true; dynamicKPIs.action++; }
+                else if (actionTxt.includes('CATERED')) { dynamicKPIs.catered++; actionActuallyTaken = true; dynamicKPIs.action++; }
+                else if (actionTxt.includes('CANCELLED')) { dynamicKPIs.cancelled++; actionActuallyTaken = true; dynamicKPIs.action++; }
+                else if (actionTxt.includes('NOT ATTENDED')) { dynamicKPIs.invNotAttended++; actionActuallyTaken = true; dynamicKPIs.action++; }
+                else if (actionTxt.includes('ATTENDED')) { dynamicKPIs.invAttended++; actionActuallyTaken = true; dynamicKPIs.action++; }
+                else if (actionTxt.includes('OTHER')) { dynamicKPIs.others++; actionActuallyTaken = true; dynamicKPIs.action++; }
+                else { actionActuallyTaken = true; dynamicKPIs.action++; } 
+            }
+
             let mappedNature = rawNature.trim();
             let upperNature = mappedNature.toUpperCase();
             
@@ -1338,12 +1353,15 @@ function processDocumentsData(data) {
                 level1: mappedNature,     
                 level2: subCategory,      
                 level3: specificOffice,
+                hasActionTaken: actionActuallyTaken,
                 count: 1 
             });
         }
     });
 
-    originalKPITotals = dynamicKPIs;
+    // 3. SET FINAL TOTALS
+    originalKPITotals = foundExplicit ? explicitKPIs : dynamicKPIs;
+    if (foundExplicit && originalKPITotals.req === 0) originalKPITotals.req = dynamicKPIs.req;
 
     let monthSelect = document.getElementById('docPieMonthFilter');
     if (monthSelect) {
