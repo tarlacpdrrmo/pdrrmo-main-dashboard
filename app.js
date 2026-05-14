@@ -1356,7 +1356,6 @@ function processDocumentsData(data) {
     renderDocPieChart();
     renderLineChartByTimeframe('daily');
 }
-
 function updateTrackingKPIDisplays() {
     const cardReqCount = document.getElementById('doc-kpi-request').parentElement; 
     const cardAction = document.getElementById('doc-kpi-action').parentElement; 
