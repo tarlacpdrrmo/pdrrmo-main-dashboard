@@ -1232,88 +1232,90 @@ function processDocumentsData(data) {
         invAttended: 0, invNotAttended: 0, others: 0, noAction: 0
     };
 
+    let hasExplicitSummary = false;
+
+    // 1. EXACT COLUMN TARGETING (Space-Insensitive)
+    for (let i = 0; i < data.length; i++) {
+        let row = data[i];
+        
+        // Helper to find column regardless of double spaces or casing
+        const getVal = (targetKeys) => {
+            let actualKeys = Object.keys(row);
+            for (let tk of targetKeys) {
+                let strippedTarget = tk.replace(/\s+/g, '').toUpperCase();
+                let match = actualKeys.find(k => k.replace(/\s+/g, '').toUpperCase() === strippedTarget);
+                
+                if (match && row[match] !== undefined && String(row[match]).trim() !== '') {
+                    return parseInt(String(row[match]).replace(/,/g, '').trim()) || 0;
+                }
+            }
+            return null;
+        };
+
+        let reqCount = getVal(['TOTAL RECEIVED FROM OFFICE', 'TOTAL COMMUNICATION RECEIVED']);
+        
+        // If we found the row with your specific columns, lock them in!
+        if (reqCount !== null) {
+            dynamicKPIs.req = reqCount;
+            dynamicKPIs.catered = getVal(['TOTAL REQUEST CATERED']) || 0;
+            dynamicKPIs.cancelled = getVal(['TOTAL CANCELLED']) || 0;
+            dynamicKPIs.invAttended = getVal(['TOTAL INVITATION ATTENDED']) || 0;
+            dynamicKPIs.invNotAttended = getVal(['TOTAL INVITATION NOT ATTENDED']) || 0;
+            dynamicKPIs.notCatered = getVal(['TOTAL REQUEST NOT CATERED']) || 0;
+            dynamicKPIs.noAction = getVal(['TOTAL NO ACTION']) || 0;
+            dynamicKPIs.others = getVal(['OTHERS, SPECIFY:', 'OTHERS, SPECIFY']) || 0;
+            dynamicKPIs.action = getVal(['TOTAL ACTION TAKEN (OVERALL)', 'TOTAL ACTION TAKEN']) || 0;
+            
+            hasExplicitSummary = true;
+            break; // Stop looping, we got the exact numbers
+        }
+    }
+
+    // 2. BUILD CHARTS (Timeline & Pie Chart)
     data.forEach(row => {
         let keys = Object.keys(row);
 
-        // Safe Extraction for working charts
         let rawNature = row['Nature of Letter'] || row['NATURE OF LETTER'] || row['Column P'] || row['COLUMN P'] || '';
         let rawCategory = row['Category of Writing Party'] || row['CATEGORY OF WRITING PARTY'] || row['Column O'] || row['COLUMN O'] || '';
         let rawOffice = row['Received From (OFFICE)'] || row['RECEIVED FROM (OFFICE)'] || row['Received From Office'] || row['Column N'] || row['COLUMN N'] || '';
         let dateStr = row['Column M'] || row['COLUMN M'] || row['Date Received'] || row['DATE RECEIVED'] || row[keys[12]] || '';
         
+        // Check if this is the summary row so we don't plot it on the chart
+        let isSummaryRow = Object.keys(row).some(k => k.replace(/\s+/g, '').toUpperCase() === 'TOTALACTIONTAKEN(OVERALL)' && String(row[k]).trim() !== '');
+        
         let isBlankRow = (!rawNature || String(rawNature).trim() === '') && 
                          (!rawCategory || String(rawCategory).trim() === '') &&
                          (!dateStr || String(dateStr).trim() === '');
 
-        if (!isBlankRow) {
-            dynamicKPIs.req++;
+        if (!isSummaryRow && !isBlankRow) {
             
-            let actionActuallyTaken = false;
-            
-            // Priority 1: Check known column headers
-            let rawActionTaken = row['Actions Taken'] || row['ACTIONS TAKEN'] || row['ACTION TAKEN'] || row['Column Q'] || row['COLUMN Q'] || '';
-            let actionTxt = (rawActionTaken || '').toString().trim().toUpperCase();
-            
-            // Priority 2: DEEP SCAN - If the column is missing/shifted, scan the entire row for the status text
-            if (!actionTxt || actionTxt === 'NULL') {
-                let rowValues = Object.values(row).map(v => String(v).trim().toUpperCase());
-                for (let val of rowValues) {
-                    if (['REQUEST CATERED', 'CATERED', 'CANCELLED', 'INVITATION ATTENDED', 'INVITATION NOT ATTENDED', 'REQUEST NOT CATERED', 'NOT CATERED', 'NO ACTION'].includes(val) || val.startsWith('OTHERS')) {
-                        actionTxt = val;
-                        break;
-                    }
+            // IF the summary columns weren't found for some reason, count manually as fallback
+            if (!hasExplicitSummary) {
+                dynamicKPIs.req++;
+                let rawActionTaken = row['Actions Taken'] || row['ACTIONS TAKEN'] || row['Column Q'] || row['COLUMN Q'] || '';
+                let actionTxt = (rawActionTaken || '').toString().trim().toUpperCase();
+                
+                if (actionTxt && actionTxt !== 'NULL') {
+                    if (actionTxt.includes('NO ACTION')) dynamicKPIs.noAction++;
+                    else if (actionTxt.includes('NOT CATERED')) { dynamicKPIs.notCatered++; dynamicKPIs.action++; }
+                    else if (actionTxt.includes('CATERED')) { dynamicKPIs.catered++; dynamicKPIs.action++; }
+                    else if (actionTxt.includes('CANCELLED')) { dynamicKPIs.cancelled++; dynamicKPIs.action++; }
+                    else if (actionTxt.includes('NOT ATTENDED')) { dynamicKPIs.invNotAttended++; dynamicKPIs.action++; }
+                    else if (actionTxt.includes('ATTENDED')) { dynamicKPIs.invAttended++; dynamicKPIs.action++; }
+                    else if (actionTxt.includes('OTHER')) { dynamicKPIs.others++; dynamicKPIs.action++; }
+                    else dynamicKPIs.action++; 
                 }
             }
 
-            // Tally KPIs based on the discovered text
-            if (actionTxt && actionTxt !== 'NULL') {
-                if (actionTxt.includes('NO ACTION')) {
-                    dynamicKPIs.noAction++;
-                } else if (actionTxt.includes('NOT CATERED')) {
-                    dynamicKPIs.notCatered++;
-                    actionActuallyTaken = true;
-                    dynamicKPIs.action++;
-                } else if (actionTxt.includes('CATERED') && !actionTxt.includes('NOT')) {
-                    dynamicKPIs.catered++;
-                    actionActuallyTaken = true;
-                    dynamicKPIs.action++;
-                } else if (actionTxt.includes('CANCELLED')) {
-                    dynamicKPIs.cancelled++;
-                    actionActuallyTaken = true;
-                    dynamicKPIs.action++;
-                } else if (actionTxt.includes('NOT ATTENDED')) {
-                    dynamicKPIs.invNotAttended++;
-                    actionActuallyTaken = true;
-                    dynamicKPIs.action++;
-                } else if (actionTxt.includes('ATTENDED') && !actionTxt.includes('NOT')) {
-                    dynamicKPIs.invAttended++;
-                    actionActuallyTaken = true;
-                    dynamicKPIs.action++;
-                } else if (actionTxt.includes('OTHER')) {
-                    dynamicKPIs.others++;
-                    actionActuallyTaken = true;
-                    dynamicKPIs.action++;
-                } else {
-                    // Any other general text counts as an action taken
-                    actionActuallyTaken = true;
-                    dynamicKPIs.action++;
-                }
-            }
-
+            // Categorize for Pie Charts
             let mappedNature = rawNature.trim();
             let upperNature = mappedNature.toUpperCase();
             
-            if (upperNature.includes('OFFER') || upperNature.includes('PROPOSAL')) {
-                mappedNature = 'Offer/Proposal';
-            } else if (upperNature.includes('REQUEST')) {
-                mappedNature = 'Request';
-            } else if (upperNature.includes('INVITATION')) {
-                mappedNature = 'Invitation';
-            } else if (upperNature.includes('FYI') || upperNature.includes('INFORMATION')) {
-                mappedNature = 'For Information';
-            } else {
-                mappedNature = 'Uncategorized';
-            }
+            if (upperNature.includes('OFFER') || upperNature.includes('PROPOSAL')) mappedNature = 'Offer/Proposal';
+            else if (upperNature.includes('REQUEST')) mappedNature = 'Request';
+            else if (upperNature.includes('INVITATION')) mappedNature = 'Invitation';
+            else if (upperNature.includes('FYI') || upperNature.includes('INFORMATION')) mappedNature = 'For Information';
+            else mappedNature = 'Uncategorized';
             
             let subCategory = rawCategory.trim() !== '' ? rawCategory.trim() : 'Uncategorized';
             let specificOffice = rawOffice.trim() !== '' ? rawOffice.trim() : 'Unspecified Office';
@@ -1336,7 +1338,6 @@ function processDocumentsData(data) {
                 level1: mappedNature,     
                 level2: subCategory,      
                 level3: specificOffice,
-                hasActionTaken: actionActuallyTaken,
                 count: 1 
             });
         }
@@ -1363,7 +1364,6 @@ function processDocumentsData(data) {
     renderDocPieChart();
     renderLineChartByTimeframe('daily');
 }
-
 function updateTrackingKPIDisplays() {
     const cardReqCount = document.getElementById('doc-kpi-request').parentElement; 
     const cardAction = document.getElementById('doc-kpi-action').parentElement; 
