@@ -505,8 +505,7 @@ function parseTrainingDate(dateStr) {
 
 function extractYear(row, type) {
     if (type === 'doc') {
-        // Updated to scan H, I, M, or use Regex
-        let dStr = row['Date/ Time received'] || row['DATE/ TIME RECEIVED'] || row['Date Received'] || row['DATE RECEIVED'] || row['Column H'] || row['Column I'] || row['Column M'] || '';
+        let dStr = row['Date/ Time received'] || row['DATE/ TIME RECEIVED'] || row['Date Received'] || row['DATE RECEIVED'] || row['Column M'] || row['Column H'] || row['Column I'] || '';
         if (!dStr || String(dStr).trim() === '') {
             for (let key in row) {
                 let val = String(row[key]).trim();
@@ -1245,41 +1244,41 @@ function processDocumentsData(data) {
     data.forEach(row => {
         let keys = Object.keys(row);
 
-        // Nature is in Column E
-        let rawNature = row['Nature of Letter'] || row['NATURE OF LETTER'] || row['Column E'] || row['COLUMN E'] || row['Column P'] || '';
-        // Category is in Column F
-        let rawCategory = row['Category of Writing Party'] || row['CATEGORY OF WRITING PARTY'] || row['Column F'] || row['COLUMN F'] || row['Column O'] || '';
-        // Office is in Column B
-        let rawOffice = row['Received From (NAME OF OFFICE/SENDER)'] || row['Received From (OFFICE)'] || row['RECEIVED FROM (OFFICE)'] || row['Column B'] || row['COLUMN B'] || '';
+        // Robust fetchers for core columns
+        let rawNature = getRobustValue(row, ['NATURE OF LETTER', 'NATURE'], ['Column P', 'Column E', 'Column F']);
+        let rawCategory = getRobustValue(row, ['CATEGORY OF WRITING PARTY', 'CATEGORY'], ['Column O', 'Column F', 'Column G']);
+        let rawOffice = getRobustValue(row, ['RECEIVED FROM (NAME OF OFFICE/SENDER)', 'RECEIVED FROM (OFFICE)', 'RECEIVED FROM'], ['Column N', 'Column B']);
         
-        // Status is in Column R (User specified)
-        let rawActionTaken = row['STATUS'] || row['Status'] || row['Column R'] || row['COLUMN R'] || row['Column V'] || '';
+        // STRICTLY TARGET THE STATUS COLUMN ONLY
+        // Look for "STATUS" in headers explicitly
+        let statusKey = keys.find(k => String(k).replace(/[^A-Z]/gi, '').toUpperCase() === 'STATUS');
+        let rawActionTaken = statusKey ? row[statusKey] : getRobustValue(row, ['STATUS', 'ACTION TAKEN'], ['Column R', 'Column V', 'Column S']);
         
-        // Date is somewhere else (try H, I, M)
-        let dateStr = row['Date/ Time received'] || row['DATE/ TIME RECEIVED'] || row['Date Received'] || row['DATE RECEIVED'] || row['Column H'] || row['Column I'] || row['Column M'] || '';
-        
-        // Fallback Date search if missing
+        // Fetch Date
+        let dateStr = getRobustValue(row, ['DATE/ TIME RECEIVED', 'DATE RECEIVED', 'DATE'], ['Column M', 'Column H', 'Column I']);
         if (!dateStr || String(dateStr).trim() === '') {
             for (let k of keys) {
                 let val = String(row[k]).trim();
                 if (val.match(/^(0?[1-9]|1[012])[\/\-](0?[1-9]|[12][0-9]|3[01])[\/\-]\d{2,4}/)) {
-                    dateStr = val; break;
+                    dateStr = val; 
+                    break;
                 }
             }
         }
 
-        let isSummaryRow = (row['TOTAL ACTION TAKEN (OVERALL)'] !== undefined && String(row['TOTAL ACTION TAKEN (OVERALL)']).trim() !== '');
-        
+        // Check if summary row
+        let isSummaryRow = (row['TOTAL ACTION TAKEN (OVERALL)'] !== undefined) || 
+                           keys.some(k => String(k).replace(/[^A-Z]/gi, '').toUpperCase() === 'TOTALACTIONTAKENOVERALL' && String(row[k]).trim() !== '');
+
         let isBlankRow = (!rawNature || String(rawNature).trim() === '') && 
-                         (!rawCategory || String(rawCategory).trim() === ''); 
+                         (!rawCategory || String(rawCategory).trim() === '');
 
         if (!isSummaryRow && !isBlankRow) {
             dynamicKPIs.req++;
             
             let actionTxt = String(rawActionTaken).trim().toLowerCase();
             let actionActuallyTaken = false;
-
-            // STRICT matching to avoid double counting from "Remarks"
+            
             if (actionTxt !== '' && actionTxt !== 'null') {
                 if (actionTxt === 'no action' || actionTxt.includes('no action')) {
                     dynamicKPIs.noAction++;
@@ -1346,6 +1345,7 @@ function processDocumentsData(data) {
         }
     });
 
+    // Apply to UI
     originalKPITotals = { ...dynamicKPIs };
 
     let monthSelect = document.getElementById('docPieMonthFilter');
