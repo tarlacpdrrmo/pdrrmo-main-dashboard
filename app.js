@@ -1239,21 +1239,16 @@ function renderMasterServicePie(monthFilter) {
 // ==========================================
 function processDocumentsData(data) {
     let uniqueMonths = new Set();
-    let dynamicKPIs = {
-        req: 0, action: 0, catered: 0, notCatered: 0, cancelled: 0, 
-        invAttended: 0, invNotAttended: 0, others: 0, noAction: 0
-    };
+    let dynamicKPIs = { req: 0, action: 0, catered: 0, notCatered: 0, cancelled: 0, invAttended: 0, invNotAttended: 0, others: 0, noAction: 0 };
 
     data.forEach(row => {
         // Fetch Date FIRST to strictly validate if it's a real data row
         let dateStr = getRobustValue(row, ['DATE/ TIME RECEIVED', 'DATE RECEIVED', 'DATE'], ['Column C', 'Column M', 'Column H', 'Column I']);
         
-        // Fallback Date search if missing
         if (!dateStr || String(dateStr).trim() === '') {
             let keys = Object.keys(row);
             for (let k of keys) {
                 let val = String(row[k]).trim();
-                // Check if cell matches a date format like MM/DD/YYYY
                 if (val.match(/^(0?[1-9]|1[012])[\/\-](0?[1-9]|[12][0-9]|3[01])[\/\-]\d{2,4}/)) {
                     dateStr = val; 
                     break;
@@ -1264,10 +1259,8 @@ function processDocumentsData(data) {
         let parsedDate = parseCustomDate(dateStr);
 
         // STRICT FILTER: If it does not have a valid date, IT IS NOT A DATA ROW.
-        // This instantly skips Row 1 (Headers), Summary rows, and empty rows.
         if (!parsedDate) return; 
 
-        // If we reach here, it is a guaranteed data row
         dynamicKPIs.req++;
 
         let keys = Object.keys(row);
@@ -1275,44 +1268,52 @@ function processDocumentsData(data) {
         let rawCategory = getRobustValue(row, ['CATEGORY OF WRITING PARTY', 'CATEGORY'], ['Column O', 'Column F', 'Column G']);
         let rawOffice = getRobustValue(row, ['RECEIVED FROM (NAME OF OFFICE/SENDER)', 'RECEIVED FROM (OFFICE)', 'RECEIVED FROM'], ['Column N', 'Column B']);
         
-        // Target Status Dropdowns based on your columns
         let statusKey = keys.find(k => String(k).replace(/[^A-Z]/gi, '').toUpperCase() === 'STATUS');
         let rawActionTaken = statusKey ? row[statusKey] : getRobustValue(row, ['STATUS', 'ACTION TAKEN'], ['Column R', 'Column V', 'Column S']);
         
         let actionTxt = String(rawActionTaken).trim().toLowerCase();
         let actionActuallyTaken = false;
         
+        // ---> NEW: Tag the specific action for the Month Filter <---
+        let actionCategory = 'none';
+        
         if (actionTxt !== '' && actionTxt !== 'null') {
             if (actionTxt === 'no action' || actionTxt.includes('no action')) {
                 dynamicKPIs.noAction++;
+                actionCategory = 'noAction';
             } else if (actionTxt === 'request not catered' || actionTxt === 'not catered' || actionTxt.includes('not catered')) {
                 dynamicKPIs.notCatered++;
                 dynamicKPIs.action++;
                 actionActuallyTaken = true;
+                actionCategory = 'notCatered';
             } else if (actionTxt === 'request catered' || actionTxt === 'catered' || actionTxt.includes('catered')) {
                 dynamicKPIs.catered++;
                 dynamicKPIs.action++;
                 actionActuallyTaken = true;
+                actionCategory = 'catered';
             } else if (actionTxt === 'cancelled' || actionTxt.includes('cancelled')) {
                 dynamicKPIs.cancelled++;
                 dynamicKPIs.action++;
                 actionActuallyTaken = true;
+                actionCategory = 'cancelled';
             } else if (actionTxt === 'invitation not attended' || actionTxt === 'not attended' || actionTxt.includes('not attended')) {
                 dynamicKPIs.invNotAttended++;
                 dynamicKPIs.action++;
                 actionActuallyTaken = true;
+                actionCategory = 'invNotAttended';
             } else if (actionTxt === 'invitation attended' || actionTxt === 'attended' || actionTxt.includes('attended')) {
                 dynamicKPIs.invAttended++;
                 dynamicKPIs.action++;
                 actionActuallyTaken = true;
+                actionCategory = 'invAttended';
             } else if (actionTxt.includes('other') || actionTxt.includes('specify')) {
                 dynamicKPIs.others++;
                 dynamicKPIs.action++;
                 actionActuallyTaken = true;
+                actionCategory = 'others';
             }
         }
 
-        // Standardize categories for the Pie Chart
         let mappedNature = rawNature.trim();
         let upperNature = mappedNature.toUpperCase();
         
@@ -1340,11 +1341,11 @@ function processDocumentsData(data) {
             level2: subCategory,      
             level3: specificOffice,
             hasActionTaken: actionActuallyTaken,
+            actionCategory: actionCategory, // Passed directly into the data array
             count: 1 
         });
     });
 
-    // Apply the strictly validated counts to the UI
     originalKPITotals = { ...dynamicKPIs };
 
     let monthSelect = document.getElementById('docPieMonthFilter');
@@ -1366,7 +1367,6 @@ function processDocumentsData(data) {
     renderDocPieChart();
     renderLineChartByTimeframe('daily');
 }
-
 function updateTrackingKPIDisplays() {
     const cardReqCount = document.getElementById('doc-kpi-request').parentElement; 
     const cardAction = document.getElementById('doc-kpi-action').parentElement; 
@@ -1383,16 +1383,38 @@ function updateTrackingKPIDisplays() {
     if (currentPieState.level === 1) {
         [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => card.style.display = '');
         
-        document.getElementById('doc-kpi-request').innerText = originalKPITotals.req;
-        document.getElementById('doc-kpi-action').innerText = originalKPITotals.action;
-        document.getElementById('doc-kpi-catered').innerText = originalKPITotals.catered;
-        document.getElementById('doc-kpi-inv-att').innerText = originalKPITotals.invAttended;
-        document.getElementById('doc-kpi-not-catered').innerText = originalKPITotals.notCatered;
-        document.getElementById('doc-kpi-others').innerText = originalKPITotals.others;
-        document.getElementById('doc-kpi-inv-not').innerText = originalKPITotals.invNotAttended;
-        document.getElementById('doc-kpi-cancelled').innerText = originalKPITotals.cancelled;
-        document.getElementById('doc-kpi-no-action').innerText = originalKPITotals.noAction;
+        // ---> THE FIX: Dynamic recalculation for the selected Month Filter <---
+        let dynReq = 0, dynAction = 0, dynCatered = 0, dynNotCatered = 0, dynCancelled = 0;
+        let dynInvAtt = 0, dynInvNot = 0, dynOthers = 0, dynNoAction = 0;
+
+        globalDocRecords.forEach(record => {
+            // Checks if the row belongs to the currently selected month
+            if (currentPieState.filterKey === 'all' || record.dateKey === currentPieState.filterKey) {
+                dynReq++;
+                if (record.hasActionTaken) dynAction++;
+                
+                if (record.actionCategory === 'noAction') dynNoAction++;
+                else if (record.actionCategory === 'notCatered') dynNotCatered++;
+                else if (record.actionCategory === 'catered') dynCatered++;
+                else if (record.actionCategory === 'cancelled') dynCancelled++;
+                else if (record.actionCategory === 'invNotAttended') dynInvNot++;
+                else if (record.actionCategory === 'invAttended') dynInvAtt++;
+                else if (record.actionCategory === 'others') dynOthers++;
+            }
+        });
+
+        // Apply the dynamic month totals to the UI
+        document.getElementById('doc-kpi-request').innerText = dynReq;
+        document.getElementById('doc-kpi-action').innerText = dynAction;
+        document.getElementById('doc-kpi-catered').innerText = dynCatered;
+        document.getElementById('doc-kpi-inv-att').innerText = dynInvAtt;
+        document.getElementById('doc-kpi-not-catered').innerText = dynNotCatered;
+        document.getElementById('doc-kpi-others').innerText = dynOthers;
+        document.getElementById('doc-kpi-inv-not').innerText = dynInvNot;
+        document.getElementById('doc-kpi-cancelled').innerText = dynCancelled;
+        document.getElementById('doc-kpi-no-action').innerText = dynNoAction;
     } else {
+        // Drill-Down Level (Clicking on the Pie Chart)
         let dynTotalRequestsMatched = 0;
         let dynActionsActuallyTakenMatched = 0;
         let targetCategory = currentPieState.level1Target;
