@@ -1227,73 +1227,78 @@ function renderMasterServicePie(monthFilter) {
 // ==========================================
 function processDocumentsData(data) {
     let uniqueMonths = new Set();
-    
     let dynamicKPIs = {
         req: 0, action: 0, catered: 0, notCatered: 0, cancelled: 0, 
         invAttended: 0, invNotAttended: 0, others: 0, noAction: 0
     };
 
-    let explicitNoAction = 0;
-    if (rawDocumentsData && rawDocumentsData.length > 0) {
-        for (let i = 0; i < Math.min(5, rawDocumentsData.length); i++) {
-            let row = rawDocumentsData[i];
-            let keys = Object.keys(row);
-            let targetKey = keys.find(k => k.trim().toUpperCase() === 'TOTAL NO ACTION' || k.trim().toUpperCase() === 'COLUMN I');
-            if (targetKey && row[targetKey] !== undefined && String(row[targetKey]).trim() !== '') {
-                let parsedVal = parseInt(String(row[targetKey]).replace(/,/g, '').trim());
-                if (!isNaN(parsedVal)) {
-                    explicitNoAction = parsedVal;
-                    break;
-                }
-            }
-        }
-    }
-    
-    dynamicKPIs.noAction = explicitNoAction;
-
     data.forEach(row => {
         let keys = Object.keys(row);
 
+        // Safe Extraction for working charts
         let rawNature = row['Nature of Letter'] || row['NATURE OF LETTER'] || row['Column P'] || row['COLUMN P'] || '';
         let rawCategory = row['Category of Writing Party'] || row['CATEGORY OF WRITING PARTY'] || row['Column O'] || row['COLUMN O'] || '';
         let rawOffice = row['Received From (OFFICE)'] || row['RECEIVED FROM (OFFICE)'] || row['Received From Office'] || row['Column N'] || row['COLUMN N'] || '';
-        let rawActionTaken = row['Actions Taken'] || row['ACTIONS TAKEN'] || row['Column Q'] || row['COLUMN Q'] || '';
         let dateStr = row['Column M'] || row['COLUMN M'] || row['Date Received'] || row['DATE RECEIVED'] || row[keys[12]] || '';
         
-        let isSummaryRow = (row['TOTAL ACTION TAKEN (OVERALL)'] !== undefined && String(row['TOTAL ACTION TAKEN (OVERALL)']).trim() !== '') || 
-                           (row['TOTAL REQUEST CATERED'] !== undefined && String(row['TOTAL REQUEST CATERED']).trim() !== '');
-                           
         let isBlankRow = (!rawNature || String(rawNature).trim() === '') && 
                          (!rawCategory || String(rawCategory).trim() === '') &&
                          (!dateStr || String(dateStr).trim() === '');
 
-        if (!isSummaryRow && !isBlankRow) {
-            
+        if (!isBlankRow) {
             dynamicKPIs.req++;
-            let actionTxt = (rawActionTaken || '').toString().trim().toLowerCase();
+            
             let actionActuallyTaken = false;
             
-            if (actionTxt.includes('no action')) {
-                dynamicKPIs.noAction++;
-            } 
-            else if (actionTxt !== '' && actionTxt !== 'null') {
-                actionActuallyTaken = true;
-                dynamicKPIs.action++;
-                
-                if (actionTxt.includes('not catered')) {
-                    dynamicKPIs.notCatered++;
-                } else if (actionTxt.includes('catered') || actionTxt === 'catered') {
-                    dynamicKPIs.catered++;
-                } else if (actionTxt.includes('cancelled')) {
-                    dynamicKPIs.cancelled++;
-                } else if (actionTxt.includes('not attended')) {
-                    dynamicKPIs.invNotAttended++;
-                } else if (actionTxt.includes('attended')) {
-                    dynamicKPIs.invAttended++;
-                } else {
-                    dynamicKPIs.others++;
+            // Priority 1: Check known column headers
+            let rawActionTaken = row['Actions Taken'] || row['ACTIONS TAKEN'] || row['ACTION TAKEN'] || row['Column Q'] || row['COLUMN Q'] || '';
+            let actionTxt = (rawActionTaken || '').toString().trim().toUpperCase();
+            
+            // Priority 2: DEEP SCAN - If the column is missing/shifted, scan the entire row for the status text
+            if (!actionTxt || actionTxt === 'NULL') {
+                let rowValues = Object.values(row).map(v => String(v).trim().toUpperCase());
+                for (let val of rowValues) {
+                    if (['REQUEST CATERED', 'CATERED', 'CANCELLED', 'INVITATION ATTENDED', 'INVITATION NOT ATTENDED', 'REQUEST NOT CATERED', 'NOT CATERED', 'NO ACTION'].includes(val) || val.startsWith('OTHERS')) {
+                        actionTxt = val;
+                        break;
+                    }
                 }
-            } 
+            }
+
+            // Tally KPIs based on the discovered text
+            if (actionTxt && actionTxt !== 'NULL') {
+                if (actionTxt.includes('NO ACTION')) {
+                    dynamicKPIs.noAction++;
+                } else if (actionTxt.includes('NOT CATERED')) {
+                    dynamicKPIs.notCatered++;
+                    actionActuallyTaken = true;
+                    dynamicKPIs.action++;
+                } else if (actionTxt.includes('CATERED') && !actionTxt.includes('NOT')) {
+                    dynamicKPIs.catered++;
+                    actionActuallyTaken = true;
+                    dynamicKPIs.action++;
+                } else if (actionTxt.includes('CANCELLED')) {
+                    dynamicKPIs.cancelled++;
+                    actionActuallyTaken = true;
+                    dynamicKPIs.action++;
+                } else if (actionTxt.includes('NOT ATTENDED')) {
+                    dynamicKPIs.invNotAttended++;
+                    actionActuallyTaken = true;
+                    dynamicKPIs.action++;
+                } else if (actionTxt.includes('ATTENDED') && !actionTxt.includes('NOT')) {
+                    dynamicKPIs.invAttended++;
+                    actionActuallyTaken = true;
+                    dynamicKPIs.action++;
+                } else if (actionTxt.includes('OTHER')) {
+                    dynamicKPIs.others++;
+                    actionActuallyTaken = true;
+                    dynamicKPIs.action++;
+                } else {
+                    // Any other general text counts as an action taken
+                    actionActuallyTaken = true;
+                    dynamicKPIs.action++;
+                }
+            }
 
             let mappedNature = rawNature.trim();
             let upperNature = mappedNature.toUpperCase();
@@ -1337,17 +1342,7 @@ function processDocumentsData(data) {
         }
     });
 
-    originalKPITotals = {
-        req: dynamicKPIs.req, 
-        action: dynamicKPIs.action, 
-        catered: dynamicKPIs.catered,     
-        notCatered: dynamicKPIs.notCatered, 
-        cancelled: dynamicKPIs.cancelled,     
-        invAttended: dynamicKPIs.invAttended, 
-        invNotAttended: dynamicKPIs.invNotAttended, 
-        others: dynamicKPIs.others,
-        noAction: dynamicKPIs.noAction 
-    };
+    originalKPITotals = dynamicKPIs;
 
     let monthSelect = document.getElementById('docPieMonthFilter');
     if (monthSelect) {
