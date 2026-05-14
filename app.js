@@ -505,8 +505,20 @@ function parseTrainingDate(dateStr) {
 
 function extractYear(row, type) {
     if (type === 'doc') {
-        // ---> Added 'Date/ Time received' based on Sheet1 <---
-        let dStr = row['Date/ Time received'] || row['DATE/ TIME RECEIVED'] || row['Column M'] || row['COLUMN M'] || row['Date Received'] || row['DATE RECEIVED'];
+        // Try the explicit headers from Sheet1
+        let dStr = row['Date/ Time received'] || row['DATE/ TIME RECEIVED'] || row['Date Received'] || row['DATE RECEIVED'] || row['Column M'] || '';
+        
+        // If headers fail, scan the row for anything that looks like a date (MM/DD/YYYY)
+        if (!dStr) {
+            let rowVals = Object.values(row).map(v => String(v).trim());
+            for (let v of rowVals) {
+                if (v.match(/^\d{1,2}\/\d{1,2}\/\d{2,4}/)) {
+                    dStr = v;
+                    break;
+                }
+            }
+        }
+
         if (dStr) {
             let d = parseCustomDate(dStr);
             if (d) return d.getFullYear().toString();
@@ -1228,102 +1240,97 @@ function renderMasterServicePie(monthFilter) {
 // ==========================================
 function processDocumentsData(data) {
     let uniqueMonths = new Set();
-    
     let dynamicKPIs = {
         req: 0, action: 0, catered: 0, notCatered: 0, cancelled: 0, 
         invAttended: 0, invNotAttended: 0, others: 0, noAction: 0
     };
 
-    let explicitNoAction = 0;
-    if (rawDocumentsData && rawDocumentsData.length > 0) {
-        for (let i = 0; i < Math.min(5, rawDocumentsData.length); i++) {
-            let row = rawDocumentsData[i];
-            let keys = Object.keys(row);
-            let targetKey = keys.find(k => k.trim().toUpperCase() === 'TOTAL NO ACTION' || k.trim().toUpperCase() === 'COLUMN I');
-            if (targetKey && row[targetKey] !== undefined && String(row[targetKey]).trim() !== '') {
-                let parsedVal = parseInt(String(row[targetKey]).replace(/,/g, '').trim());
-                if (!isNaN(parsedVal)) {
-                    explicitNoAction = parsedVal;
+    data.forEach(row => {
+        // 1. Convert the entire row's values to lowercase for scanning
+        let rowVals = Object.values(row).map(v => String(v).trim().toLowerCase());
+        
+        // Skip the summary row if it sneaks in
+        let isSummaryRow = false;
+        for (let v of rowVals) {
+            if (v.includes('total action taken (overall)')) {
+                isSummaryRow = true;
+                break;
+            }
+        }
+
+        let rawNature = row['Nature of Letter'] || row['NATURE OF LETTER'] || row['Column P'] || row['COLUMN P'] || '';
+        let rawCategory = row['Category of Writing Party'] || row['CATEGORY OF WRITING PARTY'] || row['Column O'] || row['COLUMN O'] || '';
+        let rawOffice = row['Received From (OFFICE)'] || row['RECEIVED FROM (OFFICE)'] || row['Received From Office'] || row['Column N'] || row['COLUMN N'] || '';
+        
+        // Fetch Date
+        let dateStr = row['Date/ Time received'] || row['DATE/ TIME RECEIVED'] || row['Date Received'] || row['DATE RECEIVED'] || row['Column M'] || '';
+        if (!dateStr) {
+            for (let v of Object.values(row)) {
+                if (String(v).match(/^\d{1,2}\/\d{1,2}\/\d{2,4}/)) {
+                    dateStr = String(v);
                     break;
                 }
             }
         }
-    }
-    
-    dynamicKPIs.noAction = explicitNoAction;
 
-    data.forEach(row => {
-        let keys = Object.keys(row);
-
-        // ---> Added 'Received From (NAME OF OFFICE/SENDER)' <---
-        let rawNature = row['Nature of Letter'] || row['NATURE OF LETTER'] || row['Column P'] || row['COLUMN P'] || '';
-        let rawCategory = row['Category of Writing Party'] || row['CATEGORY OF WRITING PARTY'] || row['Column O'] || row['COLUMN O'] || '';
-        let rawOffice = row['Received From (NAME OF OFFICE/SENDER)'] || row['Received From (OFFICE)'] || row['RECEIVED FROM (OFFICE)'] || row['Column N'] || '';
-        
-        // ---> THE FIX: Added 'STATUS' to catch your Sheet1 Dropdowns <---
-        let rawActionTaken = row['STATUS'] || row['Status'] || row['Actions Taken'] || row['ACTIONS TAKEN'] || '';
-        
-        // ---> THE FIX: Added 'Date/ Time received' <---
-        let dateStr = row['Date/ Time received'] || row['DATE/ TIME RECEIVED'] || row['Column M'] || row['COLUMN M'] || row['Date Received'] || '';
-        
-        let isSummaryRow = (row['TOTAL ACTION TAKEN (OVERALL)'] !== undefined && String(row['TOTAL ACTION TAKEN (OVERALL)']).trim() !== '') || 
-                           (row['TOTAL REQUEST CATERED'] !== undefined && String(row['TOTAL REQUEST CATERED']).trim() !== '');
-                           
         let isBlankRow = (!rawNature || String(rawNature).trim() === '') && 
                          (!rawCategory || String(rawCategory).trim() === '') &&
                          (!dateStr || String(dateStr).trim() === '');
 
         if (!isSummaryRow && !isBlankRow) {
-            
             dynamicKPIs.req++;
             
-            // Your dropdowns are converted to lowercase here (e.g. "Request Catered" becomes "request catered")
-            let actionTxt = (rawActionTaken || '').toString().trim().toLowerCase();
+            // 2. THE FIX: Search the row values for the EXACT dropdown text
+            let actionTxt = '';
+            for (let val of rowVals) {
+                if (val === 'request catered' || val === 'request not catered' || 
+                    val === 'invitation attended' || val === 'invitation not attended' || 
+                    val === 'cancelled' || val === 'no action' || 
+                    val.includes('others, specify') || val.includes('others,specify')) {
+                    actionTxt = val;
+                    break;
+                }
+            }
+
             let actionActuallyTaken = false;
             
-            // This matches the dropdowns perfectly without needing the word "TOTAL"
-            if (actionTxt.includes('no action')) {
+            // 3. Apply it directly to the KPI counts
+            if (actionTxt === 'no action') {
                 dynamicKPIs.noAction++;
             } 
-            else if (actionTxt !== '' && actionTxt !== 'null') {
+            else if (actionTxt !== '') {
                 actionActuallyTaken = true;
                 dynamicKPIs.action++;
                 
-                if (actionTxt.includes('not catered')) {
+                if (actionTxt === 'not catered' || actionTxt === 'request not catered') {
                     dynamicKPIs.notCatered++;
-                } else if (actionTxt.includes('catered') || actionTxt === 'catered') {
+                } else if (actionTxt === 'catered' || actionTxt === 'request catered') {
                     dynamicKPIs.catered++;
-                } else if (actionTxt.includes('cancelled')) {
+                } else if (actionTxt === 'cancelled') {
                     dynamicKPIs.cancelled++;
-                } else if (actionTxt.includes('not attended')) {
+                } else if (actionTxt === 'not attended' || actionTxt === 'invitation not attended') {
                     dynamicKPIs.invNotAttended++;
-                } else if (actionTxt.includes('attended')) {
+                } else if (actionTxt === 'attended' || actionTxt === 'invitation attended') {
                     dynamicKPIs.invAttended++;
-                } else if (actionTxt.includes('other')) { // Catches "Others, Specify"
+                } else if (actionTxt.includes('others')) {
                     dynamicKPIs.others++;
                 }
-            } 
+            }
 
+            // 4. Categorize for Pie Charts
             let mappedNature = rawNature.trim();
             let upperNature = mappedNature.toUpperCase();
             
-            if (upperNature.includes('OFFER') || upperNature.includes('PROPOSAL')) {
-                mappedNature = 'Offer/Proposal';
-            } else if (upperNature.includes('REQUEST')) {
-                mappedNature = 'Request';
-            } else if (upperNature.includes('INVITATION')) {
-                mappedNature = 'Invitation';
-            } else if (upperNature.includes('FYI') || upperNature.includes('INFORMATION')) {
-                mappedNature = 'For Information';
-            } else {
-                mappedNature = 'Uncategorized';
-            }
+            if (upperNature.includes('OFFER') || upperNature.includes('PROPOSAL')) mappedNature = 'Offer/Proposal';
+            else if (upperNature.includes('REQUEST')) mappedNature = 'Request';
+            else if (upperNature.includes('INVITATION')) mappedNature = 'Invitation';
+            else if (upperNature.includes('FYI') || upperNature.includes('INFORMATION')) mappedNature = 'For Information';
+            else mappedNature = 'Uncategorized';
             
             let subCategory = rawCategory.trim() !== '' ? rawCategory.trim() : 'Uncategorized';
             let specificOffice = rawOffice.trim() !== '' ? rawOffice.trim() : 'Unspecified Office';
             
             let monthYearKey = 'all';
-            
             if (dateStr && String(dateStr).trim() !== '') {
                 let parsedDate = parseCustomDate(dateStr);
                 if (parsedDate) {
@@ -1346,20 +1353,8 @@ function processDocumentsData(data) {
         }
     });
 
-    // Override noAction if dynamic count is higher
-    if (dynamicKPIs.noAction > explicitNoAction) explicitNoAction = dynamicKPIs.noAction;
-
-    originalKPITotals = {
-        req: dynamicKPIs.req, 
-        action: dynamicKPIs.action, 
-        catered: dynamicKPIs.catered,     
-        notCatered: dynamicKPIs.notCatered, 
-        cancelled: dynamicKPIs.cancelled,     
-        invAttended: dynamicKPIs.invAttended, 
-        invNotAttended: dynamicKPIs.invNotAttended, 
-        others: dynamicKPIs.others,
-        noAction: explicitNoAction 
-    };
+    // 5. Apply the Dynamic Counts to the UI
+    originalKPITotals = { ...dynamicKPIs };
 
     let monthSelect = document.getElementById('docPieMonthFilter');
     if (monthSelect) {
@@ -1380,6 +1375,7 @@ function processDocumentsData(data) {
     renderDocPieChart();
     renderLineChartByTimeframe('daily');
 }
+
 function updateTrackingKPIDisplays() {
     const cardReqCount = document.getElementById('doc-kpi-request').parentElement; 
     const cardAction = document.getElementById('doc-kpi-action').parentElement; 
