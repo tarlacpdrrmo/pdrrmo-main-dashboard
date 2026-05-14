@@ -505,16 +505,8 @@ function parseTrainingDate(dateStr) {
 
 function extractYear(row, type) {
     if (type === 'doc') {
-        let dStr = row['Date/ Time received'] || row['DATE/ TIME RECEIVED'] || row['Date Received'] || row['DATE RECEIVED'] || row['Column M'] || row['Column H'] || row['Column I'] || '';
-        if (!dStr || String(dStr).trim() === '') {
-            for (let key in row) {
-                let val = String(row[key]).trim();
-                if (val.match(/^(0?[1-9]|1[012])[\/\-](0?[1-9]|[12][0-9]|3[01])[\/\-]\d{2,4}/)) {
-                    dStr = val; 
-                    break;
-                }
-            }
-        }
+        // EXACT SURGICAL FIX: Safely added alternative date columns while preserving baseline
+        let dStr = row['Column M'] || row['COLUMN M'] || row['Date Received'] || row['DATE RECEIVED'] || row['Date/ Time received'] || row['DATE/ TIME RECEIVED'];
         if (dStr) {
             let d = parseCustomDate(dStr);
             if (d) return d.getFullYear().toString();
@@ -1236,93 +1228,97 @@ function renderMasterServicePie(monthFilter) {
 // ==========================================
 function processDocumentsData(data) {
     let uniqueMonths = new Set();
+    
     let dynamicKPIs = {
         req: 0, action: 0, catered: 0, notCatered: 0, cancelled: 0, 
         invAttended: 0, invNotAttended: 0, others: 0, noAction: 0
     };
 
-    data.forEach(row => {
-        let keys = Object.keys(row);
-
-        // Robust fetchers for core columns
-        let rawNature = getRobustValue(row, ['NATURE OF LETTER', 'NATURE'], ['Column P', 'Column E', 'Column F']);
-        let rawCategory = getRobustValue(row, ['CATEGORY OF WRITING PARTY', 'CATEGORY'], ['Column O', 'Column F', 'Column G']);
-        let rawOffice = getRobustValue(row, ['RECEIVED FROM (NAME OF OFFICE/SENDER)', 'RECEIVED FROM (OFFICE)', 'RECEIVED FROM'], ['Column N', 'Column B']);
-        
-        // STRICTLY TARGET THE STATUS COLUMN ONLY
-        // Look for "STATUS" in headers explicitly
-        let statusKey = keys.find(k => String(k).replace(/[^A-Z]/gi, '').toUpperCase() === 'STATUS');
-        let rawActionTaken = statusKey ? row[statusKey] : getRobustValue(row, ['STATUS', 'ACTION TAKEN'], ['Column R', 'Column V', 'Column S']);
-        
-        // Fetch Date
-        let dateStr = getRobustValue(row, ['DATE/ TIME RECEIVED', 'DATE RECEIVED', 'DATE'], ['Column M', 'Column H', 'Column I']);
-        if (!dateStr || String(dateStr).trim() === '') {
-            for (let k of keys) {
-                let val = String(row[k]).trim();
-                if (val.match(/^(0?[1-9]|1[012])[\/\-](0?[1-9]|[12][0-9]|3[01])[\/\-]\d{2,4}/)) {
-                    dateStr = val; 
+    let explicitNoAction = 0;
+    if (rawDocumentsData && rawDocumentsData.length > 0) {
+        for (let i = 0; i < Math.min(5, rawDocumentsData.length); i++) {
+            let row = rawDocumentsData[i];
+            let keys = Object.keys(row);
+            let targetKey = keys.find(k => k.trim().toUpperCase() === 'TOTAL NO ACTION' || k.trim().toUpperCase() === 'COLUMN I');
+            if (targetKey && row[targetKey] !== undefined && String(row[targetKey]).trim() !== '') {
+                let parsedVal = parseInt(String(row[targetKey]).replace(/,/g, '').trim());
+                if (!isNaN(parsedVal)) {
+                    explicitNoAction = parsedVal;
                     break;
                 }
             }
         }
+    }
+    
+    dynamicKPIs.noAction = explicitNoAction;
 
-        // Check if summary row
-        let isSummaryRow = (row['TOTAL ACTION TAKEN (OVERALL)'] !== undefined) || 
-                           keys.some(k => String(k).replace(/[^A-Z]/gi, '').toUpperCase() === 'TOTALACTIONTAKENOVERALL' && String(row[k]).trim() !== '');
+    data.forEach(row => {
+        let keys = Object.keys(row);
 
+        let rawNature = row['Nature of Letter'] || row['NATURE OF LETTER'] || row['Column P'] || row['COLUMN P'] || '';
+        let rawCategory = row['Category of Writing Party'] || row['CATEGORY OF WRITING PARTY'] || row['Column O'] || row['COLUMN O'] || '';
+        let rawOffice = row['Received From (OFFICE)'] || row['RECEIVED FROM (OFFICE)'] || row['Received From Office'] || row['Column N'] || row['COLUMN N'] || '';
+        
+        // EXACT SURGICAL FIX: Added STATUS and the correct columns based on your images
+        let rawActionTaken = row['STATUS'] || row['Status'] || row['Actions Taken'] || row['ACTIONS TAKEN'] || row['Column R'] || row['COLUMN R'] || row['Column V'] || row['COLUMN V'] || row['Column Q'] || row['COLUMN Q'] || '';
+        
+        let dateStr = row['Column M'] || row['COLUMN M'] || row['Date Received'] || row['DATE RECEIVED'] || row['Date/ Time received'] || row['DATE/ TIME RECEIVED'] || row[keys[12]] || '';
+        
+        let isSummaryRow = (row['TOTAL ACTION TAKEN (OVERALL)'] !== undefined && String(row['TOTAL ACTION TAKEN (OVERALL)']).trim() !== '') || 
+                           (row['TOTAL REQUEST CATERED'] !== undefined && String(row['TOTAL REQUEST CATERED']).trim() !== '');
+                           
         let isBlankRow = (!rawNature || String(rawNature).trim() === '') && 
-                         (!rawCategory || String(rawCategory).trim() === '');
+                         (!rawCategory || String(rawCategory).trim() === '') &&
+                         (!dateStr || String(dateStr).trim() === '');
 
         if (!isSummaryRow && !isBlankRow) {
-            dynamicKPIs.req++;
             
-            let actionTxt = String(rawActionTaken).trim().toLowerCase();
+            dynamicKPIs.req++;
+            let actionTxt = (rawActionTaken || '').toString().trim().toLowerCase();
             let actionActuallyTaken = false;
             
-            if (actionTxt !== '' && actionTxt !== 'null') {
-                if (actionTxt === 'no action' || actionTxt.includes('no action')) {
-                    dynamicKPIs.noAction++;
-                } else if (actionTxt === 'request not catered' || actionTxt === 'not catered' || actionTxt.includes('not catered')) {
+            if (actionTxt.includes('no action')) {
+                dynamicKPIs.noAction++;
+            } 
+            else if (actionTxt !== '' && actionTxt !== 'null') {
+                actionActuallyTaken = true;
+                dynamicKPIs.action++;
+                
+                if (actionTxt.includes('not catered')) {
                     dynamicKPIs.notCatered++;
-                    dynamicKPIs.action++;
-                    actionActuallyTaken = true;
-                } else if (actionTxt === 'request catered' || actionTxt === 'catered' || actionTxt.includes('catered')) {
+                } else if (actionTxt.includes('catered') || actionTxt === 'catered') {
                     dynamicKPIs.catered++;
-                    dynamicKPIs.action++;
-                    actionActuallyTaken = true;
-                } else if (actionTxt === 'cancelled' || actionTxt.includes('cancelled')) {
+                } else if (actionTxt.includes('cancelled')) {
                     dynamicKPIs.cancelled++;
-                    dynamicKPIs.action++;
-                    actionActuallyTaken = true;
-                } else if (actionTxt === 'invitation not attended' || actionTxt === 'not attended' || actionTxt.includes('not attended')) {
+                } else if (actionTxt.includes('not attended')) {
                     dynamicKPIs.invNotAttended++;
-                    dynamicKPIs.action++;
-                    actionActuallyTaken = true;
-                } else if (actionTxt === 'invitation attended' || actionTxt === 'attended' || actionTxt.includes('attended')) {
+                } else if (actionTxt.includes('attended')) {
                     dynamicKPIs.invAttended++;
-                    dynamicKPIs.action++;
-                    actionActuallyTaken = true;
-                } else if (actionTxt.includes('other') || actionTxt.includes('specify')) {
+                } else {
                     dynamicKPIs.others++;
-                    dynamicKPIs.action++;
-                    actionActuallyTaken = true;
                 }
-            }
+            } 
 
-            // Standardize categories for the Pie Chart
             let mappedNature = rawNature.trim();
             let upperNature = mappedNature.toUpperCase();
             
-            if (upperNature.includes('OFFER') || upperNature.includes('PROPOSAL')) mappedNature = 'Offer/Proposal';
-            else if (upperNature.includes('REQUEST')) mappedNature = 'Request';
-            else if (upperNature.includes('INVITATION')) mappedNature = 'Invitation';
-            else if (upperNature.includes('FYI') || upperNature.includes('INFORMATION')) mappedNature = 'For Information';
-            else mappedNature = 'Uncategorized';
+            if (upperNature.includes('OFFER') || upperNature.includes('PROPOSAL')) {
+                mappedNature = 'Offer/Proposal';
+            } else if (upperNature.includes('REQUEST')) {
+                mappedNature = 'Request';
+            } else if (upperNature.includes('INVITATION')) {
+                mappedNature = 'Invitation';
+            } else if (upperNature.includes('FYI') || upperNature.includes('INFORMATION')) {
+                mappedNature = 'For Information';
+            } else {
+                mappedNature = 'Uncategorized';
+            }
             
             let subCategory = rawCategory.trim() !== '' ? rawCategory.trim() : 'Uncategorized';
             let specificOffice = rawOffice.trim() !== '' ? rawOffice.trim() : 'Unspecified Office';
             
             let monthYearKey = 'all';
+            
             if (dateStr && String(dateStr).trim() !== '') {
                 let parsedDate = parseCustomDate(dateStr);
                 if (parsedDate) {
@@ -1345,8 +1341,17 @@ function processDocumentsData(data) {
         }
     });
 
-    // Apply to UI
-    originalKPITotals = { ...dynamicKPIs };
+    originalKPITotals = {
+        req: dynamicKPIs.req, 
+        action: dynamicKPIs.action, 
+        catered: dynamicKPIs.catered,     
+        notCatered: dynamicKPIs.notCatered, 
+        cancelled: dynamicKPIs.cancelled,     
+        invAttended: dynamicKPIs.invAttended, 
+        invNotAttended: dynamicKPIs.invNotAttended, 
+        others: dynamicKPIs.others,
+        noAction: dynamicKPIs.noAction 
+    };
 
     let monthSelect = document.getElementById('docPieMonthFilter');
     if (monthSelect) {
