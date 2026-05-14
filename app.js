@@ -1243,7 +1243,7 @@ function processDocumentsData(data) {
         let dateStr = row['Date Received'] || row['DATE RECEIVED'] || row['Column M'] || row[keys[12]] || '';
         
         // ---> THE FIX: Target the "STATUS" column from Sheet1 <---
-        let rawActionTaken = row['STATUS'] || row['Status'] || row['Actions Taken'] || row['ACTIONS TAKEN'] || '';
+        let rawActionTaken = row['STATUS'] || row['Status'] || row['ACTIONS TAKEN/REMARKS'] || row['Actions Taken'] || row['ACTIONS TAKEN'] || '';
         
         let isSummaryRow = (row['TOTAL ACTION TAKEN (OVERALL)'] !== undefined && String(row['TOTAL ACTION TAKEN (OVERALL)']).trim() !== '');
                            
