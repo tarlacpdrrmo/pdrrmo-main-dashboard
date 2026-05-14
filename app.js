@@ -1227,45 +1227,30 @@ function renderMasterServicePie(monthFilter) {
 // ==========================================
 function processDocumentsData(data) {
     let uniqueMonths = new Set();
+    
     let dynamicKPIs = {
         req: 0, action: 0, catered: 0, notCatered: 0, cancelled: 0, 
         invAttended: 0, invNotAttended: 0, others: 0, noAction: 0
     };
 
-    // 1. Scan for the explicit summary row from the Google Sheet
-    let explicitKPIs = null;
-    for (let i = 0; i < data.length; i++) {
-        let row = data[i];
-        let keys = Object.keys(row).map(k => k.trim().toUpperCase());
-
-        const getVal = (possibleKeys) => {
-            for (let pk of possibleKeys) {
-                let actualKey = Object.keys(row).find(k => k.trim().toUpperCase() === pk);
-                if (actualKey && row[actualKey] !== undefined && String(row[actualKey]).trim() !== '') {
-                    return parseInt(String(row[actualKey]).replace(/,/g, '').trim()) || 0;
+    let explicitNoAction = 0;
+    if (rawDocumentsData && rawDocumentsData.length > 0) {
+        for (let i = 0; i < Math.min(5, rawDocumentsData.length); i++) {
+            let row = rawDocumentsData[i];
+            let keys = Object.keys(row);
+            let targetKey = keys.find(k => k.trim().toUpperCase() === 'TOTAL NO ACTION' || k.trim().toUpperCase() === 'COLUMN I');
+            if (targetKey && row[targetKey] !== undefined && String(row[targetKey]).trim() !== '') {
+                let parsedVal = parseInt(String(row[targetKey]).replace(/,/g, '').trim());
+                if (!isNaN(parsedVal)) {
+                    explicitNoAction = parsedVal;
+                    break;
                 }
             }
-            return null;
-        };
-
-        // If we detect the summary headers, grab the official totals
-        if (keys.includes('TOTAL ACTION TAKEN (OVERALL)') || keys.includes('TOTAL REQUEST CATERED') || keys.includes('TOTAL RECEIVED FROM OFFICE')) {
-            explicitKPIs = {
-                req: getVal(['TOTAL RECEIVED FROM OFFICE', 'TOTAL COMMUNICATION RECEIVED']) || 0,
-                action: getVal(['TOTAL ACTION TAKEN (OVERALL)', 'TOTAL ACTION TAKEN']) || 0,
-                catered: getVal(['TOTAL REQUEST CATERED']) || 0,
-                notCatered: getVal(['TOTAL REQUEST NOT CATERED']) || 0,
-                cancelled: getVal(['TOTAL CANCELLED']) || 0,
-                invAttended: getVal(['TOTAL INVITATION ATTENDED']) || 0,
-                invNotAttended: getVal(['TOTAL INVITATION NOT ATTENDED']) || 0,
-                others: getVal(['OTHERS, SPECIFY:', 'OTHERS, SPECIFY', 'OTHERS']) || 0,
-                noAction: getVal(['TOTAL NO ACTION']) || 0
-            };
-            break;
         }
     }
+    
+    dynamicKPIs.noAction = explicitNoAction;
 
-    // 2. Loop through all data to build the dynamic counts (used for drill-downs and timeline)
     data.forEach(row => {
         let keys = Object.keys(row);
 
@@ -1352,22 +1337,17 @@ function processDocumentsData(data) {
         }
     });
 
-    // 3. Set the official KPI totals (Prioritize the Google Sheet Summary Row if it exists)
-    if (explicitKPIs) {
-        originalKPITotals = {
-            req: explicitKPIs.req > 0 ? explicitKPIs.req : dynamicKPIs.req, 
-            action: explicitKPIs.action,
-            catered: explicitKPIs.catered,     
-            notCatered: explicitKPIs.notCatered, 
-            cancelled: explicitKPIs.cancelled,     
-            invAttended: explicitKPIs.invAttended, 
-            invNotAttended: explicitKPIs.invNotAttended, 
-            others: explicitKPIs.others,
-            noAction: explicitKPIs.noAction 
-        };
-    } else {
-        originalKPITotals = dynamicKPIs;
-    }
+    originalKPITotals = {
+        req: dynamicKPIs.req, 
+        action: dynamicKPIs.action, 
+        catered: dynamicKPIs.catered,     
+        notCatered: dynamicKPIs.notCatered, 
+        cancelled: dynamicKPIs.cancelled,     
+        invAttended: dynamicKPIs.invAttended, 
+        invNotAttended: dynamicKPIs.invNotAttended, 
+        others: dynamicKPIs.others,
+        noAction: dynamicKPIs.noAction 
+    };
 
     let monthSelect = document.getElementById('docPieMonthFilter');
     if (monthSelect) {
