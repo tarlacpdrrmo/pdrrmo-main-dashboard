@@ -505,20 +505,17 @@ function parseTrainingDate(dateStr) {
 
 function extractYear(row, type) {
     if (type === 'doc') {
-        // Try the explicit headers from Sheet1
-        let dStr = row['Date/ Time received'] || row['DATE/ TIME RECEIVED'] || row['Date Received'] || row['DATE RECEIVED'] || row['Column M'] || '';
-        
-        // If headers fail, scan the row for anything that looks like a date (MM/DD/YYYY)
-        if (!dStr) {
-            let rowVals = Object.values(row).map(v => String(v).trim());
-            for (let v of rowVals) {
-                if (v.match(/^\d{1,2}\/\d{1,2}\/\d{2,4}/)) {
-                    dStr = v;
+        // Updated to scan H, I, M, or use Regex
+        let dStr = row['Date/ Time received'] || row['DATE/ TIME RECEIVED'] || row['Date Received'] || row['DATE RECEIVED'] || row['Column H'] || row['Column I'] || row['Column M'] || '';
+        if (!dStr || String(dStr).trim() === '') {
+            for (let key in row) {
+                let val = String(row[key]).trim();
+                if (val.match(/^(0?[1-9]|1[012])[\/\-](0?[1-9]|[12][0-9]|3[01])[\/\-]\d{2,4}/)) {
+                    dStr = val; 
                     break;
                 }
             }
         }
-
         if (dStr) {
             let d = parseCustomDate(dStr);
             if (d) return d.getFullYear().toString();
@@ -1248,57 +1245,72 @@ function processDocumentsData(data) {
     data.forEach(row => {
         let keys = Object.keys(row);
 
-        // Fetching the base data robustly
-        let rawNature = getRobustValue(row, ['NATURE OF LETTER', 'NATURE'], ['Column P', 'Column F']);
-        let rawCategory = getRobustValue(row, ['CATEGORY OF WRITING PARTY', 'CATEGORY'], ['Column O', 'Column G']);
-        let rawOffice = getRobustValue(row, ['RECEIVED FROM (OFFICE)', 'RECEIVED FROM'], ['Column N', 'Column B']);
-        let dateStr = getRobustValue(row, ['Date/ Time received', 'Date Received', 'DATE'], ['Column M', 'Column H', 'Column I']);
-
-        // STRICTLY TARGET THE STATUS COLUMN ONLY
-        // This strips all spaces and symbols from the headers to guarantee it finds "STATUS"
-        let statusKey = keys.find(k => k.replace(/[^A-Z]/gi, '').toUpperCase() === 'STATUS');
+        // Nature is in Column E
+        let rawNature = row['Nature of Letter'] || row['NATURE OF LETTER'] || row['Column E'] || row['COLUMN E'] || row['Column P'] || '';
+        // Category is in Column F
+        let rawCategory = row['Category of Writing Party'] || row['CATEGORY OF WRITING PARTY'] || row['Column F'] || row['COLUMN F'] || row['Column O'] || '';
+        // Office is in Column B
+        let rawOffice = row['Received From (NAME OF OFFICE/SENDER)'] || row['Received From (OFFICE)'] || row['RECEIVED FROM (OFFICE)'] || row['Column B'] || row['COLUMN B'] || '';
         
-        // If it finds the exact STATUS column, use it. Otherwise try fallback columns (S or V)
-        let rawActionTaken = statusKey ? row[statusKey] : (row['Column S'] || row['Column V'] || '');
+        // Status is in Column R (User specified)
+        let rawActionTaken = row['STATUS'] || row['Status'] || row['Column R'] || row['COLUMN R'] || row['Column V'] || '';
+        
+        // Date is somewhere else (try H, I, M)
+        let dateStr = row['Date/ Time received'] || row['DATE/ TIME RECEIVED'] || row['Date Received'] || row['DATE RECEIVED'] || row['Column H'] || row['Column I'] || row['Column M'] || '';
+        
+        // Fallback Date search if missing
+        if (!dateStr || String(dateStr).trim() === '') {
+            for (let k of keys) {
+                let val = String(row[k]).trim();
+                if (val.match(/^(0?[1-9]|1[012])[\/\-](0?[1-9]|[12][0-9]|3[01])[\/\-]\d{2,4}/)) {
+                    dateStr = val; break;
+                }
+            }
+        }
 
-        let isSummaryRow = (row['TOTAL ACTION TAKEN (OVERALL)'] !== undefined) || 
-                           keys.some(k => k.replace(/[^A-Z]/gi, '').toUpperCase() === 'TOTALACTIONTAKENOVERALL' && String(row[k]).trim() !== '');
-
+        let isSummaryRow = (row['TOTAL ACTION TAKEN (OVERALL)'] !== undefined && String(row['TOTAL ACTION TAKEN (OVERALL)']).trim() !== '');
+        
         let isBlankRow = (!rawNature || String(rawNature).trim() === '') && 
-                         (!rawCategory || String(rawCategory).trim() === '') &&
-                         (!dateStr || String(dateStr).trim() === '');
+                         (!rawCategory || String(rawCategory).trim() === ''); 
 
         if (!isSummaryRow && !isBlankRow) {
-            
             dynamicKPIs.req++;
             
-            // Look ONLY at what is selected in the Status dropdown
             let actionTxt = String(rawActionTaken).trim().toLowerCase();
             let actionActuallyTaken = false;
 
-            if (actionTxt.includes('no action')) {
-                dynamicKPIs.noAction++;
-            } 
-            else if (actionTxt !== '' && actionTxt !== 'null') {
-                actionActuallyTaken = true;
-                dynamicKPIs.action++; // Adds to the Total Action Taken (Overall)
-                
-                if (actionTxt.includes('not catered')) {
+            // STRICT matching to avoid double counting from "Remarks"
+            if (actionTxt !== '' && actionTxt !== 'null') {
+                if (actionTxt === 'no action' || actionTxt.includes('no action')) {
+                    dynamicKPIs.noAction++;
+                } else if (actionTxt === 'request not catered' || actionTxt === 'not catered' || actionTxt.includes('not catered')) {
                     dynamicKPIs.notCatered++;
-                } else if (actionTxt.includes('catered')) {
+                    dynamicKPIs.action++;
+                    actionActuallyTaken = true;
+                } else if (actionTxt === 'request catered' || actionTxt === 'catered' || actionTxt.includes('catered')) {
                     dynamicKPIs.catered++;
-                } else if (actionTxt.includes('cancelled')) {
+                    dynamicKPIs.action++;
+                    actionActuallyTaken = true;
+                } else if (actionTxt === 'cancelled' || actionTxt.includes('cancelled')) {
                     dynamicKPIs.cancelled++;
-                } else if (actionTxt.includes('not attended')) {
+                    dynamicKPIs.action++;
+                    actionActuallyTaken = true;
+                } else if (actionTxt === 'invitation not attended' || actionTxt === 'not attended' || actionTxt.includes('not attended')) {
                     dynamicKPIs.invNotAttended++;
-                } else if (actionTxt.includes('attended')) {
+                    dynamicKPIs.action++;
+                    actionActuallyTaken = true;
+                } else if (actionTxt === 'invitation attended' || actionTxt === 'attended' || actionTxt.includes('attended')) {
                     dynamicKPIs.invAttended++;
-                } else if (actionTxt.includes('other')) {
+                    dynamicKPIs.action++;
+                    actionActuallyTaken = true;
+                } else if (actionTxt.includes('other') || actionTxt.includes('specify')) {
                     dynamicKPIs.others++;
+                    dynamicKPIs.action++;
+                    actionActuallyTaken = true;
                 }
-            } 
+            }
 
-            // Categorize for Pie Charts
+            // Standardize categories for the Pie Chart
             let mappedNature = rawNature.trim();
             let upperNature = mappedNature.toUpperCase();
             
@@ -1312,7 +1324,6 @@ function processDocumentsData(data) {
             let specificOffice = rawOffice.trim() !== '' ? rawOffice.trim() : 'Unspecified Office';
             
             let monthYearKey = 'all';
-            
             if (dateStr && String(dateStr).trim() !== '') {
                 let parsedDate = parseCustomDate(dateStr);
                 if (parsedDate) {
