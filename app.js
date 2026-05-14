@@ -1227,110 +1227,91 @@ function renderMasterServicePie(monthFilter) {
 // ==========================================
 function processDocumentsData(data) {
     let uniqueMonths = new Set();
+    
     let dynamicKPIs = {
         req: 0, action: 0, catered: 0, notCatered: 0, cancelled: 0, 
         invAttended: 0, invNotAttended: 0, others: 0, noAction: 0
     };
 
-    // --- 1. INDESTRUCTIBLE EXPLICIT COLUMN SCANNER ---
-    let explicitKPIs = { req: 0, action: 0, catered: 0, notCatered: 0, cancelled: 0, invAttended: 0, invNotAttended: 0, others: 0, noAction: 0 };
-    let foundExplicit = false;
-
-    // Scan the first 10 rows aggressively to find those exact columns
-    for (let i = 0; i < Math.min(data.length, 10); i++) {
-        let row = data[i];
-        let keys = Object.keys(row);
-        
-        keys.forEach(key => {
-            // Scenario A: The App Script turned your headers into Object Keys
-            let cleanKey = key.toUpperCase().replace(/[^A-Z]/g, ''); // Strips all spaces and symbols
-            let val = parseInt(String(row[key]).replace(/,/g, '').trim());
-            
-            if (!isNaN(val)) {
-                if (cleanKey.includes('TOTALRECEIVEDFROMOFFICE') || cleanKey.includes('TOTALCOMMUNICATIONRECEIVED')) { explicitKPIs.req = Math.max(explicitKPIs.req, val); foundExplicit = true; }
-                if (cleanKey.includes('REQUESTCATERED') && !cleanKey.includes('NOT')) { explicitKPIs.catered = Math.max(explicitKPIs.catered, val); foundExplicit = true; }
-                if (cleanKey.includes('TOTALCANCELLED')) { explicitKPIs.cancelled = Math.max(explicitKPIs.cancelled, val); foundExplicit = true; }
-                if (cleanKey.includes('INVITATIONATTENDED') && !cleanKey.includes('NOT')) { explicitKPIs.invAttended = Math.max(explicitKPIs.invAttended, val); foundExplicit = true; }
-                if (cleanKey.includes('INVITATIONNOTATTENDED')) { explicitKPIs.invNotAttended = Math.max(explicitKPIs.invNotAttended, val); foundExplicit = true; }
-                if (cleanKey.includes('REQUESTNOTCATERED')) { explicitKPIs.notCatered = Math.max(explicitKPIs.notCatered, val); foundExplicit = true; }
-                if (cleanKey.includes('TOTALNOACTION') || cleanKey === 'NOACTION') { explicitKPIs.noAction = Math.max(explicitKPIs.noAction, val); foundExplicit = true; }
-                if (cleanKey.includes('OTHERSSPECIFY') || cleanKey === 'OTHERS') { explicitKPIs.others = Math.max(explicitKPIs.others, val); foundExplicit = true; }
-                if (cleanKey.includes('ACTIONTAKENOVERALL') || cleanKey === 'TOTALACTIONTAKEN') { explicitKPIs.action = Math.max(explicitKPIs.action, val); foundExplicit = true; }
-            }
-
-            // Scenario B: The headers are cell values in Row 1, and the numbers are below them in Row 2
-            if (i < data.length - 1) {
-                let nextRow = data[i+1];
-                let cellValue = String(row[key]).toUpperCase().replace(/[^A-Z]/g, '');
-                let nextVal = parseInt(String(nextRow[key]).replace(/,/g, '').trim());
-                
-                if (cellValue && !isNaN(nextVal)) {
-                    if (cellValue.includes('TOTALRECEIVEDFROMOFFICE') || cellValue.includes('TOTALCOMMUNICATIONRECEIVED')) { explicitKPIs.req = Math.max(explicitKPIs.req, nextVal); foundExplicit = true; }
-                    if (cellValue.includes('REQUESTCATERED') && !cellValue.includes('NOT')) { explicitKPIs.catered = Math.max(explicitKPIs.catered, nextVal); foundExplicit = true; }
-                    if (cellValue.includes('TOTALCANCELLED')) { explicitKPIs.cancelled = Math.max(explicitKPIs.cancelled, nextVal); foundExplicit = true; }
-                    if (cellValue.includes('INVITATIONATTENDED') && !cellValue.includes('NOT')) { explicitKPIs.invAttended = Math.max(explicitKPIs.invAttended, nextVal); foundExplicit = true; }
-                    if (cellValue.includes('INVITATIONNOTATTENDED')) { explicitKPIs.invNotAttended = Math.max(explicitKPIs.invNotAttended, nextVal); foundExplicit = true; }
-                    if (cellValue.includes('REQUESTNOTCATERED')) { explicitKPIs.notCatered = Math.max(explicitKPIs.notCatered, nextVal); foundExplicit = true; }
-                    if (cellValue.includes('TOTALNOACTION') || cellValue === 'NOACTION') { explicitKPIs.noAction = Math.max(explicitKPIs.noAction, nextVal); foundExplicit = true; }
-                    if (cellValue.includes('OTHERSSPECIFY') || cellValue === 'OTHERS') { explicitKPIs.others = Math.max(explicitKPIs.others, nextVal); foundExplicit = true; }
-                    if (cellValue.includes('ACTIONTAKENOVERALL') || cellValue === 'TOTALACTIONTAKEN') { explicitKPIs.action = Math.max(explicitKPIs.action, nextVal); foundExplicit = true; }
+    let explicitNoAction = 0;
+    if (rawDocumentsData && rawDocumentsData.length > 0) {
+        for (let i = 0; i < Math.min(5, rawDocumentsData.length); i++) {
+            let row = rawDocumentsData[i];
+            let keys = Object.keys(row);
+            let targetKey = keys.find(k => k.trim().toUpperCase() === 'TOTAL NO ACTION' || k.trim().toUpperCase() === 'COLUMN I');
+            if (targetKey && row[targetKey] !== undefined && String(row[targetKey]).trim() !== '') {
+                let parsedVal = parseInt(String(row[targetKey]).replace(/,/g, '').trim());
+                if (!isNaN(parsedVal)) {
+                    explicitNoAction = parsedVal;
+                    break;
                 }
             }
-        });
+        }
     }
+    
+    dynamicKPIs.noAction = explicitNoAction;
 
-    // --- 2. DYNAMIC TIMELINE & PIE CHART DATA GENERATOR ---
     data.forEach(row => {
         let keys = Object.keys(row);
 
         let rawNature = row['Nature of Letter'] || row['NATURE OF LETTER'] || row['Column P'] || row['COLUMN P'] || '';
         let rawCategory = row['Category of Writing Party'] || row['CATEGORY OF WRITING PARTY'] || row['Column O'] || row['COLUMN O'] || '';
         let rawOffice = row['Received From (OFFICE)'] || row['RECEIVED FROM (OFFICE)'] || row['Received From Office'] || row['Column N'] || row['COLUMN N'] || '';
+        
+        // ---> THE FIX: Added 'STATUS' to target Column V from your sheet <---
+        let rawActionTaken = row['STATUS'] || row['Status'] || row['Actions Taken'] || row['ACTIONS TAKEN'] || row['Column Q'] || row['COLUMN Q'] || '';
+        
         let dateStr = row['Column M'] || row['COLUMN M'] || row['Date Received'] || row['DATE RECEIVED'] || row[keys[12]] || '';
         
-        let isSummaryRow = Object.keys(row).some(k => k.replace(/[^A-Z]/gi, '').toUpperCase() === 'TOTALACTIONTAKENOVERALL' && String(row[k]).trim() !== '');
-        
+        let isSummaryRow = (row['TOTAL ACTION TAKEN (OVERALL)'] !== undefined && String(row['TOTAL ACTION TAKEN (OVERALL)']).trim() !== '') || 
+                           (row['TOTAL REQUEST CATERED'] !== undefined && String(row['TOTAL REQUEST CATERED']).trim() !== '');
+                           
         let isBlankRow = (!rawNature || String(rawNature).trim() === '') && 
                          (!rawCategory || String(rawCategory).trim() === '') &&
                          (!dateStr || String(dateStr).trim() === '');
 
         if (!isSummaryRow && !isBlankRow) {
             
-            // Backup manual counting (just in case the explicit columns are ever deleted)
             dynamicKPIs.req++;
+            let actionTxt = (rawActionTaken || '').toString().trim().toLowerCase();
             let actionActuallyTaken = false;
-            let rawActionTaken = row['Actions Taken'] || row['ACTIONS TAKEN'] || row['Column Q'] || row['COLUMN Q'] || '';
-            let actionTxt = (rawActionTaken || '').toString().trim().toUpperCase();
             
-            if (!actionTxt || actionTxt === 'NULL') {
-                let rowValues = Object.values(row).map(v => String(v).trim().toUpperCase());
-                for (let val of rowValues) {
-                    if (val.includes('CATERED') || val.includes('CANCELLED') || val.includes('ATTENDED') || val.includes('NO ACTION') || val.includes('OTHER')) {
-                        actionTxt = val;
-                        break;
-                    }
+            if (actionTxt.includes('no action')) {
+                dynamicKPIs.noAction++;
+            } 
+            else if (actionTxt !== '' && actionTxt !== 'null') {
+                actionActuallyTaken = true;
+                dynamicKPIs.action++;
+                
+                if (actionTxt.includes('not catered')) {
+                    dynamicKPIs.notCatered++;
+                } else if (actionTxt.includes('catered') || actionTxt === 'catered') {
+                    dynamicKPIs.catered++;
+                } else if (actionTxt.includes('cancelled')) {
+                    dynamicKPIs.cancelled++;
+                } else if (actionTxt.includes('not attended')) {
+                    dynamicKPIs.invNotAttended++;
+                } else if (actionTxt.includes('attended')) {
+                    dynamicKPIs.invAttended++;
+                } else {
+                    dynamicKPIs.others++;
                 }
-            }
-
-            if (actionTxt && actionTxt !== 'NULL') {
-                if (actionTxt.includes('NO ACTION')) { dynamicKPIs.noAction++; }
-                else if (actionTxt.includes('NOT CATERED')) { dynamicKPIs.notCatered++; actionActuallyTaken = true; dynamicKPIs.action++; }
-                else if (actionTxt.includes('CATERED')) { dynamicKPIs.catered++; actionActuallyTaken = true; dynamicKPIs.action++; }
-                else if (actionTxt.includes('CANCELLED')) { dynamicKPIs.cancelled++; actionActuallyTaken = true; dynamicKPIs.action++; }
-                else if (actionTxt.includes('NOT ATTENDED')) { dynamicKPIs.invNotAttended++; actionActuallyTaken = true; dynamicKPIs.action++; }
-                else if (actionTxt.includes('ATTENDED')) { dynamicKPIs.invAttended++; actionActuallyTaken = true; dynamicKPIs.action++; }
-                else if (actionTxt.includes('OTHER')) { dynamicKPIs.others++; actionActuallyTaken = true; dynamicKPIs.action++; }
-                else { actionActuallyTaken = true; dynamicKPIs.action++; } 
-            }
+            } 
 
             let mappedNature = rawNature.trim();
             let upperNature = mappedNature.toUpperCase();
             
-            if (upperNature.includes('OFFER') || upperNature.includes('PROPOSAL')) mappedNature = 'Offer/Proposal';
-            else if (upperNature.includes('REQUEST')) mappedNature = 'Request';
-            else if (upperNature.includes('INVITATION')) mappedNature = 'Invitation';
-            else if (upperNature.includes('FYI') || upperNature.includes('INFORMATION')) mappedNature = 'For Information';
-            else mappedNature = 'Uncategorized';
+            if (upperNature.includes('OFFER') || upperNature.includes('PROPOSAL')) {
+                mappedNature = 'Offer/Proposal';
+            } else if (upperNature.includes('REQUEST')) {
+                mappedNature = 'Request';
+            } else if (upperNature.includes('INVITATION')) {
+                mappedNature = 'Invitation';
+            } else if (upperNature.includes('FYI') || upperNature.includes('INFORMATION')) {
+                mappedNature = 'For Information';
+            } else {
+                mappedNature = 'Uncategorized';
+            }
             
             let subCategory = rawCategory.trim() !== '' ? rawCategory.trim() : 'Uncategorized';
             let specificOffice = rawOffice.trim() !== '' ? rawOffice.trim() : 'Unspecified Office';
@@ -1359,9 +1340,17 @@ function processDocumentsData(data) {
         }
     });
 
-    // 3. SET FINAL TOTALS
-    originalKPITotals = foundExplicit ? explicitKPIs : dynamicKPIs;
-    if (foundExplicit && originalKPITotals.req === 0) originalKPITotals.req = dynamicKPIs.req;
+    originalKPITotals = {
+        req: dynamicKPIs.req, 
+        action: dynamicKPIs.action, 
+        catered: dynamicKPIs.catered,     
+        notCatered: dynamicKPIs.notCatered, 
+        cancelled: dynamicKPIs.cancelled,     
+        invAttended: dynamicKPIs.invAttended, 
+        invNotAttended: dynamicKPIs.invNotAttended, 
+        others: dynamicKPIs.others,
+        noAction: dynamicKPIs.noAction 
+    };
 
     let monthSelect = document.getElementById('docPieMonthFilter');
     if (monthSelect) {
