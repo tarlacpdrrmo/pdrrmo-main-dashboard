@@ -2359,3 +2359,27 @@ window.closeMapModal = function() {
 
 const mapModalEl = document.getElementById('mapModal');
 if(mapModalEl) { mapModalEl.addEventListener('click', function(e) { if(e.target === this) closeMapModal(); }); }
+// ==========================================
+// WEATHER IMAGERY MODAL LOGIC
+// ==========================================
+window.openOtherSourcesModal = function() {
+    const modal = document.getElementById('otherSourcesModal');
+    if (modal) {
+        modal.classList.add('active'); 
+    }
+}
+
+window.closeOtherSourcesModal = function() {
+    const modal = document.getElementById('otherSourcesModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+// Close modal if clicking outside the map container
+const otherSourcesModalEl = document.getElementById('otherSourcesModal');
+if (otherSourcesModalEl) { 
+    otherSourcesModalEl.addEventListener('click', function(e) { 
+        if (e.target === this) closeOtherSourcesModal(); 
+    }); 
+}
