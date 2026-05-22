@@ -2,18 +2,8 @@ Chart.register(ChartDataLabels);
 
 // 1. YOUR SECURE GOOGLE APPS SCRIPT WEB APP URL
 const webAppUrl = "https://script.google.com/macros/s/AKfycbwYUt0YFQClUUXRGwrNdnC5INPXWzWyGUeN3J8E5tRKsO2ME-Y6zu5Fv0a56fCtxhwzTg/exec";
-
-// ⚠️ PASTE YOUR KEYS HERE (Redacted for your security)
+// OPENWEATHERMAP CREDENTIALS
 const OWM_API_KEY = "3457c364d3f2840960216510c279837c"; 
-const firebaseConfig = {
-    apiKey: "YOUR_FIREBASE_API_KEY", 
-    authDomain: "pdrrmo-dashboard.firebaseapp.com",
-    projectId: "pdrrmo-dashboard",
-    storageBucket: "pdrrmo-dashboard.firebasestorage.app",
-    messagingSenderId: "555106842078",
-    appId: "1:555106842078:web:38f0275bc89499669ad94f"
-};
-
 let rainChartInstance = null; 
 
 function toggleWeatherPanel() {
@@ -34,7 +24,7 @@ function changeMunicipality() {
 }
 
 async function fetchOpenWeather(cityQuery) {
-    if (!OWM_API_KEY || OWM_API_KEY === "YOUR_OPENWEATHERMAP_API_KEY") return;
+    if (OWM_API_KEY === "PASTE_YOUR_OPENWEATHERMAP_API_KEY_HERE") return;
 
     try {
         const currentUrl = `https://api.openweathermap.org/data/2.5/weather?q=${cityQuery}&units=metric&appid=${OWM_API_KEY}`;
@@ -126,7 +116,7 @@ function updateRainChart(labels, dataPoints) {
             labels: labels,
             datasets: [{
                 data: dataPoints,
-                backgroundColor: 'rgba(56, 189, 248, 0.8)', // Brighter blue for glassy UI
+                backgroundColor: 'rgba(14, 165, 233, 0.7)', 
                 borderWidth: 0, 
                 borderRadius: 4
             }]
@@ -149,7 +139,7 @@ function updateRainChart(labels, dataPoints) {
             scales: {
                 y: { display: false, min: 0, max: 100 }, 
                 x: { 
-                    ticks: { color: '#cbd5e1', font: { size: 9, weight: 'bold', family: 'Inter' } }, 
+                    ticks: { color: '#94a3b8', font: { size: 9, weight: 'bold', family: 'Inter' } }, 
                     grid: { display: false },
                     border: { display: false }
                 }
@@ -190,7 +180,9 @@ let trainStatusChartInst = null;
 let trainTypesChartInst = null;
 let trainNumbersChartInst = null;
 
+// Global tracking for parsed volunteer gender data
 let globalOrgGenderMap = {}; 
+
 let globalLineData = []; 
 let globalDocRecords = []; 
 let originalKPITotals = {};
@@ -224,21 +216,19 @@ const pieColorPalette = [
     '#8b5cf6', '#d946ef', '#f97316', '#14b8a6', '#6366f1'
 ];
 
-// UPDATED: Glassmorphism Tooltip Configuration
 const sharedTooltipConfig = {
-    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+    backgroundColor: 'rgba(30, 41, 59, 0.95)',
     titleColor: '#ffffff',
-    bodyColor: '#f8fafc',
-    titleFont: { family: 'Inter', size: 12, weight: '800' },
+    bodyColor: '#ffffff',
+    titleFont: { family: 'Inter', size: 11, weight: '800' },
     bodyFont: { family: 'Inter', size: 11, weight: '600' },
-    padding: 12,
-    cornerRadius: 8,
-    displayColors: true, 
-    borderColor: 'rgba(255, 255, 255, 0.15)', 
+    padding: 10,
+    cornerRadius: 6,
+    displayColors: false, 
+    borderColor: 'rgba(255, 255, 255, 0.4)', 
     borderWidth: 1,
     caretSize: 6,
-    caretPadding: 8,
-    boxPadding: 4
+    caretPadding: 6
 };
 
 // --- MODAL CHART LOGIC FOR FULL YEAR BAR CHART ---
@@ -261,14 +251,14 @@ window.openExpandedLineChart = function(chartKey) {
         const chartColor = Array.isArray(dataObj.color) ? dataObj.color[0] : dataObj.color;
 
         expandedLineInstance = new Chart(ctx, {
-            type: 'bar', 
+            type: 'bar', // Full 12 month vertical bar chart
             data: {
                 labels: dataObj.labels, 
                 datasets: [{
                     label: dataObj.labelText,
                     data: dataObj.data, 
                     backgroundColor: chartColor,
-                    borderRadius: 6,
+                    borderRadius: 4,
                     borderWidth: 0,
                     maxBarThickness: 40
                 }]
@@ -296,7 +286,7 @@ window.openExpandedLineChart = function(chartKey) {
                     },
                     y: {
                         beginAtZero: true,
-                        grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false }, // Softened for glass
+                        grid: { color: '#f1f5f9', drawBorder: false },
                         ticks: { font: { family: 'Inter', size: 11 }, color: '#94a3b8' },
                         grace: '15%',
                         border: { display: false }
@@ -320,6 +310,9 @@ function scrollToSection(panelId) {
     }
 }
 
+// ==========================================
+// CRITICALLY RESTORED DOMContentLoaded BLOCK
+// ==========================================
 document.addEventListener("DOMContentLoaded", function() {
     fetchOpenWeather("Tarlac City,PH");
     setInterval(() => fetchOpenWeather(document.getElementById('tarlac-muni-select').value), 900000);
@@ -512,8 +505,10 @@ function parseTrainingDate(dateStr) {
 
 function extractYear(row, type) {
     if (type === 'doc') {
+        // Robust fetch: Target Column C first based on your feedback
         let dStr = row['Column C'] || row['COLUMN C'] || row['Date/ Time received'] || row['DATE/ TIME RECEIVED'] || row['Column M'] || row['Column H'] || row['Column I'] || '';
         
+        // If it's missing, scan for a date format
         if (!dStr || String(dStr).trim() === '') {
             for (let key in row) {
                 let val = String(row[key]).trim();
@@ -614,6 +609,7 @@ async function loadAllData() {
         applyGlobalYearFilter(yearSelect ? yearSelect.value : 'all');
         
         if (rawVolunteersData.length > 0) processVolunteersData(rawVolunteersData);
+        
         processTrainingsData(rawTrainingsData);
         
         hideLoader();
@@ -691,7 +687,7 @@ function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = fa
 
     const diff = current - previous;
     let trendHtml = '';
-    let bgColor = 'rgba(100, 116, 139, 0.8)'; // Glassy gray
+    let bgColor = '#64748b'; 
 
     if (dataArray.length < 2) {
         trendHtml = `<span>No prior data</span>`;
@@ -707,13 +703,12 @@ function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = fa
     const arrowUp = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>`;
     const arrowDown = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"></path></svg>`;
 
-    // Updated trend colors for glass aesthetics
     if (diff > 0) {
         symbol = arrowUp;
-        bgColor = inverseColors ? 'rgba(225, 29, 72, 0.8)' : 'rgba(16, 185, 129, 0.8)'; 
+        bgColor = inverseColors ? '#ef4444' : '#10b981'; 
     } else if (diff < 0) {
         symbol = arrowDown;
-        bgColor = inverseColors ? 'rgba(16, 185, 129, 0.8)' : 'rgba(225, 29, 72, 0.8)'; 
+        bgColor = inverseColors ? '#10b981' : '#ef4444'; 
         sign = '-'; 
     }
 
@@ -722,17 +717,16 @@ function renderTrendFooter(elementId, dataArray, labelsArray, inverseColors = fa
 
     let tooltipHtml = `
         <div class="custom-tooltip">
-            <div style="color:#cbd5e1; font-size:0.55rem; text-transform:uppercase; margin-bottom:6px; letter-spacing:0.5px;">Monthly Comparison</div>
+            <div style="color:#94a3b8; font-size:0.55rem; text-transform:uppercase; margin-bottom:6px; letter-spacing:0.5px;">Monthly Comparison</div>
             <div style="display:flex; justify-content:space-between; gap:20px; margin-bottom:2px;"><span>${currentLabel}:</span> <strong>${current}</strong></div>
             <div style="display:flex; justify-content:space-between; gap:20px; margin-bottom:2px;"><span>${prevLabel}:</span> <strong>${previous}</strong></div>
-            <div style="border-top:1px solid rgba(255,255,255,0.2); margin-top:6px; padding-top:6px; display:flex; justify-content:space-between; gap:20px;"><span>Difference:</span> <strong>${diffStr}</strong></div>
+            <div style="border-top:1px solid #334155; margin-top:6px; padding-top:6px; display:flex; justify-content:space-between; gap:20px;"><span>Difference:</span> <strong>${diffStr}</strong></div>
         </div>
     `;
 
     el.style.backgroundColor = bgColor;
     el.style.padding = '10px 16px'; 
     el.style.color = '#ffffff';
-    el.style.backdropFilter = 'blur(4px)';
 
     el.innerHTML = `
         <div class="has-tooltip" style="display:flex; width:100%; justify-content:space-between; align-items:center; cursor:pointer;">
@@ -776,10 +770,9 @@ function drawLineChart(canvasId, labels, dataArr) {
     
     if(docLineChartInstance) docLineChartInstance.destroy();
 
-    // Smoother glass gradient
     let gradient = ctx.createLinearGradient(0, 0, 0, 300);
-    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.4)');
-    gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)'); 
+    gradient.addColorStop(0, 'rgba(37, 99, 235, 0.3)');
+    gradient.addColorStop(1, 'rgba(37, 99, 235, 0.0)'); 
 
     docLineChartInstance = new Chart(ctx, {
         type: 'line',
@@ -788,13 +781,13 @@ function drawLineChart(canvasId, labels, dataArr) {
             datasets: [{ 
                 label: 'Requests Received', 
                 data: dataArr, 
-                borderColor: '#3b82f6', 
+                borderColor: '#2563eb', 
                 backgroundColor: gradient, 
                 borderWidth: 2, 
                 pointRadius: 0, 
                 pointHoverRadius: 5,
                 pointBackgroundColor: '#ffffff',
-                pointBorderColor: '#3b82f6',
+                pointBorderColor: '#2563eb',
                 pointBorderWidth: 2,
                 tension: 0.4, 
                 fill: true
@@ -820,9 +813,9 @@ function drawLineChart(canvasId, labels, dataArr) {
                         display: true,
                         text: 'Received From (OFFICE)',
                         font: { family: 'Inter', size: 12, weight: '600', style: 'italic' },
-                        color: '#64748b'
+                        color: '#475569'
                     },
-                    grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false }, 
+                    grid: { color: '#f1f5f9', drawBorder: false }, 
                     beginAtZero: true, 
                     ticks: { font: { family: 'Inter', size: 10 }, color: '#64748b' } 
                 } 
@@ -840,7 +833,7 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
         monthlyTotalPieInstance.destroy();
     }
 
-    const vibrantColors = ['#3b82f6', '#06b6d4', '#e11d48', '#ea580c', '#10b981', '#9333ea'];
+    const vibrantColors = ['#2563eb', '#06b6d4', '#e11d48', '#ea580c', '#16a34a', '#9333ea'];
     const mappedVibrant = dataArr.map((_, i) => vibrantColors[i % vibrantColors.length]);
     
     const gtEl = document.getElementById('pie-grand-total');
@@ -856,7 +849,7 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
                 borderWidth: 0, 
                 borderRadius: 8, 
                 spacing: 5,     
-                hoverOffset: 12 
+                hoverOffset: 15 
             }] 
         },
         options: { 
@@ -1145,7 +1138,7 @@ function renderMasterServicePie(monthFilter) {
         if(filteredLabels.length === 0) {
             filteredLabels = ["No Data"];
             filteredData = [1];
-            mappedColors = ["rgba(255, 255, 255, 0.4)"];
+            mappedColors = ["#e2e8f0"];
         } else {
             let combined = filteredLabels.map((l, i) => ({l, d: filteredData[i], c: mappedColors[i]}));
             combined.sort((a,b) => b.d - a.d);
@@ -1174,7 +1167,7 @@ function renderMasterServicePie(monthFilter) {
                         borderWidth: 0, 
                         borderRadius: 8, 
                         spacing: 5,     
-                        hoverOffset: 12  
+                        hoverOffset: 15  
                     }]
                 },
                 options: {
@@ -1249,6 +1242,7 @@ function processDocumentsData(data) {
     let dynamicKPIs = { req: 0, action: 0, catered: 0, notCatered: 0, cancelled: 0, invAttended: 0, invNotAttended: 0, others: 0, noAction: 0 };
 
     data.forEach(row => {
+        // Fetch Date FIRST to strictly validate if it's a real data row
         let dateStr = getRobustValue(row, ['DATE/ TIME RECEIVED', 'DATE RECEIVED', 'DATE'], ['Column C', 'Column M', 'Column H', 'Column I']);
         
         if (!dateStr || String(dateStr).trim() === '') {
@@ -1263,6 +1257,8 @@ function processDocumentsData(data) {
         }
 
         let parsedDate = parseCustomDate(dateStr);
+
+        // STRICT FILTER: If it does not have a valid date, IT IS NOT A DATA ROW.
         if (!parsedDate) return; 
 
         dynamicKPIs.req++;
@@ -1277,6 +1273,8 @@ function processDocumentsData(data) {
         
         let actionTxt = String(rawActionTaken).trim().toLowerCase();
         let actionActuallyTaken = false;
+        
+        // ---> NEW: Tag the specific action for the Month Filter <---
         let actionCategory = 'none';
         
         if (actionTxt !== '' && actionTxt !== 'null') {
@@ -1343,7 +1341,7 @@ function processDocumentsData(data) {
             level2: subCategory,      
             level3: specificOffice,
             hasActionTaken: actionActuallyTaken,
-            actionCategory: actionCategory, 
+            actionCategory: actionCategory, // Passed directly into the data array
             count: 1 
         });
     });
@@ -1369,7 +1367,6 @@ function processDocumentsData(data) {
     renderDocPieChart();
     renderLineChartByTimeframe('daily');
 }
-
 function updateTrackingKPIDisplays() {
     const cardReqCount = document.getElementById('doc-kpi-request').parentElement; 
     const cardAction = document.getElementById('doc-kpi-action').parentElement; 
@@ -1386,10 +1383,12 @@ function updateTrackingKPIDisplays() {
     if (currentPieState.level === 1) {
         [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => card.style.display = '');
         
+        // ---> THE FIX: Dynamic recalculation for the selected Month Filter <---
         let dynReq = 0, dynAction = 0, dynCatered = 0, dynNotCatered = 0, dynCancelled = 0;
         let dynInvAtt = 0, dynInvNot = 0, dynOthers = 0, dynNoAction = 0;
 
         globalDocRecords.forEach(record => {
+            // Checks if the row belongs to the currently selected month
             if (currentPieState.filterKey === 'all' || record.dateKey === currentPieState.filterKey) {
                 dynReq++;
                 if (record.hasActionTaken) dynAction++;
@@ -1404,6 +1403,7 @@ function updateTrackingKPIDisplays() {
             }
         });
 
+        // Apply the dynamic month totals to the UI
         document.getElementById('doc-kpi-request').innerText = dynReq;
         document.getElementById('doc-kpi-action').innerText = dynAction;
         document.getElementById('doc-kpi-catered').innerText = dynCatered;
@@ -1414,6 +1414,7 @@ function updateTrackingKPIDisplays() {
         document.getElementById('doc-kpi-cancelled').innerText = dynCancelled;
         document.getElementById('doc-kpi-no-action').innerText = dynNoAction;
     } else {
+        // Drill-Down Level (Clicking on the Pie Chart)
         let dynTotalRequestsMatched = 0;
         let dynActionsActuallyTakenMatched = 0;
         let targetCategory = currentPieState.level1Target;
@@ -1501,7 +1502,7 @@ function renderDocPieChart() {
 
     if (docPieChartInstance) {
         let mappedColors = labels.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
-        if (!hasData) mappedColors = ['rgba(255, 255, 255, 0.4)'];
+        if (!hasData) mappedColors = ['#e2e8f0'];
 
         docPieChartInstance.data.labels = labels;
         docPieChartInstance.data.datasets[0].data = dataValues;
@@ -1522,7 +1523,7 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
     if(docPieChartInstance) docPieChartInstance.destroy();
     
     let mappedColors = labels.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
-    if (isEmptyState) mappedColors = ['rgba(255, 255, 255, 0.4)']; 
+    if (isEmptyState) mappedColors = ['#e2e8f0']; 
     
     docPieChartInstance = new Chart(ctx, {
         type: 'doughnut',
@@ -1534,7 +1535,7 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
                 borderWidth: 0, 
                 borderRadius: 8, 
                 spacing: 5,     
-                hoverOffset: isEmptyState ? 0 : 12 
+                hoverOffset: isEmptyState ? 0 : 15 
             }] 
         },
         options: {
@@ -1564,7 +1565,7 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
             plugins: {
                 legend: { display: false },
                 datalabels: {
-                    color: (context) => (context.chart.data.labels.length === 1 && context.chart.data.labels[0] === 'No Data Found') ? '#64748b' : '#ffffff', 
+                    color: (context) => (context.chart.data.labels.length === 1 && context.chart.data.labels[0] === 'No Data Found') ? '#94a3b8' : '#ffffff', 
                     font: (context) => ({ weight: '800', family: 'Inter', size: (context.chart.data.labels.length === 1 && context.chart.data.labels[0] === 'No Data Found') ? 12 : 9 }), 
                     anchor: 'center',
                     align: 'center',
@@ -1612,7 +1613,7 @@ function updateCustomLegend(labels, data, isEmptyState = false) {
     if(!legendContainer) return;
     legendContainer.innerHTML = '';
     labels.forEach((label, index) => {
-        let color = isEmptyState ? 'rgba(255, 255, 255, 0.4)' : pieColorPalette[index % pieColorPalette.length];
+        let color = isEmptyState ? '#e2e8f0' : pieColorPalette[index % pieColorPalette.length];
         let val = isEmptyState ? '-' : data[index];
         legendContainer.innerHTML += `
             <div class="legend-item" style="animation-delay: ${index * 0.04}s;">
@@ -1724,6 +1725,7 @@ function renderTrainingOverview(monthFilter) {
         let paxRaw = getRobustValue(row, ['NO. PAX', 'PAX', 'NO PAX'], ['Column F']);
         let pax = parseInt(paxRaw) || 0;
         let status = getRobustValue(row, ['REMARKS', 'REMARK'], ['Column G']);
+        let facilitatedBy = getRobustValue(row, ['FACILITATOR'], ['Column H']);
 
         if (cat && String(cat).trim() !== "") {
             totalPax += pax;
@@ -1758,7 +1760,7 @@ function renderTrainingOverview(monthFilter) {
     let statusColors = statusLabels.map(label => {
         if (label === 'WITH AAR') return '#10b981'; 
         if (label === 'NO AAR') return '#f43f5e';   
-        return '#64748b'; 
+        return '#94a3b8'; 
     });
     drawTrainBarChart('trainStatusChart', statusLabels, statusData, statusColors); 
 }
@@ -1915,7 +1917,7 @@ function buildMonthHTML(year, month, isSmallScale) {
 
             let tooltipHtml = `
                 <div class="custom-tooltip cal-tooltip" style="z-index: 999; pointer-events: none; bottom: 110%; min-width: 220px; white-space: normal; padding: 12px;">
-                    <div style="color:#94a3b8; font-size:0.55rem; text-transform:uppercase; margin-bottom:10px; letter-spacing:0.5px; border-bottom:1px solid rgba(255,255,255,0.2); padding-bottom:6px;">${monthOrder[month]} ${day}, ${year}</div>
+                    <div style="color:#94a3b8; font-size:0.55rem; text-transform:uppercase; margin-bottom:10px; letter-spacing:0.5px; border-bottom:1px solid #334155; padding-bottom:6px;">${monthOrder[month]} ${day}, ${year}</div>
                     ${tooltipListHtml}
                 </div>
             `;
@@ -1952,14 +1954,14 @@ function drawTrainBarChart(canvasId, labels, dataArr, customColors = null) {
 
     window[canvasId + 'Inst'] = new Chart(ctx, {
         type: 'bar',
-        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: colors, borderRadius: 6, borderWidth: 0, maxBarThickness: 30 }] },
+        data: { labels: labels, datasets: [{ data: dataArr, backgroundColor: colors, borderRadius: 4, borderWidth: 0, maxBarThickness: 30 }] },
         options: {
             responsive: true, maintainAspectRatio: false,
             layout: { padding: { top: 25, left: 10, right: 10, bottom: 0 } }, 
             plugins: { legend: { display: false }, tooltip: sharedTooltipConfig, datalabels: { display: true, align: 'top', anchor: 'end', color: '#64748b', font: { weight: 'bold' } } },
             scales: {
                 x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 9 }, color: '#64748b' }, border: {display: false} },
-                y: { grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 }, color: '#94a3b8' }, beginAtZero: true, grace: '20%', border: {display: false} } 
+                y: { grid: { color: '#f1f5f9', drawBorder: false }, ticks: { font: { family: 'Inter', size: 10 }, color: '#94a3b8' }, beginAtZero: true, grace: '20%', border: {display: false} } 
             }
         }
     });
@@ -2028,11 +2030,11 @@ function populateRemarksModal(detailsObj) {
 
         let color = status === 'WITH AAR' ? '#10b981' : (status === 'NO AAR' ? '#f43f5e' : '#64748b'); 
 
-        let html = `<h3 style="font-size: 0.9rem; color: ${color}; margin-top: 16px; margin-bottom: 8px; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 6px;">${status} (${items.length})</h3>`;
+        let html = `<h3 style="font-size: 0.9rem; color: ${color}; margin-top: 16px; margin-bottom: 8px; border-bottom: 2px solid #f1f5f9; padding-bottom: 6px;">${status} (${items.length})</h3>`;
         
         items.forEach((item, index) => {
             html += `
-                <div class="legend-item" style="padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.05); align-items: flex-start; animation-delay: ${index * 0.02}s;">
+                <div class="legend-item" style="padding: 12px 0; border-bottom: 1px solid #f8fafc; align-items: flex-start; animation-delay: ${index * 0.02}s;">
                     <div class="legend-text" style="font-size: 0.8rem; white-space: normal; line-height: 1.4;">
                         <span style="font-weight: 800; color: #1e293b;">${item.title}</span><br>
                         <span style="font-size: 0.7rem; color: #64748b;">${item.agency} &nbsp;|&nbsp; ${item.dates}</span>
@@ -2139,8 +2141,8 @@ function processVolunteersData(data) {
         tdCount.innerHTML = `
             <div style="display:flex; align-items:center; gap:12px; width:100%;">
                 <span style="width: 30px; font-weight:800;">${org.count.toLocaleString()}</span>
-                <div style="flex:1; height:6px; background:rgba(255,255,255,0.5); border-radius:3px; overflow:hidden;">
-                    <div style="height:100%; width:${percentage}%; background:linear-gradient(90deg, #06b6d4, #3b82f6); border-radius:3px; transition: width 1s ease-in-out;"></div>
+                <div style="flex:1; height:6px; background:#f1f5f9; border-radius:3px; overflow:hidden;">
+                    <div style="height:100%; width:${percentage}%; background:linear-gradient(90deg, #06b6d4, #2563eb); border-radius:3px; transition: width 1s ease-in-out;"></div>
                 </div>
             </div>
         `; 
@@ -2181,7 +2183,7 @@ function processVolunteersData(data) {
                 opt.onclick = function() {
                     Array.from(optionsContainer.children).forEach(c => c.classList.remove('selected'));
                     this.classList.add('selected');
-                    selectedText.innerText = org.name; 
+                    selectedText.innerText = org.name; // Now properly targets the live element
                     dropdownContainer.classList.remove('active');
                     renderPictogram(org.name);
                 };
@@ -2226,6 +2228,7 @@ function renderPictogram(orgName) {
         pctMale = Math.round(ratioMale * 100);
         pctFemale = 100 - pctMale;
     } else {
+        // No gender breakdown available, but we have total count
         container.innerHTML = `
             <div style="text-align:center; padding: 40px; color:#94a3b8;">
                 <div style="font-size: 2rem; font-weight: 800; color: #1e293b;">${data.OfficialTotal}</div>
@@ -2250,12 +2253,12 @@ function renderPictogram(orgName) {
 
     container.innerHTML = `
         <div style="display:flex; justify-content:space-between; margin-bottom: 16px;">
-            <div style="background:rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.8); border-radius:12px; padding:10px 16px; flex:1; margin-right:8px; display:flex; flex-direction:column; align-items:center; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+            <div style="background:#eff6ff; border: 1px solid #bfdbfe; border-radius:8px; padding:10px 16px; flex:1; margin-right:8px; display:flex; flex-direction:column; align-items:center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
                 <span style="font-size:0.6rem; font-weight:800; color:#3b82f6; text-transform:uppercase; letter-spacing: 0.5px;">Male</span>
                 <span style="font-size:1.4rem; font-weight:800; color:#1e40af; margin-top:2px;">${displayMale}</span>
                 <span style="font-size:0.65rem; font-weight:700; color:#60a5fa; margin-top:2px;">${pctMale}%</span>
             </div>
-            <div style="background:rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.8); border-radius:12px; padding:10px 16px; flex:1; margin-left:8px; display:flex; flex-direction:column; align-items:center; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+            <div style="background:#fff1f2; border: 1px solid #fecdd3; border-radius:8px; padding:10px 16px; flex:1; margin-left:8px; display:flex; flex-direction:column; align-items:center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
                 <span style="font-size:0.6rem; font-weight:800; color:#f43f5e; text-transform:uppercase; letter-spacing: 0.5px;">Female</span>
                 <span style="font-size:1.4rem; font-weight:800; color:#9f1239; margin-top:2px;">${displayFemale}</span>
                 <span style="font-size:0.65rem; font-weight:700; color:#fb7185; margin-top:2px;">${pctFemale}%</span>
@@ -2286,6 +2289,15 @@ function renderPictogram(orgName) {
 // ==========================================
 // FIREBASE AUTHENTICATION
 // ==========================================
+const firebaseConfig = {
+    apiKey: "AIzaSyDSCB9jQIzyn9WxGZ58sLkyJPHCj5oeEKQ", 
+    authDomain: "pdrrmo-dashboard.firebaseapp.com",
+    projectId: "pdrrmo-dashboard",
+    storageBucket: "pdrrmo-dashboard.firebasestorage.app",
+    messagingSenderId: "555106842078",
+    appId: "1:555106842078:web:38f0275bc89499669ad94f"
+};
+
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
