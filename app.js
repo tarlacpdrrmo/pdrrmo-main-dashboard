@@ -467,6 +467,18 @@ document.addEventListener("DOMContentLoaded", function() {
             if(e.target === remarksModal) remarksModal.classList.remove('active'); 
         });
     }
+
+    const docDetailsModal = document.getElementById('docDetailsModal');
+    const closeDocDetailsModalBtn = document.getElementById('closeDocDetailsModalBtn');
+
+    if(docDetailsModal && closeDocDetailsModalBtn) {
+        closeDocDetailsModalBtn.addEventListener('click', () => {
+            docDetailsModal.classList.remove('active');
+        });
+        docDetailsModal.addEventListener('click', (e) => {
+            if(e.target === docDetailsModal) docDetailsModal.classList.remove('active'); 
+        });
+    }
 });
 
 // ==========================================
@@ -1335,13 +1347,20 @@ function processDocumentsData(data) {
             uniqueMonths.add(monthYearKey);
         }
 
+        // ---> NEW: Grab the Particulars/Details for the popup modal
+        let rawParticulars = getRobustValue(row, ['Details/ Particulars of Letter', 'Particulars', 'Details', 'Subject'], ['Column S', 'Column T', 'Column U']);
+        let particularSafe = rawParticulars ? String(rawParticulars).trim() : 'No Details Provided';
+
         globalDocRecords.push({
             dateKey: monthYearKey,
+            dateObj: parsedDate,            // Added for sorting the popup list
+            displayDate: dateStr,           // Added to display original date text
+            particulars: particularSafe,    // Added to display Column S
             level1: mappedNature,     
             level2: subCategory,      
             level3: specificOffice,
             hasActionTaken: actionActuallyTaken,
-            actionCategory: actionCategory, // Passed directly into the data array
+            actionCategory: actionCategory, 
             count: 1 
         });
     });
@@ -1559,6 +1578,9 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
                         currentPieState.level = 3;
                         currentPieState.level2Target = label;
                         renderDocPieChart();
+                    } else if (currentPieState.level === 3) {
+                        // NEW: Trigger the details modal when Level 3 is clicked
+                        openDocDetailsModal(label);
                     }
                 }
             },
@@ -2359,3 +2381,57 @@ window.closeMapModal = function() {
 
 const mapModalEl = document.getElementById('mapModal');
 if(mapModalEl) { mapModalEl.addEventListener('click', function(e) { if(e.target === this) closeMapModal(); }); }
+
+// ==========================================
+// DOCUMENT DETAILS MODAL LOGIC (LEVEL 3 POPUP)
+// ==========================================
+window.openDocDetailsModal = function(officeName) {
+    const modal = document.getElementById('docDetailsModal');
+    const titleEl = document.getElementById('docDetailsModalTitle');
+    const listEl = document.getElementById('modal-doc-details-list');
+    if(!modal || !titleEl || !listEl) return;
+
+    // Set title with main category and specific office
+    titleEl.innerHTML = `${officeName.toUpperCase()} <span style="color: #64748b; font-size: 0.7rem; font-weight: 600;">(${currentPieState.level2Target})</span>`;
+    listEl.innerHTML = '';
+
+    // Filter records down to the exact clicked slice
+    let filteredDocs = globalDocRecords.filter(record => {
+        let match = record.level1 === currentPieState.level1Target && 
+                    record.level2 === currentPieState.level2Target && 
+                    record.level3 === officeName;
+                    
+        // Respect the month filter if one is selected
+        if (currentPieState.filterKey !== 'all') {
+            match = match && record.dateKey === currentPieState.filterKey;
+        }
+        return match;
+    });
+
+    // Sort by newest date first
+    filteredDocs.sort((a, b) => b.dateObj - a.dateObj);
+
+    // Build the HTML list
+    if(filteredDocs.length === 0) {
+        listEl.innerHTML = `<div style="color: #94a3b8; font-size: 0.9rem; padding: 20px; text-align:center;">No Details Available</div>`;
+    } else {
+        let html = '';
+        filteredDocs.forEach((doc, idx) => {
+            // Format the date nicely
+            let formattedDate = doc.dateObj ? doc.dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : doc.displayDate;
+            
+            // Reusing your existing legend-item CSS for a clean look
+            html += `
+                <div class="legend-item" style="padding: 12px 0; border-bottom: 1px solid #f8fafc; align-items: flex-start; animation-delay: ${idx * 0.02}s;">
+                    <div class="legend-text" style="font-size: 0.8rem; white-space: normal; line-height: 1.4;">
+                        <span style="font-size: 0.7rem; color: #3b82f6; font-weight: 800; display: block; margin-bottom: 4px; letter-spacing: 0.5px;">${formattedDate}</span>
+                        <span style="font-weight: 600; color: #1e293b;">${doc.particulars}</span>
+                    </div>
+                </div>
+            `;
+        });
+        listEl.innerHTML = html;
+    }
+
+    modal.classList.add('active');
+}
