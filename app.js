@@ -2331,6 +2331,7 @@ if(mapModalEl) { mapModalEl.addEventListener('click', function(e) { if(e.target 
 const firebaseConfig = {
     apiKey: "AIzaSyDSCB9jQIzyn9WxGZ58sLkyJPHCj5oeEKQ", 
     authDomain: "pdrrmo-dashboard.firebaseapp.com",
+    databaseURL: "https://pdrrmo-dashboard-default-rtdb.asia-southeast1.firebasedatabase.app", // <-- Added this line
     projectId: "pdrrmo-dashboard",
     storageBucket: "pdrrmo-dashboard.firebasestorage.app",
     messagingSenderId: "555106842078",
