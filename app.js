@@ -2506,18 +2506,26 @@ function initChat() {
         if(msg.text) contentHtml += `<div>${msg.text}</div>`;
         if(msg.imageUrl) contentHtml += `<img src="${msg.imageUrl}" onclick="window.open('${msg.imageUrl}', '_blank')">`;
 
-        const msgDiv = document.createElement('div');
-        msgDiv.className = `chat-message ${isMine ? 'msg-mine' : 'msg-others'}`;
-        msgDiv.innerHTML = `
-            <span class="msg-sender">${isMine ? 'You' : msg.alias}</span>
-            <div class="msg-bubble">${contentHtml}</div>
-            <span class="msg-timestamp">${dateStr} • ${timeStr}</span>
+        // Safely extract the first character (the animal emoji) from the alias for the avatar
+        const aliasArray = Array.from(msg.alias);
+        const avatarEmoji = aliasArray.length > 0 ? aliasArray[0] : '👤';
+        const senderName = isMine ? `You - ${msg.alias}` : msg.alias;
+
+        const rowDiv = document.createElement('div');
+        rowDiv.className = `chat-message-row ${isMine ? 'row-mine' : 'row-others'}`;
+        
+        rowDiv.innerHTML = `
+            <div class="chat-avatar">${avatarEmoji}</div>
+            <div class="chat-message ${isMine ? 'msg-mine' : 'msg-others'}">
+                <span class="msg-sender">${senderName}</span>
+                <div class="msg-bubble">${contentHtml}</div>
+                <span class="msg-timestamp">${dateStr} • ${timeStr}</span>
+            </div>
         `;
         
-        chatBody.appendChild(msgDiv);
+        chatBody.appendChild(rowDiv);
         chatBody.scrollTop = chatBody.scrollHeight;
     });
-
     const chatInput = document.getElementById('chatInput');
     chatInput.addEventListener('paste', function(e) {
         let items = (e.clipboardData || e.originalEvent.clipboardData).items;
@@ -2580,3 +2588,23 @@ function uploadSnipAndSend(imageFile) {
         console.error(error);
     });
 }
+window.toggleEmojiPicker = function() {
+    const picker = document.getElementById('emojiPicker');
+    if(picker) picker.classList.toggle('active');
+}
+
+window.addEmoji = function(emoji) {
+    const input = document.getElementById('chatInput');
+    input.value += emoji;
+    input.focus();
+    document.getElementById('emojiPicker').classList.remove('active');
+}
+
+// Global click listener to close emoji picker if clicking outside of it
+document.addEventListener('click', function(event) {
+    const picker = document.getElementById('emojiPicker');
+    const btn = document.querySelector('.chat-emoji-btn');
+    if (picker && picker.classList.contains('active') && !picker.contains(event.target) && (!btn || !btn.contains(event.target))) {
+        picker.classList.remove('active');
+    }
+});
