@@ -497,6 +497,22 @@ function parseCustomDate(dateStr) {
     return null;
 }
 
+// ==========================================
+// DATA PARSING HELPERS
+// ==========================================
+function parseCustomDate(dateStr) {
+    if (!dateStr) return null;
+    let d = new Date(dateStr);
+    if (!isNaN(d.getTime())) return d;
+    
+    let parts = dateStr.split(/[\/\-]/);
+    if (parts.length === 3) {
+        let fallbackDate = new Date(`${parts[1]}/${parts[0]}/${parts[2]}`);
+        if (!isNaN(fallbackDate.getTime())) return fallbackDate;
+    }
+    return null;
+}
+
 function parseTrainingDate(dateStr) {
     if (!dateStr) return null;
     let str = String(dateStr).trim();
@@ -517,10 +533,8 @@ function parseTrainingDate(dateStr) {
 
 function extractYear(row, type) {
     if (type === 'doc') {
-        // Robust fetch: Target Column C first based on your feedback
         let dStr = row['Column C'] || row['COLUMN C'] || row['Date/ Time received'] || row['DATE/ TIME RECEIVED'] || row['Column M'] || row['Column H'] || row['Column I'] || '';
         
-        // If it's missing, scan for a date format
         if (!dStr || String(dStr).trim() === '') {
             for (let key in row) {
                 let val = String(row[key]).trim();
@@ -1254,7 +1268,6 @@ function processDocumentsData(data) {
     let dynamicKPIs = { req: 0, action: 0, catered: 0, notCatered: 0, cancelled: 0, invAttended: 0, invNotAttended: 0, others: 0, noAction: 0 };
 
     data.forEach(row => {
-        // Fetch Date FIRST to strictly validate if it's a real data row
         let dateStr = getRobustValue(row, ['DATE/ TIME RECEIVED', 'DATE RECEIVED', 'DATE'], ['Column C', 'Column M', 'Column H', 'Column I']);
         
         if (!dateStr || String(dateStr).trim() === '') {
@@ -1270,7 +1283,6 @@ function processDocumentsData(data) {
 
         let parsedDate = parseCustomDate(dateStr);
 
-        // STRICT FILTER: If it does not have a valid date, IT IS NOT A DATA ROW.
         if (!parsedDate) return; 
 
         dynamicKPIs.req++;
@@ -1286,7 +1298,6 @@ function processDocumentsData(data) {
         let actionTxt = String(rawActionTaken).trim().toLowerCase();
         let actionActuallyTaken = false;
         
-        // ---> NEW: Tag the specific action for the Month Filter <---
         let actionCategory = 'none';
         
         if (actionTxt !== '' && actionTxt !== 'null') {
@@ -1353,9 +1364,9 @@ function processDocumentsData(data) {
 
         globalDocRecords.push({
             dateKey: monthYearKey,
-            dateObj: parsedDate,            // Added for sorting the popup list
-            displayDate: dateStr,           // Added to display original date text
-            particulars: particularSafe,    // Added to display Column S
+            dateObj: parsedDate,            
+            displayDate: dateStr,           
+            particulars: particularSafe,    
             level1: mappedNature,     
             level2: subCategory,      
             level3: specificOffice,
@@ -1386,6 +1397,7 @@ function processDocumentsData(data) {
     renderDocPieChart();
     renderLineChartByTimeframe('daily');
 }
+
 function updateTrackingKPIDisplays() {
     const cardReqCount = document.getElementById('doc-kpi-request').parentElement; 
     const cardAction = document.getElementById('doc-kpi-action').parentElement; 
@@ -1402,12 +1414,10 @@ function updateTrackingKPIDisplays() {
     if (currentPieState.level === 1) {
         [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => card.style.display = '');
         
-        // ---> THE FIX: Dynamic recalculation for the selected Month Filter <---
         let dynReq = 0, dynAction = 0, dynCatered = 0, dynNotCatered = 0, dynCancelled = 0;
         let dynInvAtt = 0, dynInvNot = 0, dynOthers = 0, dynNoAction = 0;
 
         globalDocRecords.forEach(record => {
-            // Checks if the row belongs to the currently selected month
             if (currentPieState.filterKey === 'all' || record.dateKey === currentPieState.filterKey) {
                 dynReq++;
                 if (record.hasActionTaken) dynAction++;
@@ -1422,7 +1432,6 @@ function updateTrackingKPIDisplays() {
             }
         });
 
-        // Apply the dynamic month totals to the UI
         document.getElementById('doc-kpi-request').innerText = dynReq;
         document.getElementById('doc-kpi-action').innerText = dynAction;
         document.getElementById('doc-kpi-catered').innerText = dynCatered;
@@ -1433,7 +1442,6 @@ function updateTrackingKPIDisplays() {
         document.getElementById('doc-kpi-cancelled').innerText = dynCancelled;
         document.getElementById('doc-kpi-no-action').innerText = dynNoAction;
     } else {
-        // Drill-Down Level (Clicking on the Pie Chart)
         let dynTotalRequestsMatched = 0;
         let dynActionsActuallyTakenMatched = 0;
         let targetCategory = currentPieState.level1Target;
@@ -1579,7 +1587,7 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
                         currentPieState.level2Target = label;
                         renderDocPieChart();
                     } else if (currentPieState.level === 3) {
-                        // NEW: Trigger the details modal when Level 3 is clicked
+                        // NEW: Open details popup modal on clicking Level 3
                         openDocDetailsModal(label);
                     }
                 }
@@ -2082,7 +2090,6 @@ function processVolunteersData(data) {
     if(!tbody) return;
     tbody.innerHTML = ''; 
 
-    // First Pass: Extract Summary Logic
     data.forEach(row => {
         let keys = Object.keys(row);
         if (keys.length < 6) return;
@@ -2109,12 +2116,10 @@ function processVolunteersData(data) {
     orgList.sort((a, b) => b.count - a.count);
     const maxCount = orgList.length > 0 ? orgList[0].count : 1;
 
-    // Initialize Gender Map from Official List
     orgList.forEach(org => {
         globalOrgGenderMap[org.name] = { Male: 0, Female: 0, TallyTotal: 0, OfficialTotal: org.count };
     });
 
-    // Second Pass: Extract Gender Breakdown Logic
     data.forEach(row => {
         let keys = Object.keys(row);
         let indOrgKey = keys.find(k => k.trim().toUpperCase() === 'ORGANIZATION') || keys[3];
@@ -2126,7 +2131,6 @@ function processVolunteersData(data) {
         if (indOrg && indGender) {
             let search = indOrg.toUpperCase();
             
-            // Fuzzy Match
             let matchedOrgObj = orgList.find(o => o.name.toUpperCase() === search);
             if (!matchedOrgObj) {
                 matchedOrgObj = orgList.find(o => o.name.toUpperCase().includes(search) || search.includes(o.name.toUpperCase()));
@@ -2145,7 +2149,6 @@ function processVolunteersData(data) {
         }
     });
 
-    // Populate Data Table
     orgList.forEach((org, index) => {
         let tr = document.createElement('tr');
         tr.style.animationDelay = `${index * 0.03}s`;
@@ -2174,13 +2177,11 @@ function processVolunteersData(data) {
         tbody.appendChild(tr);
     });
 
-    // Update the 3 Metric Boxes
     document.getElementById('vol-orgs').innerText = totalOrgs.toLocaleString(); 
     const orgMembersEl = document.getElementById('vol-org-members');
     if (orgMembersEl) orgMembersEl.innerText = totalIndividualsInOrgs.toLocaleString();
     document.getElementById('vol-ind').innerText = standaloneIndividuals.toLocaleString();
 
-    // Populate Custom Dropdown Using ONLY Official orgList
     const dropdownContainer = document.getElementById('orgGenderDropdown');
     let selectedText = document.getElementById('orgGenderSelectedText');
     const optionsContainer = document.getElementById('orgGenderOptions');
@@ -2188,12 +2189,10 @@ function processVolunteersData(data) {
     if (dropdownContainer && optionsContainer) {
         optionsContainer.innerHTML = '';
         
-        // Remove old listeners by replacing the node
         const selectedBox = document.getElementById('orgGenderSelected');
         let newBox = selectedBox.cloneNode(true);
         selectedBox.parentNode.replaceChild(newBox, selectedBox);
         
-        // RE-FETCH the live text element after cloning
         selectedText = document.getElementById('orgGenderSelectedText');
 
         if (orgList.length > 0) {
@@ -2205,7 +2204,7 @@ function processVolunteersData(data) {
                 opt.onclick = function() {
                     Array.from(optionsContainer.children).forEach(c => c.classList.remove('selected'));
                     this.classList.add('selected');
-                    selectedText.innerText = org.name; // Now properly targets the live element
+                    selectedText.innerText = org.name; 
                     dropdownContainer.classList.remove('active');
                     renderPictogram(org.name);
                 };
@@ -2250,7 +2249,6 @@ function renderPictogram(orgName) {
         pctMale = Math.round(ratioMale * 100);
         pctFemale = 100 - pctMale;
     } else {
-        // No gender breakdown available, but we have total count
         container.innerHTML = `
             <div style="text-align:center; padding: 40px; color:#94a3b8;">
                 <div style="font-size: 2rem; font-weight: 800; color: #1e293b;">${data.OfficialTotal}</div>
@@ -2309,7 +2307,26 @@ function renderPictogram(orgName) {
 }
 
 // ==========================================
-// FIREBASE AUTHENTICATION
+// MAP MODAL LOGIC
+// ==========================================
+window.openMapModal = function(url, title) {
+    const modal = document.getElementById('mapModal'); const titleEl = document.getElementById('mapModalTitle'); const bodyEl = document.getElementById('mapModalBody');
+    if(titleEl) titleEl.innerText = title;
+    if(bodyEl) bodyEl.innerHTML = `<iframe src="${url}" allowfullscreen></iframe>`;
+    if(modal) modal.classList.add('active');
+}
+
+window.closeMapModal = function() {
+    const modal = document.getElementById('mapModal'); const bodyEl = document.getElementById('mapModalBody');
+    if(modal) modal.classList.remove('active');
+    setTimeout(() => { if(bodyEl) bodyEl.innerHTML = ''; }, 300);
+}
+
+const mapModalEl = document.getElementById('mapModal');
+if(mapModalEl) { mapModalEl.addEventListener('click', function(e) { if(e.target === this) closeMapModal(); }); }
+
+// ==========================================
+// FIREBASE AUTHENTICATION & CHAT LOGIC
 // ==========================================
 const firebaseConfig = {
     apiKey: "AIzaSyDSCB9jQIzyn9WxGZ58sLkyJPHCj5oeEKQ", 
@@ -2324,18 +2341,37 @@ if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 const auth = firebase.auth();
+const db = firebase.database();
+const storage = firebase.storage();
+
+let currentChatAlias = "";
 
 auth.onAuthStateChanged(user => {
     const loginOverlay = document.getElementById('login-overlay');
     const loader = document.getElementById('global-loader');
+    const chatWidget = document.getElementById('chatWidget');
     
     if (user) {
         if(loginOverlay) loginOverlay.style.display = 'none';
         if(loader) { loader.style.display = 'flex'; loader.style.visibility = 'visible'; loader.style.opacity = '1'; }
-        loadAllData(); 
+        
+        db.ref('users/' + user.uid).once('value').then(snapshot => {
+            if (snapshot.exists() && snapshot.val().nickname) {
+                currentChatAlias = snapshot.val().nickname;
+                if(chatWidget) chatWidget.style.display = 'flex';
+                initChat(); 
+                loadAllData();
+            } else {
+                if(loader) loader.style.display = 'none';
+                const nickModal = document.getElementById('nicknameModal');
+                nickModal.style.display = 'flex';
+                nickModal.classList.add('active');
+            }
+        });
     } else {
         if(loginOverlay) loginOverlay.style.display = 'flex';
         if(loader) loader.style.display = 'none';
+        if(chatWidget) chatWidget.style.display = 'none';
     }
 });
 
@@ -2364,25 +2400,6 @@ window.handleLogout = function() {
 }
 
 // ==========================================
-// MAP MODAL LOGIC
-// ==========================================
-window.openMapModal = function(url, title) {
-    const modal = document.getElementById('mapModal'); const titleEl = document.getElementById('mapModalTitle'); const bodyEl = document.getElementById('mapModalBody');
-    if(titleEl) titleEl.innerText = title;
-    if(bodyEl) bodyEl.innerHTML = `<iframe src="${url}" allowfullscreen></iframe>`;
-    if(modal) modal.classList.add('active');
-}
-
-window.closeMapModal = function() {
-    const modal = document.getElementById('mapModal'); const bodyEl = document.getElementById('mapModalBody');
-    if(modal) modal.classList.remove('active');
-    setTimeout(() => { if(bodyEl) bodyEl.innerHTML = ''; }, 300);
-}
-
-const mapModalEl = document.getElementById('mapModal');
-if(mapModalEl) { mapModalEl.addEventListener('click', function(e) { if(e.target === this) closeMapModal(); }); }
-
-// ==========================================
 // DOCUMENT DETAILS MODAL LOGIC (LEVEL 3 POPUP)
 // ==========================================
 window.openDocDetailsModal = function(officeName) {
@@ -2391,36 +2408,29 @@ window.openDocDetailsModal = function(officeName) {
     const listEl = document.getElementById('modal-doc-details-list');
     if(!modal || !titleEl || !listEl) return;
 
-    // Set title with main category and specific office
     titleEl.innerHTML = `${officeName.toUpperCase()} <span style="color: #64748b; font-size: 0.7rem; font-weight: 600;">(${currentPieState.level2Target})</span>`;
     listEl.innerHTML = '';
 
-    // Filter records down to the exact clicked slice
     let filteredDocs = globalDocRecords.filter(record => {
         let match = record.level1 === currentPieState.level1Target && 
                     record.level2 === currentPieState.level2Target && 
                     record.level3 === officeName;
                     
-        // Respect the month filter if one is selected
         if (currentPieState.filterKey !== 'all') {
             match = match && record.dateKey === currentPieState.filterKey;
         }
         return match;
     });
 
-    // Sort by newest date first
     filteredDocs.sort((a, b) => b.dateObj - a.dateObj);
 
-    // Build the HTML list
     if(filteredDocs.length === 0) {
         listEl.innerHTML = `<div style="color: #94a3b8; font-size: 0.9rem; padding: 20px; text-align:center;">No Details Available</div>`;
     } else {
         let html = '';
         filteredDocs.forEach((doc, idx) => {
-            // Format the date nicely
             let formattedDate = doc.dateObj ? doc.dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : doc.displayDate;
             
-            // Reusing your existing legend-item CSS for a clean look
             html += `
                 <div class="legend-item" style="padding: 12px 0; border-bottom: 1px solid #f8fafc; align-items: flex-start; animation-delay: ${idx * 0.02}s;">
                     <div class="legend-text" style="font-size: 0.8rem; white-space: normal; line-height: 1.4;">
@@ -2434,4 +2444,138 @@ window.openDocDetailsModal = function(officeName) {
     }
 
     modal.classList.add('active');
+}
+
+// ==========================================
+// CHATBOX & SNIPPING TOOL LOGIC
+// ==========================================
+window.saveNickname = function() {
+    const input = document.getElementById('nicknameInput').value.trim();
+    const errorEl = document.getElementById('nicknameError');
+    const btn = document.getElementById('nicknameBtn');
+    
+    if(input.length < 3) { errorEl.innerText = "Alias must be at least 3 characters."; return; }
+    if(input.length > 20) { errorEl.innerText = "Keep it under 20 characters."; return; }
+    
+    btn.innerText = "SAVING...";
+    const user = auth.currentUser;
+    
+    db.ref('users/' + user.uid).set({ nickname: input })
+        .then(() => {
+            document.getElementById('nicknameModal').style.display = 'none';
+            currentChatAlias = input;
+            document.getElementById('chatWidget').style.display = 'flex';
+            
+            const loader = document.getElementById('global-loader');
+            if(loader) { loader.style.display = 'flex'; loader.style.visibility = 'visible'; loader.style.opacity = '1'; }
+            initChat();
+            loadAllData();
+        }).catch(err => {
+            btn.innerText = "SAVE ALIAS";
+            errorEl.innerText = "Error saving alias.";
+        });
+}
+
+window.toggleChat = function() {
+    const panel = document.getElementById('chatPanel');
+    if(panel) panel.classList.toggle('active');
+}
+
+function initChat() {
+    const chatBody = document.getElementById('chatBody');
+    const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000); 
+
+    db.ref('chat').orderByChild('timestamp').endAt(thirtyDaysAgo).once('value', snapshot => {
+        snapshot.forEach(childSnapshot => {
+            if(childSnapshot.val().imageUrl) {
+                storage.refFromURL(childSnapshot.val().imageUrl).delete().catch(()=>console.log('Orphaned image.'));
+            }
+            childSnapshot.ref.remove();
+        });
+    });
+
+    db.ref('chat').on('child_added', snapshot => {
+        const msg = snapshot.val();
+        const isMine = msg.uid === auth.currentUser.uid;
+        
+        const timeStr = new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        const dateStr = new Date(msg.timestamp).toLocaleDateString([], {month: 'short', day: 'numeric'});
+        
+        let contentHtml = '';
+        if(msg.text) contentHtml += `<div>${msg.text}</div>`;
+        if(msg.imageUrl) contentHtml += `<img src="${msg.imageUrl}" onclick="window.open('${msg.imageUrl}', '_blank')">`;
+
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `chat-message ${isMine ? 'msg-mine' : 'msg-others'}`;
+        msgDiv.innerHTML = `
+            <span class="msg-sender">${isMine ? 'You' : msg.alias}</span>
+            <div class="msg-bubble">${contentHtml}</div>
+            <span class="msg-timestamp">${dateStr} • ${timeStr}</span>
+        `;
+        
+        chatBody.appendChild(msgDiv);
+        chatBody.scrollTop = chatBody.scrollHeight;
+    });
+
+    const chatInput = document.getElementById('chatInput');
+    chatInput.addEventListener('paste', function(e) {
+        let items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (let index in items) {
+            let item = items[index];
+            if (item.kind === 'file' && item.type.includes('image/')) {
+                let blob = item.getAsFile();
+                uploadSnipAndSend(blob);
+                e.preventDefault(); 
+            }
+        }
+    });
+}
+
+window.sendChatMessage = function() {
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if(!text) return;
+    
+    input.value = '';
+    
+    db.ref('chat').push({
+        uid: auth.currentUser.uid,
+        alias: currentChatAlias,
+        text: text,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+}
+
+function uploadSnipAndSend(imageFile) {
+    const chatBody = document.getElementById('chatBody');
+    const input = document.getElementById('chatInput');
+    let text = input.value.trim();
+    input.value = '';
+
+    const tempId = 'loading-' + Date.now();
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = tempId;
+    loadingDiv.className = 'upload-msg';
+    loadingDiv.innerText = 'Uploading snip...';
+    chatBody.appendChild(loadingDiv);
+    chatBody.scrollTop = chatBody.scrollHeight;
+
+    const fileRef = storage.ref('snips/' + Date.now() + '.png');
+    
+    fileRef.put(imageFile).then(snapshot => {
+        return snapshot.ref.getDownloadURL();
+    }).then(downloadURL => {
+        document.getElementById(tempId).remove();
+        db.ref('chat').push({
+            uid: auth.currentUser.uid,
+            alias: currentChatAlias,
+            text: text, 
+            imageUrl: downloadURL,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
+    }).catch(error => {
+        document.getElementById(tempId).innerText = "Upload failed.";
+        setTimeout(() => document.getElementById(tempId).remove(), 3000);
+        console.error(error);
+    });
 }
