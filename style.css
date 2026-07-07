@@ -1303,10 +1303,14 @@ td {
    ========================================== */
 .chat-widget {
     position: fixed;
-    bottom: 16px;
-    right: 16px;
+    bottom: 20px !important;
+    right: 20px !important;
     z-index: 9999;
     display: none; 
+    flex-direction: column;
+    align-items: flex-end;
+    /* 🔥 The ultimate invisible shield fix: lets clicks pass through the container! */
+    pointer-events: none; 
 }
 @media print { .chat-widget { display: none !important; } }
 
@@ -1318,9 +1322,8 @@ td {
     display: flex; justify-content: center; align-items: center;
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     cursor: pointer;
-    position: absolute; 
-    bottom: 0; right: 0;
-    z-index: 2; 
+    /* 🔥 Ensures the button itself is clickable despite the container */
+    pointer-events: auto; 
     transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
 }
 .chat-toggle-btn:hover {
@@ -1337,11 +1340,12 @@ td {
     border-radius: 16px;
     box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5), 0 0 20px rgba(37, 99, 235, 0.15);
     display: flex; flex-direction: column; overflow: hidden;
-    position: absolute;
-    bottom: 68px; 
-    right: 0;
-    z-index: 1;
-    pointer-events: none; 
+    
+    /* 🔥 Removed absolute positioning. Now uses Flexbox margin to hug the button */
+    position: relative;
+    margin-bottom: 12px; 
+    
+    pointer-events: none; /* Ignores clicks when hidden */
     opacity: 0; visibility: hidden;
     transform-origin: bottom right;
     transform: scale(0.3) translateY(40px); 
@@ -1351,9 +1355,8 @@ td {
 .chat-panel.active {
     opacity: 1; visibility: visible;
     transform: scale(1) translateY(0); 
-    pointer-events: auto; 
+    pointer-events: auto; /* 🔥 Restores clicks inside panel when open */
 }
-
 .chat-header {
     background: rgba(30, 41, 59, 0.8);
     padding: 12px 16px;
