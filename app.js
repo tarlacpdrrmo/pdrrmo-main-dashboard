@@ -2495,26 +2495,36 @@ function initChat() {
         });
     });
 
+// 2. LISTEN FOR NEW MESSAGES
     db.ref('chat').on('child_added', snapshot => {
         const msg = snapshot.val();
         const isMine = msg.uid === auth.currentUser.uid;
-
+        
         const timeStr = new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         const dateStr = new Date(msg.timestamp).toLocaleDateString([], {month: 'short', day: 'numeric'});
-
+        
         let contentHtml = '';
         if(msg.text) contentHtml += `<div>${msg.text}</div>`;
         if(msg.imageUrl) contentHtml += `<img src="${msg.imageUrl}" onclick="window.open('${msg.imageUrl}', '_blank')">`;
 
-        const msgDiv = document.createElement('div');
-        msgDiv.className = `chat-message ${isMine ? 'msg-mine' : 'msg-others'}`;
-        msgDiv.innerHTML = `
-            <span class="msg-sender">${isMine ? 'You' : msg.alias}</span>
-            <div class="msg-bubble">${contentHtml}</div>
-            <span class="msg-timestamp">${dateStr} • ${timeStr}</span>
-        `;
+        // Safely extract the first character (the animal emoji) from the alias for the avatar
+        const aliasArray = Array.from(msg.alias);
+        const avatarEmoji = aliasArray.length > 0 ? aliasArray[0] : '👤';
+        const senderName = isMine ? `You - ${msg.alias}` : msg.alias;
 
-        chatBody.appendChild(msgDiv);
+        const rowDiv = document.createElement('div');
+        rowDiv.className = `chat-message-row ${isMine ? 'row-mine' : 'row-others'}`;
+        
+        rowDiv.innerHTML = `
+            <div class="chat-avatar">${avatarEmoji}</div>
+            <div class="chat-message ${isMine ? 'msg-mine' : 'msg-others'}">
+                <span class="msg-sender">${senderName}</span>
+                <div class="msg-bubble">${contentHtml}</div>
+                <span class="msg-timestamp">${dateStr} • ${timeStr}</span>
+            </div>
+        `;
+        
+        chatBody.appendChild(rowDiv);
         chatBody.scrollTop = chatBody.scrollHeight;
     });
 
