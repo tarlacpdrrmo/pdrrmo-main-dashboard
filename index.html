@@ -1034,13 +1034,34 @@
     </div>
 
     <!-- NICKNAME REGISTRATION MODAL -->
-    <div id="nicknameModal" class="modal-overlay" style="z-index: 9999999;">
-        <div class="login-card" style="transform: none; animation: none;">
-            <h2>Set Your Alias</h2>
-            <p style="color: #f59e0b; font-size: 0.65rem;">⚠️ ONE-TIME ONLY. THIS CANNOT BE CHANGED LATER.</p>
-            <input type="text" id="nicknameInput" placeholder="e.g. 🦅 Eagle, 🐅 Tiger" onkeypress="if(event.key === 'Enter') saveNickname();" />
+  <div id="nicknameModal" class="modal-overlay" style="z-index: 9999999;">
+        <div class="login-card" style="transform: none; animation: none; max-width: 480px;">
+            <h2>Set Your Profile</h2>
+            <p style="color: #f59e0b; font-size: 0.65rem; margin-bottom: 16px;">⚠️ ONE-TIME ONLY. THIS CANNOT BE CHANGED LATER.</p>
+            
+            <div class="avatar-selection">
+                <span class="nickname-label">1. Choose your Avatar</span>
+                <div class="avatar-grid" id="avatarGrid">
+                    <div class="avatar-option selected" onclick="selectAvatar(this, '🦁')">🦁</div>
+                    <div class="avatar-option" onclick="selectAvatar(this, '🐅')">🐅</div>
+                    <div class="avatar-option" onclick="selectAvatar(this, '🐘')">🐘</div>
+                    <div class="avatar-option" onclick="selectAvatar(this, '🐺')">🐺</div>
+                    <div class="avatar-option" onclick="selectAvatar(this, '🦊')">🦊</div>
+                    <div class="avatar-option" onclick="selectAvatar(this, '🐻')">🐻</div>
+                    <div class="avatar-option" onclick="selectAvatar(this, '🐶')">🐶</div>
+                    <div class="avatar-option" onclick="selectAvatar(this, '🐱')">🐱</div>
+                    <div class="avatar-option" onclick="selectAvatar(this, '🦒')">🦒</div>
+                    <div class="avatar-option" onclick="selectAvatar(this, '🦌')">🦌</div>
+                </div>
+            </div>
+
+            <div style="text-align: left;">
+                <span class="nickname-label">2. Enter your Name/Alias</span>
+                <input type="text" id="nicknameInput" placeholder="Enter your nick name!" onkeypress="if(event.key === 'Enter') saveNickname();" style="margin-bottom: 8px;" />
+            </div>
+            
             <p id="nicknameError" class="login-error"></p>
-            <button id="nicknameBtn" onclick="saveNickname()">SAVE ALIAS</button>
+            <button id="nicknameBtn" onclick="saveNickname()">SAVE PROFILE</button>
         </div>
     </div>
 
