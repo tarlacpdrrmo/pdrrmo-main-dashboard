@@ -2440,21 +2440,33 @@ window.handleLogout = function() {
 // ==========================================
 // CHATBOX & SNIPPING TOOL LOGIC
 // ==========================================
+let selectedAvatarEmoji = '🦁'; // Default fallback
+
+// Handles the visual selection in the grid
+window.selectAvatar = function(element, emoji) {
+    document.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
+    element.classList.add('selected');
+    selectedAvatarEmoji = emoji;
+}
+
 window.saveNickname = function() {
     const input = document.getElementById('nicknameInput').value.trim();
     const errorEl = document.getElementById('nicknameError');
     const btn = document.getElementById('nicknameBtn');
     
-    if(input.length < 3) { errorEl.innerText = "Alias must be at least 3 characters."; return; }
+    if(input.length < 2) { errorEl.innerText = "Name must be at least 2 characters."; return; }
     if(input.length > 20) { errorEl.innerText = "Keep it under 20 characters."; return; }
     
     btn.innerText = "SAVING...";
     const user = auth.currentUser;
     
-    db.ref('users/' + user.uid).set({ nickname: input })
+    // Combines the chosen avatar and the typed text into one string separated by a space (e.g., "🦁 Maverick")
+    const finalAlias = `${selectedAvatarEmoji} ${input}`;
+    
+    db.ref('users/' + user.uid).set({ nickname: finalAlias })
         .then(() => {
             document.getElementById('nicknameModal').style.display = 'none';
-            currentChatAlias = input;
+            currentChatAlias = finalAlias;
             document.getElementById('chatWidget').style.display = 'flex';
             
             const loader = document.getElementById('global-loader');
@@ -2462,8 +2474,8 @@ window.saveNickname = function() {
             initChat();
             loadAllData();
         }).catch(err => {
-            btn.innerText = "SAVE ALIAS";
-            errorEl.innerText = "Error saving alias.";
+            btn.innerText = "SAVE PROFILE";
+            errorEl.innerText = "Error saving profile.";
         });
 }
 
@@ -2474,6 +2486,8 @@ window.toggleChat = function() {
 
 function initChat() {
     const chatBody = document.getElementById('chatBody');
+    chatBody.innerHTML = ''; // KILL SWITCH 1: Clear the board so old messages don't duplicate visually
+
     const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000); 
 
     db.ref('chat').orderByChild('timestamp').endAt(thirtyDaysAgo).once('value', snapshot => {
@@ -2484,6 +2498,8 @@ function initChat() {
             childSnapshot.ref.remove();
         });
     });
+
+    db.ref('chat').off('child_added'); // KILL SWITCH 2: Destroy old ghost listeners before making a new one
 
     db.ref('chat').on('child_added', snapshot => {
         const msg = snapshot.val();
@@ -2496,9 +2512,11 @@ function initChat() {
         if(msg.text) contentHtml += `<div>${msg.text}</div>`;
         if(msg.imageUrl) contentHtml += `<img src="${msg.imageUrl}" onclick="window.open('${msg.imageUrl}', '_blank')">`;
 
-        const aliasArray = Array.from(msg.alias);
-        const avatarEmoji = aliasArray.length > 0 ? aliasArray[0] : '👤';
-        const senderName = isMine ? `You - ${msg.alias}` : msg.alias;
+        // AVATAR EXTRACTION FIX: Safely split the emoji from the text
+        const parts = msg.alias.split(' ');
+        const avatarEmoji = parts[0] || '👤'; // Puts ONLY the emoji in the circle
+        const justTheName = parts.slice(1).join(' ') || msg.alias; // Keeps the name above the bubble clean
+        const senderName = isMine ? `You - ${justTheName}` : justTheName;
 
         const rowDiv = document.createElement('div');
         rowDiv.className = `chat-message-row ${isMine ? 'row-mine' : 'row-others'}`;
@@ -2517,7 +2535,11 @@ function initChat() {
     });
 
     const chatInput = document.getElementById('chatInput');
-    chatInput.addEventListener('paste', function(e) {
+    // Ensure we don't attach multiple paste listeners
+    chatInput.replaceWith(chatInput.cloneNode(true));
+    const newChatInput = document.getElementById('chatInput');
+    
+    newChatInput.addEventListener('paste', function(e) {
         let items = (e.clipboardData || e.originalEvent.clipboardData).items;
         for (let index in items) {
             let item = items[index];
