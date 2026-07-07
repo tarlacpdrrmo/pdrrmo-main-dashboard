@@ -2589,4 +2589,25 @@ function uploadSnipAndSend(imageFile) {
         setTimeout(() => document.getElementById(tempId).remove(), 3000);
         console.error(error);
     });
+
+    window.toggleEmojiPicker = function() {
+    const picker = document.getElementById('emojiPicker');
+    if(picker) picker.classList.toggle('active');
+}
+
+window.addEmoji = function(emoji) {
+    const input = document.getElementById('chatInput');
+    input.value += emoji;
+    input.focus();
+    document.getElementById('emojiPicker').classList.remove('active');
+}
+
+// Global click listener to close emoji picker if clicking outside of it
+document.addEventListener('click', function(event) {
+    const picker = document.getElementById('emojiPicker');
+    const btn = document.querySelector('.chat-emoji-btn');
+    if (picker && picker.classList.contains('active') && !picker.contains(event.target) && (!btn || !btn.contains(event.target))) {
+        picker.classList.remove('active');
+    }
+});
 }
