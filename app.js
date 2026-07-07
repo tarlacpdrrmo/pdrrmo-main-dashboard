@@ -2438,17 +2438,20 @@ window.handleLogout = function() {
 }
 
 // ==========================================
-// CHATBOX & SNIPPING TOOL LOGIC
+// CHATBOX & SNIPPING TOOL LOGIC (IMAGE AVATAR VERSION)
 // ==========================================
-let selectedAvatarEmoji = '🦁'; // Default fallback
+
+let selectedAvatarFile = 'avatar1.png'; // Default fallback
+let currentChatAvatar = ''; // Store it globally for the active user
 
 // Handles the visual selection in the grid
-window.selectAvatar = function(element, emoji) {
+window.selectAvatar = function(element, fileName) {
     document.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
     element.classList.add('selected');
-    selectedAvatarEmoji = emoji;
+    selectedAvatarFile = fileName;
 }
 
+// 1. UPDATE THE PROFILE SAVE LOGIC
 window.saveNickname = function() {
     const input = document.getElementById('nicknameInput').value.trim();
     const errorEl = document.getElementById('nicknameError');
@@ -2460,33 +2463,86 @@ window.saveNickname = function() {
     btn.innerText = "SAVING...";
     const user = auth.currentUser;
     
-    // Combines the chosen avatar and the typed text into one string separated by a space (e.g., "🦁 Maverick")
-    const finalAlias = `${selectedAvatarEmoji} ${input}`;
-    
-    db.ref('users/' + user.uid).set({ nickname: finalAlias })
-        .then(() => {
-            document.getElementById('nicknameModal').style.display = 'none';
-            currentChatAlias = finalAlias;
-            document.getElementById('chatWidget').style.display = 'flex';
-            
-            const loader = document.getElementById('global-loader');
-            if(loader) { loader.style.display = 'flex'; loader.style.visibility = 'visible'; loader.style.opacity = '1'; }
-            initChat();
-            loadAllData();
-        }).catch(err => {
-            btn.innerText = "SAVE PROFILE";
-            errorEl.innerText = "Error saving profile.";
-        });
+    // Save BOTH the text name and the image filename separately to Firebase
+    db.ref('users/' + user.uid).set({ 
+        nickname: input,
+        avatarFile: selectedAvatarFile 
+    }).then(() => {
+        document.getElementById('nicknameModal').style.display = 'none';
+        currentChatAlias = input;
+        currentChatAvatar = selectedAvatarFile;
+        document.getElementById('chatWidget').style.display = 'flex';
+        
+        const loader = document.getElementById('global-loader');
+        if(loader) { loader.style.display = 'flex'; loader.style.visibility = 'visible'; loader.style.opacity = '1'; }
+        initChat();
+        loadAllData();
+    }).catch(err => {
+        btn.innerText = "SAVE PROFILE";
+        errorEl.innerText = "Error saving profile.";
+    });
 }
+
+// 2. UPDATE THE AUTH CHECK TO LOAD THE IMAGE
+auth.onAuthStateChanged(user => {
+    const loginOverlay = document.getElementById('login-overlay');
+    const loader = document.getElementById('global-loader');
+    const chatWidget = document.getElementById('chatWidget');
+    
+    if (user) {
+        if(loginOverlay) loginOverlay.style.display = 'none';
+        if(loader) { loader.style.display = 'flex'; loader.style.visibility = 'visible'; loader.style.opacity = '1'; }
+        
+        db.ref('users/' + user.uid).once('value').then(snapshot => {
+            if (snapshot.exists() && snapshot.val().nickname) {
+                currentChatAlias = snapshot.val().nickname;
+                // Grab their saved image file
+                currentChatAvatar = snapshot.val().avatarFile || 'avatar1.png'; 
+                
+                if(chatWidget) chatWidget.style.display = 'flex';
+                initChat(); 
+                loadAllData();
+            } else {
+                if(loader) loader.style.display = 'none';
+                const nickModal = document.getElementById('nicknameModal');
+                nickModal.style.display = 'flex';
+                nickModal.classList.add('active');
+            }
+        });
+    } else {
+        if(loginOverlay) loginOverlay.style.display = 'flex';
+        if(loader) loader.style.display = 'none';
+        if(chatWidget) chatWidget.style.display = 'none';
+    }
+});
+
 
 window.toggleChat = function() {
     const panel = document.getElementById('chatPanel');
     if(panel) panel.classList.toggle('active');
 }
 
+// 3. UPDATE THE MESSAGE SENDER TO ATTACH THE IMAGE
+window.sendChatMessage = function() {
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if(!text) return;
+    
+    input.value = '';
+    
+    db.ref('chat').push({
+        uid: auth.currentUser.uid,
+        alias: currentChatAlias,
+        avatarFile: currentChatAvatar, // Attach the image to the message!
+        text: text,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+}
+
+// 4. UPDATE THE UI EXTRACTOR TO RENDER AN IMAGE TAG
 function initChat() {
     const chatBody = document.getElementById('chatBody');
-    chatBody.innerHTML = ''; // KILL SWITCH 1: Clear the board so old messages don't duplicate visually
+    chatBody.innerHTML = ''; 
 
     const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000); 
 
@@ -2499,7 +2555,7 @@ function initChat() {
         });
     });
 
-    db.ref('chat').off('child_added'); // KILL SWITCH 2: Destroy old ghost listeners before making a new one
+    db.ref('chat').off('child_added'); 
 
     db.ref('chat').on('child_added', snapshot => {
         const msg = snapshot.val();
@@ -2512,17 +2568,17 @@ function initChat() {
         if(msg.text) contentHtml += `<div>${msg.text}</div>`;
         if(msg.imageUrl) contentHtml += `<img src="${msg.imageUrl}" onclick="window.open('${msg.imageUrl}', '_blank')">`;
 
-        // AVATAR EXTRACTION FIX: Safely split the emoji from the text
-        const parts = msg.alias.split(' ');
-        const avatarEmoji = parts[0] || '👤'; // Puts ONLY the emoji in the circle
-        const justTheName = parts.slice(1).join(' ') || msg.alias; // Keeps the name above the bubble clean
-        const senderName = isMine ? `You - ${justTheName}` : justTheName;
+        // Render an actual image tag using the saved file name
+        let avatarHtml = `<img src="${msg.avatarFile || 'avatar1.png'}" alt="User">`;
+        
+        // Since alias is pure text now, we don't need to split it
+        const senderName = isMine ? `You - ${msg.alias}` : msg.alias;
 
         const rowDiv = document.createElement('div');
         rowDiv.className = `chat-message-row ${isMine ? 'row-mine' : 'row-others'}`;
         
         rowDiv.innerHTML = `
-            <div class="chat-avatar">${avatarEmoji}</div>
+            <div class="chat-avatar">${avatarHtml}</div>
             <div class="chat-message ${isMine ? 'msg-mine' : 'msg-others'}">
                 <span class="msg-sender">${senderName}</span>
                 <div class="msg-bubble">${contentHtml}</div>
@@ -2535,7 +2591,6 @@ function initChat() {
     });
 
     const chatInput = document.getElementById('chatInput');
-    // Ensure we don't attach multiple paste listeners
     chatInput.replaceWith(chatInput.cloneNode(true));
     const newChatInput = document.getElementById('chatInput');
     
@@ -2549,21 +2604,6 @@ function initChat() {
                 e.preventDefault(); 
             }
         }
-    });
-}
-
-window.sendChatMessage = function() {
-    const input = document.getElementById('chatInput');
-    const text = input.value.trim();
-    if(!text) return;
-    
-    input.value = '';
-    
-    db.ref('chat').push({
-        uid: auth.currentUser.uid,
-        alias: currentChatAlias,
-        text: text,
-        timestamp: firebase.database.ServerValue.TIMESTAMP
     });
 }
 
@@ -2590,6 +2630,7 @@ function uploadSnipAndSend(imageFile) {
         db.ref('chat').push({
             uid: auth.currentUser.uid,
             alias: currentChatAlias,
+            avatarFile: currentChatAvatar, // Attach image to snipping tool sends too
             text: text, 
             imageUrl: downloadURL,
             timestamp: firebase.database.ServerValue.TIMESTAMP
