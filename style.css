@@ -1294,47 +1294,62 @@ td {
    ========================================== */
 .chat-widget {
     position: fixed;
-    bottom: 24px;
-    right: 24px;
+    bottom: 20px;
+    right: 20px;
     z-index: 9999;
-    display: none; 
-    flex-direction: column;
-    align-items: flex-end;
+    display: none; /* JS toggles this */
+    /* Flex layout removed to kill the invisible "ghost" box */
 }
 @media print { .chat-widget { display: none !important; } }
 
 .chat-toggle-btn {
-    width: 60px; height: 60px;
+    width: 56px; height: 56px; /* Slightly sleeker size */
     border-radius: 50%;
     background: linear-gradient(135deg, #2563eb, #06b6d4);
     color: white;
     display: flex; justify-content: center; align-items: center;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: absolute; 
+    bottom: 0; right: 0;
+    z-index: 2; /* Keeps button above the panel */
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
 }
 .chat-toggle-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 12px 20px rgba(0,0,0,0.4);
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
 }
 
 .chat-panel {
-    width: 340px; height: 480px;
-    background: rgba(15, 23, 42, 0.95);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    box-shadow: 0 15px 35px rgba(0,0,0,0.4);
-    margin-bottom: 16px;
+    width: 360px; height: 500px;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5), 0 0 20px rgba(37, 99, 235, 0.15);
     display: flex; flex-direction: column; overflow: hidden;
+    
+    /* 1. FIX POSITIONING: Anchors snugly above the button */
+    position: absolute;
+    bottom: 70px; 
+    right: 0;
+    z-index: 1;
+    
+    /* 2. FIX UNCLICKABLE AREA: Lets clicks pass through when hidden */
+    pointer-events: none; 
+    
+    /* 3. MODERN SPRING ANIMATION */
     opacity: 0; visibility: hidden;
-    transform: translateY(20px) scale(0.95);
     transform-origin: bottom right;
-    transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+    transform: scale(0.3) translateY(40px); /* Starts small and low */
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); /* iOS/macOS style spring bounce */
 }
+
 .chat-panel.active {
     opacity: 1; visibility: visible;
-    transform: translateY(0) scale(1);
+    transform: scale(1) translateY(0); /* Pops into full size */
+    pointer-events: auto; /* Restores clickability ONLY inside the panel when open */
 }
 
 .chat-header {
