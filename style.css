@@ -16,8 +16,8 @@ body {
 .dashboard-container { 
     display: flex; 
     height: 100vh; 
-    width: 100%; /* Prevents scrollbar layout shifts */
-    overflow: hidden; /* Prevents body-level scrolling issues when zooming */
+    width: 100%; 
+    overflow: hidden; 
 }
 
 /* --- SIDEBAR --- */
@@ -116,7 +116,6 @@ body {
     scroll-behavior: smooth; 
 }
 
-/* THE UPDATED HEADER */
 .page-header { 
     background-image: linear-gradient(to right, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.4) 100%), url('headerbg.jpg');
     background-size: cover; 
@@ -707,7 +706,6 @@ body {
 .interactive-pie-container { display: flex; gap: 16px; height: 260px; align-items: stretch; margin-top: 8px; min-width: 0; }
 .doc-pie-wrapper { flex: 1; height: 100%; position: relative; cursor: pointer; min-width: 0; }
 
-/* Legend Cascade Animation */
 @keyframes legendFadeIn {
     from { opacity: 0; transform: translateX(10px); }
     to { opacity: 1; transform: translateX(0); }
@@ -724,7 +722,6 @@ body {
 }
 .legend-item:hover { transform: translateX(4px); background-color: #f8fafc; border-radius: 4px; }
 
-/* UPDATED INTERACTIVE LEGEND CHECKMARK STYLE */
 .legend-color { 
     width: 14px !important; 
     height: 14px !important; 
@@ -747,7 +744,6 @@ body {
     transform: scale(0.98);
 }
 
-/* UPDATED HIDDEN STATE (NO STRIKETHROUGH, NO CHECKMARK) */
 .hidden-slice .legend-text {
     color: #94a3b8; 
 }
@@ -1176,7 +1172,7 @@ td {
         size: A4 landscape; 
         margin: 10mm; 
     }
-
+    
     body, html { 
         background-color: #ffffff !important; 
         color: #000000 !important; 
@@ -1189,7 +1185,6 @@ td {
         print-color-adjust: exact !important; 
     }
 
-    /* Hide non-printable elements */
     .sidebar, 
     .btn-print, 
     .master-toggle-wrapper, 
@@ -1201,11 +1196,11 @@ td {
     .btn-expand,
     .modal-overlay,
     .btn-reset,
-    .weather-interactive-container { 
+    .weather-interactive-container,
+    .chat-widget { 
         display: none !important; 
     }
 
-    /* Allow containers to flow naturally across pages */
     .dashboard-container,
     .main-content,
     .assets-layout,
@@ -1226,7 +1221,6 @@ td {
         box-shadow: none !important; 
     }
 
-    /* Convert the vertical KPI column into a horizontal grid for better A4 fit */
     .kpi-column {
         display: grid !important;
         grid-template-columns: repeat(5, 1fr) !important;
@@ -1235,7 +1229,6 @@ td {
         margin-bottom: 20px !important;
     }
 
-    /* Fix Charts Grid Overlapping */
     .charts-grid { 
         display: grid !important; 
         grid-template-columns: repeat(3, 1fr) !important; 
@@ -1249,17 +1242,16 @@ td {
         border: 1px solid #cbd5e1 !important; 
         page-break-inside: avoid !important; 
         break-inside: avoid !important;
-        margin-bottom: 0 !important; /* Handled by grid gaps */
+        margin-bottom: 0 !important; 
     }
-
+    
     .panel { 
         page-break-inside: auto !important; 
         border: none !important; 
         margin-bottom: 20px !important; 
         padding-bottom: 0 !important; 
     }
-
-    /* PREVENT ORPHANED HEADINGS */
+    
     .panel-heading,
     .panel-header-wrapper {
         page-break-after: avoid !important;
@@ -1267,12 +1259,11 @@ td {
         margin-bottom: 10px !important; 
     }
 
-    /* PREVENT BREAKS BEFORE CRITICAL LAYOUTS START */
     .assets-layout {
         page-break-before: avoid !important;
         break-before: avoid !important;
     }
-
+    
     .pie-wrapper, 
     .chart-render-area,
     .calendar-wrapper,
@@ -1281,29 +1272,46 @@ td {
         page-break-inside: avoid !important; 
         break-inside: avoid !important;
     }
-
-    /* Ensure charts resize correctly */
+    
     canvas {
         max-width: 100% !important;
         height: auto !important;
     }
 }
 
+/* --- AVATAR SELECTION GRID --- */
+.avatar-selection { margin-bottom: 16px; text-align: left; }
+.avatar-grid {
+    display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+    background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+}
+.avatar-option {
+    width: 42px; height: 42px; font-size: 1.5rem;
+    display: flex; align-items: center; justify-content: center;
+    background: transparent; border: 2px solid transparent; border-radius: 50%;
+    cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.avatar-option:hover { background: rgba(255, 255, 255, 0.1); transform: scale(1.15); }
+.avatar-option.selected {
+    background: rgba(37, 99, 235, 0.2); border-color: #3b82f6;
+    box-shadow: 0 0 12px rgba(37, 99, 235, 0.4); transform: scale(1.15);
+}
+.nickname-label { font-size: 0.75rem; color: #cbd5e1; margin-bottom: 8px; font-weight: 700; text-align: left; display: block; }
+
 /* ==========================================
-   NEW FLOATING CHAT WIDGET UI INIECTION
+   NEW FLOATING CHAT WIDGET UI INJECTION
    ========================================== */
 .chat-widget {
     position: fixed;
-    bottom: 20px;
-    right: 20px;
+    bottom: 16px;
+    right: 16px;
     z-index: 9999;
-    display: none; /* JS toggles this */
-    /* Flex layout removed to kill the invisible "ghost" box */
+    display: none; 
 }
 @media print { .chat-widget { display: none !important; } }
 
 .chat-toggle-btn {
-    width: 56px; height: 56px; /* Slightly sleeker size */
+    width: 56px; height: 56px;
     border-radius: 50%;
     background: linear-gradient(135deg, #2563eb, #06b6d4);
     color: white;
@@ -1312,7 +1320,7 @@ td {
     cursor: pointer;
     position: absolute; 
     bottom: 0; right: 0;
-    z-index: 2; /* Keeps button above the panel */
+    z-index: 2; 
     transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
 }
 .chat-toggle-btn:hover {
@@ -1329,27 +1337,21 @@ td {
     border-radius: 16px;
     box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5), 0 0 20px rgba(37, 99, 235, 0.15);
     display: flex; flex-direction: column; overflow: hidden;
-    
-    /* 1. FIX POSITIONING: Anchors snugly above the button */
     position: absolute;
-    bottom: 70px; 
+    bottom: 68px; 
     right: 0;
     z-index: 1;
-    
-    /* 2. FIX UNCLICKABLE AREA: Lets clicks pass through when hidden */
     pointer-events: none; 
-    
-    /* 3. MODERN SPRING ANIMATION */
     opacity: 0; visibility: hidden;
     transform-origin: bottom right;
-    transform: scale(0.3) translateY(40px); /* Starts small and low */
-    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); /* iOS/macOS style spring bounce */
+    transform: scale(0.3) translateY(40px); 
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); 
 }
 
 .chat-panel.active {
     opacity: 1; visibility: visible;
-    transform: scale(1) translateY(0); /* Pops into full size */
-    pointer-events: auto; /* Restores clickability ONLY inside the panel when open */
+    transform: scale(1) translateY(0); 
+    pointer-events: auto; 
 }
 
 .chat-header {
