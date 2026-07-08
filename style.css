@@ -1393,3 +1393,30 @@ td {
 .btn-inbox-action:hover { background: #f1f5f9; color: #1e293b; }
 .btn-inbox-action.mark-read { color: #3b82f6; border-color: #bfdbfe; }
 .btn-inbox-action.mark-read:hover { background: #dbeafe; }
+
+/* --- SIDEBAR SUBMENU STYLES --- */
+.submenu-list {
+    display: none;
+    list-style: none;
+    padding-left: 0;
+    margin: 0 0 10px 24px; /* Indent under the parent */
+    border-left: 2px solid rgba(148, 163, 184, 0.2);
+}
+.submenu-list.active {
+    display: block;
+}
+.submenu-list li {
+    padding: 8px 12px !important;
+    font-size: 0.65rem !important;
+    color: #94a3b8 !important;
+    margin-bottom: 2px !important;
+    border-radius: 0 6px 6px 0 !important;
+    transition: all 0.2s ease;
+}
+.submenu-list li:hover {
+    color: #ffffff !important;
+    background-color: rgba(241, 245, 249, 0.08) !important;
+}
+.has-submenu.open .dropdown-arrow-icon {
+    transform: rotate(180deg);
+}
