@@ -2571,7 +2571,86 @@ function listenForSuggestions() {
     });
 }
 
-// Placeholder for when you build the Admin view
+// ==========================================
+// SUGGESTIONS INBOX UI LOGIC
+// ==========================================
 window.openSuggestionsInbox = function() {
-    alert("Suggestions Inbox: We can build this next! It will open a modal or new page showing all submitted feedback.");
+    document.getElementById('inboxModal').classList.add('active');
+    loadInboxData();
+}
+
+window.closeSuggestionsInbox = function() {
+    document.getElementById('inboxModal').classList.remove('active');
+}
+
+function loadInboxData() {
+    const listEl = document.getElementById('inboxList');
+    listEl.innerHTML = '<div style="text-align:center; padding: 40px; color: #64748b; font-weight: 600;">Loading suggestions...</div>';
+
+    db.ref('suggestions').orderByChild('timestamp').once('value').then(snapshot => {
+        listEl.innerHTML = '';
+        if(!snapshot.exists()) {
+            listEl.innerHTML = '<div style="text-align:center; padding: 40px; color: #64748b; font-weight: 600;">The inbox is empty. No suggestions yet!</div>';
+            return;
+        }
+
+        let items = [];
+        snapshot.forEach(child => {
+            items.push({ id: child.key, ...child.val() });
+        });
+        
+        // Sort by newest first
+        items.sort((a,b) => b.timestamp - a.timestamp);
+
+        items.forEach(item => {
+            const dateObj = new Date(item.timestamp);
+            const dateStr = dateObj.toLocaleDateString([], {month: 'short', day: 'numeric', year: 'numeric'}) + ' • ' + dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const readClass = item.read ? '' : 'unread';
+            
+            let imgHtml = '';
+            if(item.imageUrl) {
+                imgHtml = `<img src="${item.imageUrl}" class="inbox-img" onclick="window.open('${item.imageUrl}', '_blank')" title="Click to view full size">`;
+            }
+
+            let btnHtml = item.read 
+                ? `<button class="btn-inbox-action" onclick="toggleSugReadStatus('${item.id}', false)">Mark Unread</button>`
+                : `<button class="btn-inbox-action mark-read" onclick="toggleSugReadStatus('${item.id}', true)">Mark as Read</button>`;
+
+            const card = document.createElement('div');
+            card.className = `inbox-card ${readClass}`;
+            card.innerHTML = `
+                <div class="inbox-header">
+                    <div class="inbox-topic">${item.topic}</div>
+                    <div class="inbox-meta">${dateStr}</div>
+                </div>
+                <div class="inbox-meta">Submitted by: ${item.email || 'Unknown User'}</div>
+                <div class="inbox-body">${item.text}</div>
+                ${imgHtml}
+                <div class="inbox-actions">
+                    ${btnHtml}
+                    <button class="btn-inbox-action" style="color: #ef4444; border-color: #fecaca;" onclick="deleteSuggestion('${item.id}', '${item.imageUrl || ''}')">Delete</button>
+                </div>
+            `;
+            listEl.appendChild(card);
+        });
+    });
+}
+
+window.toggleSugReadStatus = function(id, status) {
+    db.ref('suggestions/' + id).update({ read: status }).then(() => {
+        loadInboxData(); // Refresh the list to apply color changes
+    });
+}
+
+window.deleteSuggestion = function(id, imageUrl) {
+    if(confirm("Are you sure you want to permanently delete this suggestion?")) {
+        // Delete the database entry
+        db.ref('suggestions/' + id).remove().then(() => {
+            // If there's an attached image, delete it from Storage to save space
+            if (imageUrl) {
+                storage.refFromURL(imageUrl).delete().catch(err => console.log("Image already deleted or missing.", err));
+            }
+            loadInboxData(); // Refresh the list
+        });
+    }
 }
