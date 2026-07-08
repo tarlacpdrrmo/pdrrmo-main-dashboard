@@ -482,6 +482,12 @@
                         <line x1="10" y1="14" x2="21" y2="3"></line>
                     </svg>
                 </li>
+                <li class="section-title">Admin Controls</li>
+                <li onclick="openSuggestionsInbox()">
+                    <svg class="menu-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+                    <span style="flex: 1;">Suggestions Inbox</span>
+                    <span id="suggestionBadge" class="sidebar-badge" style="display:none;">0</span>
+                </li>
             </ul>
         </nav>
 
@@ -1033,79 +1039,70 @@
         </div>
     </div>
 
-    <!-- NICKNAME REGISTRATION MODAL -->
-  <div id="nicknameModal" class="modal-overlay" style="z-index: 9999999;">
-        <div class="login-card" style="transform: none; animation: none; max-width: 480px;">
-            <h2>Set Your Profile</h2>
-            <p style="color: #f59e0b; font-size: 0.65rem; margin-bottom: 16px;">⚠️ ONE-TIME ONLY. THIS CANNOT BE CHANGED LATER.</p>
-            
-            <div class="avatar-grid" id="avatarGrid">
-                    <!-- Note: Change the src names to whatever you name your cropped images! -->
-                    <div class="avatar-option selected" onclick="selectAvatar(this, 'avatar1.png')">
-                        <img src="avatar1.png" alt="Avatar">
-                    </div>
-                    <div class="avatar-option" onclick="selectAvatar(this, 'avatar2.png')">
-                        <img src="avatar2.png" alt="Avatar">
-                    </div>
-                    <div class="avatar-option" onclick="selectAvatar(this, 'avatar3.png')">
-                        <img src="avatar3.png" alt="Avatar">
-                    </div>
-                    <div class="avatar-option" onclick="selectAvatar(this, 'avatar4.png')">
-                        <img src="avatar4.png" alt="Avatar">
-                    </div>
-                    <div class="avatar-option" onclick="selectAvatar(this, 'avatar5.png')">
-                        <img src="avatar5.png" alt="Avatar">
-                    </div>
-                    <div class="avatar-option" onclick="selectAvatar(this, 'avatar6.png')">
-                        <img src="avatar6.png" alt="Avatar">
-                    </div>
-                 <div class="avatar-option" onclick="selectAvatar(this, 'avatar7.png')">
-                        <img src="avatar7.png" alt="Avatar">
-                    </div>
-                 <div class="avatar-option" onclick="selectAvatar(this, 'avatar8.png')">
-                        <img src="avatar8.png" alt="Avatar">
-                    </div>
+ <!-- SLEEK SUGGESTION BOX WIDGET -->
+    <div id="suggestionWidget" class="suggestion-widget">
+        <div class="suggestion-toggle-btn" onclick="toggleSuggestionBox()">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+        </div>
+        
+        <div id="suggestionPanel" class="suggestion-panel">
+            <div class="suggestion-header">
+                <div class="sug-header-left">
+                   <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16"><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg>
+                   <span>Submit a Suggestion or Report</span>
                 </div>
-
-            <div style="text-align: left;">
-                <span class="nickname-label">2. Enter your Name/Alias</span>
-                <input type="text" id="nicknameInput" placeholder="Enter your nick name!" onkeypress="if(event.key === 'Enter') saveNickname();" style="margin-bottom: 8px;" />
+                <button onclick="toggleSuggestionBox()" class="btn-close-sug">&times;</button>
             </div>
             
-            <p id="nicknameError" class="login-error"></p>
-            <button id="nicknameBtn" onclick="saveNickname()">SAVE PROFILE</button>
-        </div>
-    </div>
+            <div class="suggestion-body">
+                <div class="sug-topic-list">
+                    <div class="sug-topic" onclick="selectSuggestionTopic(this, 'Assets & Personnel')">
+                        <div class="sug-topic-title">&rarr; Assets & Personnel Dispatched</div>
+                        <div class="sug-topic-desc">Resource allocation, dispatch reports, and personnel tracking.</div>
+                    </div>
+                    <div class="sug-topic" onclick="selectSuggestionTopic(this, 'Communication Letters')">
+                        <div class="sug-topic-title">&rarr; Communication Letters</div>
+                        <div class="sug-topic-desc">Incoming documents, action taken tracking, and letter nature.</div>
+                    </div>
+                    <div class="sug-topic" onclick="selectSuggestionTopic(this, 'Trainings, Seminars & AARs')">
+                        <div class="sug-topic-title">&rarr; Trainings, Seminars & AARs</div>
+                        <div class="sug-topic-desc">Schedules, After Activity Reports (AARs), and IEC Lectures.</div>
+                    </div>
+                    <div class="sug-topic" onclick="selectSuggestionTopic(this, 'Volunteer Section')">
+                        <div class="sug-topic-title">&rarr; Volunteer's Section</div>
+                        <div class="sug-topic-desc">Organization records and individual volunteer distributions.</div>
+                    </div>
+                    <div class="sug-topic" onclick="selectSuggestionTopic(this, 'GIS Maps & Weather')">
+                        <div class="sug-topic-title">&rarr; GIS Maps & Weather</div>
+                        <div class="sug-topic-desc">Early Warning Systems, Incident Heatmaps, and Weather data.</div>
+                    </div>
+                    <div class="sug-topic" onclick="selectSuggestionTopic(this, 'Dashboard UI & Experience')">
+                        <div class="sug-topic-title">&rarr; Dashboard UI & Experience</div>
+                        <div class="sug-topic-desc">Visuals, bugs, navigation, and feature requests.</div>
+                    </div>
+                    <div class="sug-topic" onclick="selectSuggestionTopic(this, 'Other / Open Suggestion')">
+                        <div class="sug-topic-title">&rarr; Other / Open Suggestion</div>
+                        <div class="sug-topic-desc">Anything else not covered by the topics above.</div>
+                    </div>
+                </div>
+            </div>
 
-    <!-- FLOATING CHAT WIDGET -->
-    <div id="chatWidget" class="chat-widget">
-        <div id="chatPanel" class="chat-panel">
-            <div class="chat-header">
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                    <span>PDRRMO Comms</span>
+            <div class="suggestion-footer">
+                <div class="sug-selected-topic" id="activeTopicLabel">Select a topic above to start writing...</div>
+                
+                <div id="sugAttachmentPreview" class="sug-attachment-preview"></div>
+                
+                <div class="sug-input-wrapper">
+                    <input type="file" id="sugImageUpload" accept="image/*" style="display:none;" onchange="handleSugImageSelect(event)">
+                    <button class="sug-attach-btn" onclick="document.getElementById('sugImageUpload').click()" title="Attach Image">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    </button>
+                    <input type="text" id="suggestionInput" placeholder="Type feedback or Ctrl+V to paste snip..." disabled onkeypress="if(event.key === 'Enter') sendSuggestion();">
+                    <button class="sug-send-btn" onclick="sendSuggestion()" id="sugSendBtn" disabled>
+                        <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M15.964.686a.5.5 0 0 0-.65-.65L.767 5.855H.766l-.452.18a.5.5 0 0 0-.082.887l.41.26.001.002 4.995 3.178 3.178 4.995.002.002.26.41a.5.5 0 0 0 .886-.083l6-15Zm-1.833 1.89L6.637 10.07l-.215-.338a.5.5 0 0 0-.154-.154l-.338-.215 7.494-7.494 1.178-.471-.47 1.178Z"/></svg>
+                    </button>
                 </div>
-                <button onclick="toggleChat()" class="btn-close-modal" style="color:white; font-size:1.5rem;">&minus;</button>
             </div>
-            <div id="chatBody" class="chat-body"></div>
-            <div class="chat-input-area">
-                <div id="emojiPicker" class="emoji-picker">
-                    <span onclick="addEmoji('👍')">👍</span><span onclick="addEmoji('✅')">✅</span><span onclick="addEmoji('🚨')">🚨</span><span onclick="addEmoji('🔥')">🔥</span>
-                    <span onclick="addEmoji('🦅')">🦅</span><span onclick="addEmoji('🐅')">🐅</span><span onclick="addEmoji('🐬')">🐬</span><span onclick="addEmoji('🐘')">🐘</span>
-                    <span onclick="addEmoji('😀')">😀</span><span onclick="addEmoji('😂')">😂</span><span onclick="addEmoji('😎')">😎</span><span onclick="addEmoji('🙏')">🙏</span>
-                    <span onclick="addEmoji('⛈️')">⛈️</span><span onclick="addEmoji('☀️')">☀️</span><span onclick="addEmoji('🌊')">🌊</span><span onclick="addEmoji('🚑')">🚑</span>
-                </div>
-                <button onclick="toggleEmojiPicker()" class="chat-emoji-btn">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
-                </button>
-                <input type="text" id="chatInput" placeholder="Type a msg or Ctrl+V to paste snip..." autocomplete="off" onkeypress="if(event.key === 'Enter') sendChatMessage();">
-                <button onclick="sendChatMessage()" class="chat-send-btn">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                </button>
-            </div>
-        </div>
-        <div class="chat-toggle-btn" onclick="toggleChat()">
-            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
         </div>
     </div>
 
