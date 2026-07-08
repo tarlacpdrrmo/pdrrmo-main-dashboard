@@ -1456,3 +1456,33 @@ td {
 .sidebar-scroll-area::-webkit-scrollbar-thumb:hover {
     background: #94a3b8; 
 }
+/* --- SLEEK TOAST NOTIFICATION --- */
+.toast-notification {
+    visibility: hidden;
+    min-width: 280px;
+    background: rgba(30, 41, 59, 0.95); /* Deep slate to match header */
+    backdrop-filter: blur(10px);
+    color: #f8fafc;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 30px; /* Pill shape */
+    padding: 12px 24px;
+    position: fixed;
+    z-index: 999999;
+    left: 50%;
+    bottom: 20px;
+    transform: translateX(-50%);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    transition: opacity 0.3s ease, bottom 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), visibility 0.3s;
+}
+
+.toast-notification.show {
+    visibility: visible;
+    opacity: 1;
+    bottom: 40px; /* Slides up smoothly */
+}
