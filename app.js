@@ -2607,17 +2607,15 @@ function loadInboxData() {
             const dateStr = dateObj.toLocaleDateString([], {month: 'short', day: 'numeric', year: 'numeric'}) + ' • ' + dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             const readClass = item.read ? '' : 'unread';
             
+            const card = document.createElement('div');
+            card.className = `inbox-card ${readClass}`;
+            
             let imgHtml = '';
             if(item.imageUrl) {
                 imgHtml = `<img src="${item.imageUrl}" class="inbox-img" onclick="window.open('${item.imageUrl}', '_blank')" title="Click to view full size">`;
             }
 
-            let btnHtml = item.read 
-                ? `<button class="btn-inbox-action" onclick="toggleSugReadStatus('${item.id}', false)">Mark Unread</button>`
-                : `<button class="btn-inbox-action mark-read" onclick="toggleSugReadStatus('${item.id}', true)">Mark as Read</button>`;
-
-            const card = document.createElement('div');
-            card.className = `inbox-card ${readClass}`;
+            // Build the card structure WITHOUT the buttons first
             card.innerHTML = `
                 <div class="inbox-header">
                     <div class="inbox-topic">${item.topic}</div>
@@ -2626,31 +2624,38 @@ function loadInboxData() {
                 <div class="inbox-meta">Submitted by: ${item.email || 'Unknown User'}</div>
                 <div class="inbox-body">${item.text}</div>
                 ${imgHtml}
-                <div class="inbox-actions">
-                    ${btnHtml}
-                    <button class="btn-inbox-action" style="color: #ef4444; border-color: #fecaca;" onclick="deleteSuggestion('${item.id}', '${item.imageUrl || ''}')">Delete</button>
-                </div>
+                <div class="inbox-actions" id="actions-${item.id}"></div>
             `;
+            
             listEl.appendChild(card);
+
+            // Safely append buttons using Javascript to bypass HTML string breaking
+            const actionsDiv = card.querySelector(`#actions-${item.id}`);
+            
+            const readBtn = document.createElement('button');
+            readBtn.className = item.read ? 'btn-inbox-action' : 'btn-inbox-action mark-read';
+            readBtn.innerText = item.read ? 'Mark Unread' : 'Mark as Read';
+            readBtn.onclick = function() {
+                db.ref('suggestions/' + item.id).update({ read: !item.read }).then(() => loadInboxData());
+            };
+            actionsDiv.appendChild(readBtn);
+
+            const delBtn = document.createElement('button');
+            delBtn.className = 'btn-inbox-action';
+            delBtn.style.cssText = 'color: #ef4444; border-color: #fecaca;';
+            delBtn.innerText = 'Delete';
+            delBtn.onclick = function() {
+                if(confirm("Are you sure you want to permanently delete this suggestion?")) {
+                    db.ref('suggestions/' + item.id).remove().then(() => {
+                        // Delete image from storage if it exists
+                        if (item.imageUrl) {
+                            storage.refFromURL(item.imageUrl).delete().catch(err => console.log("Image already deleted or missing.", err));
+                        }
+                        loadInboxData(); // Refresh list
+                    });
+                }
+            };
+            actionsDiv.appendChild(delBtn);
         });
     });
-}
-
-window.toggleSugReadStatus = function(id, status) {
-    db.ref('suggestions/' + id).update({ read: status }).then(() => {
-        loadInboxData(); // Refresh the list to apply color changes
-    });
-}
-
-window.deleteSuggestion = function(id, imageUrl) {
-    if(confirm("Are you sure you want to permanently delete this suggestion?")) {
-        // Delete the database entry
-        db.ref('suggestions/' + id).remove().then(() => {
-            // If there's an attached image, delete it from Storage to save space
-            if (imageUrl) {
-                storage.refFromURL(imageUrl).delete().catch(err => console.log("Image already deleted or missing.", err));
-            }
-            loadInboxData(); // Refresh the list
-        });
-    }
 }
