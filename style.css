@@ -1515,18 +1515,18 @@ td {
     background: transparent !important;
     transform: scale(1.1); /* Adds a nice little zoom effect when you hover instead of changing colors */
 }
-/* --- ICON WAVE ANIMATION ("SAYING HI") --- */
-@keyframes waveHi {
-    0%   { transform: rotate(0deg); }
-    4%   { transform: rotate(18deg); }   /* Tilt right */
-    8%   { transform: rotate(-12deg); }  /* Tilt left */
-    12%  { transform: rotate(18deg); }   /* Tilt right */
-    16%  { transform: rotate(-12deg); }  /* Tilt left */
-    20%  { transform: rotate(0deg); }    /* Back to center */
-    100% { transform: rotate(0deg); }    /* Stay still for the remaining 4 seconds */
+/* --- ICON WAVE & JUMP ANIMATION ("SAYING HI") --- */
+@keyframes waveAndJump {
+    0%   { transform: translateY(0) rotate(0deg); }
+    4%   { transform: translateY(-12px) rotate(18deg); }   /* Jumps up & tilts right */
+    8%   { transform: translateY(-18px) rotate(-12deg); }  /* Peak jump height & tilts left */
+    12%  { transform: translateY(-12px) rotate(18deg); }   /* Starts coming down & tilts right */
+    16%  { transform: translateY(-4px) rotate(-12deg); }   /* Almost landed & tilts left */
+    20%  { transform: translateY(0) rotate(0deg); }        /* Landed safely, back to center */
+    100% { transform: translateY(0) rotate(0deg); }        /* Stays perfectly still for 4 seconds */
 }
 
 .suggestion-toggle-btn img {
-    animation: waveHi 5s infinite ease-in-out;
-    transform-origin: bottom center; /* Makes it wave from the bottom, like a hand */
+    animation: waveAndJump 5s infinite ease-in-out;
+    transform-origin: bottom center; 
 }
