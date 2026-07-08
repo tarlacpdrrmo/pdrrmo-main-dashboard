@@ -1105,6 +1105,20 @@
             </div>
         </div>
     </div>
+    <!-- SUGGESTIONS INBOX MODAL -->
+    <div id="inboxModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 800px; width: 95%;">
+            <div class="modal-header">
+                <h2>Suggestions & Reports Inbox</h2>
+                <button onclick="closeSuggestionsInbox()" class="btn-close-modal">&times;</button>
+            </div>
+            <div class="modal-body" style="height: 500px; background: #f8fafc; padding: 20px;">
+                <div id="inboxList" style="display: flex; flex-direction: column; gap: 12px;">
+                    <!-- JS injects the suggestion cards here -->
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
         // Disable Right-Click
