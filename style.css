@@ -1431,25 +1431,28 @@ td {
 }
 /* --- SIDEBAR MAIN SCROLL AREA (Yellow Box) --- */
 .sidebar-scroll-area {
-    flex: 1; /* Takes up all remaining space below the fixed section */
-    overflow-y: auto; /* Enables vertical scrolling */
+    flex: 1; 
+    overflow-y: auto !important; 
     overflow-x: hidden;
-    min-height: 0; /* Crucial for flexbox scrolling to work */
+    min-height: 0; 
+    height: 0; /* MAGIC FIX: Forces the box to stop expanding and actually scroll! */
     margin-top: 10px;
-    padding-bottom: 20px;
+    padding-right: 6px; /* Gives the scrollbar breathing room */
+    margin-right: -6px; /* Aligns the scrollbar nicely to the right edge */
 }
 
 /* Sleek custom scrollbar for the sidebar */
 .sidebar-scroll-area::-webkit-scrollbar {
-    width: 4px;
+    width: 5px;
 }
 .sidebar-scroll-area::-webkit-scrollbar-track {
-    background: transparent;
+    background: rgba(0, 0, 0, 0.1); 
+    border-radius: 10px;
 }
 .sidebar-scroll-area::-webkit-scrollbar-thumb {
-    background: rgba(148, 163, 184, 0.2); /* Very subtle grey */
-    border-radius: 4px;
+    background: #64748b; /* Brighter grey so it's easy to see against the dark background */
+    border-radius: 10px;
 }
 .sidebar-scroll-area::-webkit-scrollbar-thumb:hover {
-    background: rgba(148, 163, 184, 0.6); /* Darkens on hover */
+    background: #94a3b8; 
 }
