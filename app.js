@@ -2386,12 +2386,12 @@ auth.onAuthStateChanged(user => {
     const loginOverlay = document.getElementById('login-overlay');
     const loader = document.getElementById('global-loader');
     const sugWidget = document.getElementById('suggestionWidget');
-    
+
     if (user) {
         if(loginOverlay) loginOverlay.style.display = 'none';
         if(loader) { loader.style.display = 'flex'; loader.style.visibility = 'visible'; loader.style.opacity = '1'; }
         if(sugWidget) sugWidget.style.display = 'flex';
-        
+
         loadAllData();
         listenForSuggestions(); // Start listening for unread suggestions
     } else {
@@ -2439,10 +2439,10 @@ window.toggleSuggestionBox = function() {
 window.selectSuggestionTopic = function(element, topicName) {
     document.querySelectorAll('.sug-topic').forEach(el => el.classList.remove('selected'));
     element.classList.add('selected');
-    
+
     currentSuggestionTopic = topicName;
     document.getElementById('activeTopicLabel').innerText = `Selected: ${topicName}`;
-    
+
     const input = document.getElementById('suggestionInput');
     const btn = document.getElementById('sugSendBtn');
     input.disabled = false;
@@ -2454,7 +2454,7 @@ window.handleSugImageSelect = function(event) {
     const file = event.target.files[0];
     if(!file) return;
     pendingSuggestionImage = file;
-    
+
     const preview = document.getElementById('sugAttachmentPreview');
     preview.style.display = 'flex';
     preview.innerHTML = `
@@ -2474,16 +2474,16 @@ window.removeSugImage = function() {
 
 window.sendSuggestion = function() {
     if(!currentSuggestionTopic) return;
-    
+
     const input = document.getElementById('suggestionInput');
     const text = input.value.trim();
-    
+
     if(!text && !pendingSuggestionImage) return;
 
     const btn = document.getElementById('sugSendBtn');
     btn.disabled = true;
     input.disabled = true;
-    
+
     const sendData = (imageUrl = null) => {
         db.ref('suggestions').push({
             uid: auth.currentUser.uid,
@@ -2499,14 +2499,14 @@ window.sendSuggestion = function() {
             btn.disabled = false;
             input.disabled = false;
             toggleSuggestionBox();
-            
+
             // Brief success feedback
             document.getElementById('activeTopicLabel').innerText = "Feedback Sent Successfully! Select another topic to send more.";
             document.querySelectorAll('.sug-topic').forEach(el => el.classList.remove('selected'));
             currentSuggestionTopic = "";
             input.disabled = true;
             btn.disabled = true;
-            
+
         }).catch(err => {
             console.error("Error sending suggestion", err);
             btn.disabled = false;
@@ -2541,7 +2541,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 if (item.kind === 'file' && item.type.includes('image/')) {
                     let blob = item.getAsFile();
                     let file = new File([blob], "pasted-snip.png", { type: blob.type });
-                    
+
                     // Route to standard image handler
                     handleSugImageSelect({ target: { files: [file] } });
                     e.preventDefault(); 
@@ -2558,7 +2558,7 @@ function listenForSuggestions() {
         if(snapshot.exists()) {
             unreadCount = Object.keys(snapshot.val()).length;
         }
-        
+
         const badge = document.getElementById('suggestionBadge');
         if(badge) {
             if(unreadCount > 0) {
@@ -2571,10 +2571,12 @@ function listenForSuggestions() {
     });
 }
 
+// Placeholder for when you build the Admin view
 // ==========================================
 // SUGGESTIONS INBOX UI LOGIC
 // ==========================================
 window.openSuggestionsInbox = function() {
+    alert("Suggestions Inbox: We can build this next! It will open a modal or new page showing all submitted feedback.");
     document.getElementById('inboxModal').classList.add('active');
     loadInboxData();
 }
@@ -2658,4 +2660,65 @@ function loadInboxData() {
             actionsDiv.appendChild(delBtn);
         });
     });
+}
+
+        let items = [];
+        snapshot.forEach(child => {
+            items.push({ id: child.key, ...child.val() });
+        });
+        
+        // Sort by newest first
+        items.sort((a,b) => b.timestamp - a.timestamp);
+
+        items.forEach(item => {
+            const dateObj = new Date(item.timestamp);
+            const dateStr = dateObj.toLocaleDateString([], {month: 'short', day: 'numeric', year: 'numeric'}) + ' • ' + dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const readClass = item.read ? '' : 'unread';
+            
+            let imgHtml = '';
+            if(item.imageUrl) {
+                imgHtml = `<img src="${item.imageUrl}" class="inbox-img" onclick="window.open('${item.imageUrl}', '_blank')" title="Click to view full size">`;
+            }
+
+            let btnHtml = item.read 
+                ? `<button class="btn-inbox-action" onclick="toggleSugReadStatus('${item.id}', false)">Mark Unread</button>`
+                : `<button class="btn-inbox-action mark-read" onclick="toggleSugReadStatus('${item.id}', true)">Mark as Read</button>`;
+
+            const card = document.createElement('div');
+            card.className = `inbox-card ${readClass}`;
+            card.innerHTML = `
+                <div class="inbox-header">
+                    <div class="inbox-topic">${item.topic}</div>
+                    <div class="inbox-meta">${dateStr}</div>
+                </div>
+                <div class="inbox-meta">Submitted by: ${item.email || 'Unknown User'}</div>
+                <div class="inbox-body">${item.text}</div>
+                ${imgHtml}
+                <div class="inbox-actions">
+                    ${btnHtml}
+                    <button class="btn-inbox-action" style="color: #ef4444; border-color: #fecaca;" onclick="deleteSuggestion('${item.id}', '${item.imageUrl || ''}')">Delete</button>
+                </div>
+            `;
+            listEl.appendChild(card);
+        });
+    });
+}
+
+window.toggleSugReadStatus = function(id, status) {
+    db.ref('suggestions/' + id).update({ read: status }).then(() => {
+        loadInboxData(); // Refresh the list to apply color changes
+    });
+}
+
+window.deleteSuggestion = function(id, imageUrl) {
+    if(confirm("Are you sure you want to permanently delete this suggestion?")) {
+        // Delete the database entry
+        db.ref('suggestions/' + id).remove().then(() => {
+            // If there's an attached image, delete it from Storage to save space
+            if (imageUrl) {
+                storage.refFromURL(imageUrl).delete().catch(err => console.log("Image already deleted or missing.", err));
+            }
+            loadInboxData(); // Refresh the list
+        });
+    }
 }
