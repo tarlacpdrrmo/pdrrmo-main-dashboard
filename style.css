@@ -1429,3 +1429,27 @@ td {
 .has-submenu.open .dropdown-arrow-icon {
     transform: rotate(180deg);
 }
+/* --- SIDEBAR MAIN SCROLL AREA (Yellow Box) --- */
+.sidebar-scroll-area {
+    flex: 1; /* Takes up all remaining space below the fixed section */
+    overflow-y: auto; /* Enables vertical scrolling */
+    overflow-x: hidden;
+    min-height: 0; /* Crucial for flexbox scrolling to work */
+    margin-top: 10px;
+    padding-bottom: 20px;
+}
+
+/* Sleek custom scrollbar for the sidebar */
+.sidebar-scroll-area::-webkit-scrollbar {
+    width: 4px;
+}
+.sidebar-scroll-area::-webkit-scrollbar-track {
+    background: transparent;
+}
+.sidebar-scroll-area::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.2); /* Very subtle grey */
+    border-radius: 4px;
+}
+.sidebar-scroll-area::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.6); /* Darkens on hover */
+}
