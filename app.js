@@ -16,10 +16,10 @@ function changeMunicipality() {
     if(!selectEl) return;
     const selectedCityQuery = selectEl.value; 
     const selectedCityName = selectEl.options[selectEl.selectedIndex].text; 
-    
+
     document.getElementById('weather-city-main').innerText = selectedCityName;
     document.getElementById('weather-temp-main').innerText = "...";
-    
+
     fetchOpenWeather(selectedCityQuery);
 }
 
@@ -29,7 +29,7 @@ async function fetchOpenWeather(cityQuery) {
     try {
         const currentUrl = `https://api.openweathermap.org/data/2.5/weather?q=${cityQuery}&units=metric&appid=${OWM_API_KEY}`;
         const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${cityQuery}&units=metric&appid=${OWM_API_KEY}`;
-        
+
         const [currentRes, forecastRes] = await Promise.all([
             fetch(currentUrl),
             fetch(forecastUrl)
@@ -41,7 +41,7 @@ async function fetchOpenWeather(cityQuery) {
         if (currentRes.ok && forecastRes.ok) {
             const temp = Math.round(currentData.main.temp); 
             const iconCode = currentData.weather[0].icon;
-            
+
             document.getElementById('weather-temp-main').innerText = `${temp}°C`;
             const iconEl = document.getElementById('weather-icon-main');
             iconEl.src = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
@@ -53,14 +53,14 @@ async function fetchOpenWeather(cityQuery) {
 
             const rainLabels = [];
             const rainDataPoints = [];
-            
+
             for(let i = 0; i < 5; i++) {
                 const item = forecastData.list[i];
                 const date = new Date(item.dt * 1000);
                 let hour = date.getHours();
                 let ampm = hour >= 12 ? 'PM' : 'AM';
                 hour = hour % 12 || 12; 
-                
+
                 rainLabels.push(`${hour} ${ampm}`);
                 rainDataPoints.push(Math.round(item.pop * 100)); 
             }
@@ -69,20 +69,20 @@ async function fetchOpenWeather(cityQuery) {
             const daysProcessed = new Set();
             const forecastGrid = document.getElementById('forecast-grid');
             if(forecastGrid) forecastGrid.innerHTML = ''; 
-            
+
             const todayStr = new Date().toLocaleDateString();
 
             for (let item of forecastData.list) {
                 const d = new Date(item.dt * 1000);
                 const dateStr = d.toLocaleDateString();
-                
+
                 if (dateStr !== todayStr && d.getHours() >= 11 && d.getHours() <= 15 && !daysProcessed.has(dateStr)) {
                     daysProcessed.add(dateStr);
-                    
+
                     const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }); 
                     const dayTemp = Math.round(item.main.temp);
                     const dayIcon = item.weather[0].icon;
-                    
+
                     if(forecastGrid) {
                         forecastGrid.innerHTML += `
                             <div class="forecast-day">
@@ -105,11 +105,11 @@ function updateRainChart(labels, dataPoints) {
     const canvas = document.getElementById('rainChanceChart');
     if(!canvas) return;
     const ctx = canvas.getContext('2d');
-    
+
     if(rainChartInstance) {
         rainChartInstance.destroy();
     }
-    
+
     rainChartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -161,11 +161,11 @@ document.addEventListener('click', function(event) {
         orgDrop.classList.remove('active');
     }
 
-    // Suggestion panel external click listener
-    const sugPanel = document.getElementById('suggestionPanel');
-    const sugBtn = document.querySelector('.suggestion-toggle-btn');
-    if (sugPanel && sugPanel.classList.contains('active') && !sugPanel.contains(event.target) && (!sugBtn || !sugBtn.contains(event.target))) {
-        sugPanel.classList.remove('active');
+    // Emoji Picker external click listener
+    const picker = document.getElementById('emojiPicker');
+    const btn = document.querySelector('.chat-emoji-btn');
+    if (picker && picker.classList.contains('active') && !picker.contains(event.target) && (!btn || !btn.contains(event.target))) {
+        picker.classList.remove('active');
     }
 });
 
@@ -250,7 +250,7 @@ window.openExpandedLineChart = function(chartKey) {
         const canvas = document.getElementById('expandedLineCanvas');
         if(!canvas) return;
         const ctx = canvas.getContext('2d');
-        
+
         if(expandedLineInstance) {
             expandedLineInstance.destroy();
         }
@@ -323,10 +323,10 @@ function scrollToSection(panelId) {
 document.addEventListener("DOMContentLoaded", function() {
     fetchOpenWeather("Tarlac City,PH");
     setInterval(() => fetchOpenWeather(document.getElementById('tarlac-muni-select').value), 900000);
-    
+
     const panels = document.querySelectorAll('.panel');
     const navLinks = document.querySelectorAll('.sidebar li:not(.section-title)');
-    
+
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -334,7 +334,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 const id = entry.target.getAttribute('id');
                 const activeLink = document.querySelector(`.sidebar li[onclick="scrollToSection('${id}')"]`);
                 if(activeLink) activeLink.classList.add('active');
-                
+
                 if (entry.target.classList.contains('iframe-panel')) {
                     entry.target.classList.add('map-in-view');
                 }
@@ -359,13 +359,13 @@ document.addEventListener("DOMContentLoaded", function() {
         minutes = minutes < 10 ? '0' + minutes : minutes;
         seconds = seconds < 10 ? '0' + seconds : seconds;
         const timeString = hours + ':' + minutes + ':' + seconds + ' ' + ampm;
-        
+
         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         const dateString = now.toLocaleDateString('en-US', options);
-        
+
         const timeEl = document.getElementById('live-time');
         const dateEl = document.getElementById('live-date');
-        
+
         if(timeEl) timeEl.innerText = timeString;
         if(dateEl) dateEl.innerText = dateString;
     }
@@ -495,7 +495,7 @@ function parseCustomDate(dateStr) {
     if (!dateStr) return null;
     let d = new Date(dateStr);
     if (!isNaN(d.getTime())) return d;
-    
+
     let parts = dateStr.split(/[\/\-]/);
     if (parts.length === 3) {
         let fallbackDate = new Date(`${parts[1]}/${parts[0]}/${parts[2]}`);
@@ -525,7 +525,7 @@ function parseTrainingDate(dateStr) {
 function extractYear(row, type) {
     if (type === 'doc') {
         let dStr = row['Column C'] || row['COLUMN C'] || row['Date/ Time received'] || row['DATE/ TIME RECEIVED'] || row['Column M'] || row['Column H'] || row['Column I'] || '';
-        
+
         if (!dStr || String(dStr).trim() === '') {
             for (let key in row) {
                 let val = String(row[key]).trim();
@@ -542,7 +542,7 @@ function extractYear(row, type) {
     } else if (type === 'op') {
         let y = row['YEAR'] || row['Year'] || row['year'];
         if (y) return String(y).trim();
-        
+
         let dStr = row['DATE'] || row['Date'] || row['date'];
         if (dStr) {
             let d = parseCustomDate(dStr);
@@ -596,12 +596,12 @@ async function loadAllData() {
         }
 
         let yearsSet = new Set();
-        
+
         rawOperationsData.forEach(r => {
             let y = extractYear(r, 'op');
             if (y && !isNaN(y)) yearsSet.add(y);
         });
-        
+
         rawDocumentsData.forEach(r => {
             let y = extractYear(r, 'doc');
             if (y && !isNaN(y)) yearsSet.add(y);
@@ -616,7 +616,7 @@ async function loadAllData() {
                 opt.innerText = y;
                 yearSelect.appendChild(opt);
             });
-            
+
             const currentYear = new Date().getFullYear().toString();
             if (yearsSet.has(currentYear)) {
                 yearSelect.value = currentYear;
@@ -624,11 +624,11 @@ async function loadAllData() {
         }
 
         applyGlobalYearFilter(yearSelect ? yearSelect.value : 'all');
-        
+
         if (rawVolunteersData.length > 0) processVolunteersData(rawVolunteersData);
-        
+
         processTrainingsData(rawTrainingsData);
-        
+
         hideLoader();
 
     } catch (error) {
@@ -650,12 +650,12 @@ function applyGlobalYearFilter(targetYear) {
     globalLineData = [];
     globalDocRecords = [];
     originalKPITotals = {};
-    
+
     currentPieState = { level: 1, filterKey: 'all', level1Target: null, level2Target: null };
-    
+
     let docPieMonthFilter = document.getElementById('docPieMonthFilter');
     if(docPieMonthFilter) docPieMonthFilter.innerHTML = '<option value="all">All Time</option>';
-    
+
     let masterServiceMonthFilter = document.getElementById('masterServiceMonthFilter');
     if(masterServiceMonthFilter) masterServiceMonthFilter.innerHTML = '<option value="all">All Time</option>';
 
@@ -772,7 +772,7 @@ function renderLineChartByTimeframe(timeframe) {
 
     const labels = Object.keys(groupedObj);
     const dataValues = Object.values(groupedObj);
-    
+
     if(labels.length === 0) {
         drawLineChart('docDateLineChart', ['No Date Data Found'], [0]);
     } else {
@@ -784,7 +784,7 @@ function drawLineChart(canvasId, labels, dataArr) {
     const canvas = document.getElementById(canvasId);
     if(!canvas) return;
     const ctx = canvas.getContext('2d');
-    
+
     if(docLineChartInstance) docLineChartInstance.destroy();
 
     let gradient = ctx.createLinearGradient(0, 0, 0, 300);
@@ -845,14 +845,14 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
     const canvas = document.getElementById(canvasId);
     if(!canvas) return;
     const ctx = canvas.getContext('2d');
-    
+
     if (monthlyTotalPieInstance) {
         monthlyTotalPieInstance.destroy();
     }
 
     const vibrantColors = ['#2563eb', '#06b6d4', '#e11d48', '#ea580c', '#16a34a', '#9333ea'];
     const mappedVibrant = dataArr.map((_, i) => vibrantColors[i % vibrantColors.length]);
-    
+
     const gtEl = document.getElementById('pie-grand-total');
     if(gtEl) gtEl.innerText = grandTotal.toLocaleString();
 
@@ -914,14 +914,14 @@ function processOperationsData(data) {
         operationsMonthlyCache['all'] = new Array(10).fill(0);
         let monthSet = new Set();
         const monthlyAgg = {};
-        
+
         data.forEach(row => {
             if(row['MONTH']) { 
                 let m = String(row['MONTH']).trim().toUpperCase();
                 if(!monthlyAgg[m]) {
                     monthlyAgg[m] = { vehicular:0, roadside:0, patient:0, medical:0, standby:0, others:0, clearing:0, firetruck:0, hauling:0, ledvan:0, grandTotal:0, total1st:0, total2nd:0, total3rd:0, totalOutside:0 };
                 }
-                
+
                 monthlyAgg[m].vehicular += Number(row['VEHICULAR ACCIDENT']) || Number(row['TRAUMA (ROADCRASH INCIDENT)']) || 0;
                 monthlyAgg[m].roadside += Number(row['ROADSIDE ASSISTANCE']) || 0;
                 monthlyAgg[m].patient += Number(row['PATIENT TRANSPORT']) || 0;
@@ -956,7 +956,7 @@ function processOperationsData(data) {
             if(monthlyAgg[m]) {
                 labels.push(m);
                 monthSet.add(m);
-                
+
                 operationsMonthlyCache[m] = [
                     monthlyAgg[m].vehicular, monthlyAgg[m].roadside, monthlyAgg[m].patient,
                     monthlyAgg[m].medical, monthlyAgg[m].standby, monthlyAgg[m].others,
@@ -976,12 +976,12 @@ function processOperationsData(data) {
 
                 monthlyTotalServices.push(monthlyAgg[m].grandTotal);
                 overallGrandTotal += monthlyAgg[m].grandTotal;
-                
+
                 total1st += monthlyAgg[m].total1st;
                 total2nd += monthlyAgg[m].total2nd;
                 total3rd += monthlyAgg[m].total3rd;
                 totalOutside += monthlyAgg[m].totalOutside;
-                
+
                 for(let i=0; i<10; i++) {
                     operationsMonthlyCache['all'][i] += operationsMonthlyCache[m][i];
                 }
@@ -1019,7 +1019,7 @@ function processOperationsData(data) {
         renderTrendFooter('trend-patient', patient, labels, true);     
         renderTrendFooter('trend-medical', medical, labels, true);                
         renderTrendFooter('trend-standby', standby, labels, false); 
-        
+
         renderTrendFooter('trend-others', others, labels, false);
         renderTrendFooter('trend-clearing', clearing, labels, false);
         renderTrendFooter('trend-firetruck', firetruck, labels, false);
@@ -1027,7 +1027,7 @@ function processOperationsData(data) {
         renderTrendFooter('trend-ledvan', ledvan, labels, false);
 
         drawDonutChart('monthlyPieChart', labels, monthlyTotalServices, overallGrandTotal);
-        
+
         const barColors = pieColorPalette;
 
         toggleChartData['vehicularChart'] = { labels, labelText: 'TRAUMA (ROADCRASH INCIDENT)', data: vehicular, color: barColors[0] };
@@ -1035,7 +1035,7 @@ function processOperationsData(data) {
         toggleChartData['patientChart'] = { labels, labelText: 'Patient Transport', data: patient, color: barColors[2] };
         toggleChartData['medicalChart'] = { labels, labelText: 'MEDICAL EMERGENCIES', data: medical, color: barColors[3] };
         toggleChartData['standbyChart'] = { labels, labelText: 'Standby Medic & VIP', data: standby, color: barColors[4] };
-        
+
         toggleChartData['othersChart'] = { labels, labelText: 'SUPPORT SERVICES', data: others, color: barColors[5] };
         toggleChartData['clearingChart'] = { labels, labelText: 'Clearing Operations', data: clearing, color: barColors[6] };
         toggleChartData['firetruckChart'] = { labels, labelText: 'Firetruck', data: firetruck, color: barColors[7] };
@@ -1167,7 +1167,7 @@ function renderMasterServicePie(monthFilter) {
         const canvas = document.getElementById('masterServicePieChart');
         if(!canvas) return;
         const ctx = canvas.getContext('2d');
-        
+
         if(masterServicePieInstance) {
             masterServicePieInstance.data.labels = filteredLabels;
             masterServicePieInstance.data.datasets[0].data = filteredData;
@@ -1213,25 +1213,25 @@ function renderMasterServicePie(monthFilter) {
         const leg = document.getElementById('masterServiceLegend');
         if(leg) {
             leg.innerHTML = '';
-            
+
             if(filteredLabels[0] !== "No Data") {
                 filteredLabels.forEach((lbl, i) => {
                     let item = document.createElement('div');
                     item.className = 'legend-item interactive-legend-item';
                     item.style.padding = '8px 0';
                     item.style.animationDelay = `${i * 0.04}s`;
-                    
+
                     item.innerHTML = `
                         <div class="legend-color" style="background-color: ${mappedColors[i]};"></div>
                         <div class="legend-text" title="${lbl}">${lbl}</div>
                         <div class="legend-val">${filteredData[i]}</div>
                     `;
-                    
+
                     item.onclick = function() {
                         if (masterServicePieInstance) {
                             masterServicePieInstance.toggleDataVisibility(i);
                             masterServicePieInstance.update();
-                            
+
                             if (masterServicePieInstance.getDataVisibility(i)) {
                                 item.classList.remove('hidden-slice');
                             } else {
@@ -1239,7 +1239,7 @@ function renderMasterServicePie(monthFilter) {
                             }
                         }
                     };
-                    
+
                     leg.appendChild(item);
                 });
             } else {
@@ -1260,7 +1260,7 @@ function processDocumentsData(data) {
 
     data.forEach(row => {
         let dateStr = getRobustValue(row, ['DATE/ TIME RECEIVED', 'DATE RECEIVED', 'DATE'], ['Column C', 'Column M', 'Column H', 'Column I']);
-        
+
         if (!dateStr || String(dateStr).trim() === '') {
             let keys = Object.keys(row);
             for (let k of keys) {
@@ -1282,15 +1282,15 @@ function processDocumentsData(data) {
         let rawNature = getRobustValue(row, ['NATURE OF LETTER', 'NATURE'], ['Column P', 'Column E', 'Column F']);
         let rawCategory = getRobustValue(row, ['CATEGORY OF WRITING PARTY', 'CATEGORY'], ['Column O', 'Column F', 'Column G']);
         let rawOffice = getRobustValue(row, ['RECEIVED FROM (NAME OF OFFICE/SENDER)', 'RECEIVED FROM (OFFICE)', 'RECEIVED FROM'], ['Column N', 'Column B']);
-        
+
         let statusKey = keys.find(k => String(k).replace(/[^A-Z]/gi, '').toUpperCase() === 'STATUS');
         let rawActionTaken = statusKey ? row[statusKey] : getRobustValue(row, ['STATUS', 'ACTION TAKEN'], ['Column R', 'Column V', 'Column S']);
-        
+
         let actionTxt = String(rawActionTaken).trim().toLowerCase();
         let actionActuallyTaken = false;
-        
+
         let actionCategory = 'none';
-        
+
         if (actionTxt !== '' && actionTxt !== 'null') {
             if (actionTxt === 'no action' || actionTxt.includes('no action')) {
                 dynamicKPIs.noAction++;
@@ -1330,16 +1330,16 @@ function processDocumentsData(data) {
 
         let mappedNature = rawNature.trim();
         let upperNature = mappedNature.toUpperCase();
-        
+
         if (upperNature.includes('OFFER') || upperNature.includes('PROPOSAL')) mappedNature = 'Offer/Proposal';
         else if (upperNature.includes('REQUEST')) mappedNature = 'Request';
         else if (upperNature.includes('INVITATION')) mappedNature = 'Invitation';
         else if (upperNature.includes('FYI') || upperNature.includes('INFORMATION')) mappedNature = 'For Information';
         else mappedNature = 'Uncategorized';
-        
+
         let subCategory = rawCategory.trim() !== '' ? rawCategory.trim() : 'Uncategorized';
         let specificOffice = rawOffice.trim() !== '' ? rawOffice.trim() : 'Unspecified Office';
-        
+
         let monthYearKey = 'all';
         if (parsedDate) {
             globalLineData.push({ dateObj: parsedDate, count: 1, timestamp: parsedDate.getTime() });
@@ -1404,7 +1404,7 @@ function updateTrackingKPIDisplays() {
 
     if (currentPieState.level === 1) {
         [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => card.style.display = '');
-        
+
         let dynReq = 0, dynAction = 0, dynCatered = 0, dynNotCatered = 0, dynCancelled = 0;
         let dynInvAtt = 0, dynInvNot = 0, dynOthers = 0, dynNoAction = 0;
 
@@ -1412,7 +1412,7 @@ function updateTrackingKPIDisplays() {
             if (currentPieState.filterKey === 'all' || record.dateKey === currentPieState.filterKey) {
                 dynReq++;
                 if (record.hasActionTaken) dynAction++;
-                
+
                 if (record.actionCategory === 'noAction') dynNoAction++;
                 else if (record.actionCategory === 'notCatered') dynNotCatered++;
                 else if (record.actionCategory === 'catered') dynCatered++;
@@ -1452,7 +1452,7 @@ function updateTrackingKPIDisplays() {
         document.getElementById('doc-kpi-action').innerText = dynActionsActuallyTakenMatched;
 
         [cardAction, cardCatered, cardInvAtt, cardNotCatered, cardOthers, cardInvNot, cardCancelled, cardNoAction].forEach(card => card.style.display = 'none');
-        
+
         if (targetCategory === 'Request') {
             cardCatered.style.display = '';
             cardNotCatered.style.display = '';
@@ -1525,7 +1525,7 @@ function renderDocPieChart() {
         docPieChartInstance.data.labels = labels;
         docPieChartInstance.data.datasets[0].data = dataValues;
         docPieChartInstance.data.datasets[0].backgroundColor = mappedColors;
-        
+
         docPieChartInstance.update();
         updateCustomLegend(labels, dataValues, !hasData);
     } else {
@@ -1537,12 +1537,12 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
     const canvas = document.getElementById(canvasId);
     if(!canvas) return;
     const ctx = canvas.getContext('2d');
-    
+
     if(docPieChartInstance) docPieChartInstance.destroy();
-    
+
     let mappedColors = labels.map((_, i) => pieColorPalette[i % pieColorPalette.length]);
     if (isEmptyState) mappedColors = ['#e2e8f0']; 
-    
+
     docPieChartInstance = new Chart(ctx, {
         type: 'doughnut',
         data: { 
@@ -1564,11 +1564,11 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
             hover: { mode: 'index', animationDuration: 300 }, 
             onClick: (event, elements, chart) => {
                 if (chart.data.labels.length === 1 && chart.data.labels[0] === 'No Data Found') return;
-                
+
                 if (elements[0]) {
                     const index = elements[0].index;
                     const label = chart.data.labels[index];
-                    
+
                     if (currentPieState.level === 1) {
                         currentPieState.level = 2;
                         currentPieState.level1Target = label;
@@ -1591,13 +1591,13 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
                     align: 'center',
                     formatter: (value, context) => { 
                         if (context.chart.data.labels.length === 1 && context.chart.data.labels[0] === 'No Data Found') return 'No Data';
-                        
+
                         let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); 
                         if (sum === 0) return ''; 
-                        
+
                         let pctStr = ((value * 100) / sum).toFixed(1);
                         let pctFloat = parseFloat(pctStr);
-                        
+
                         return pctFloat >= 8 ? pctStr + '%' : ''; 
                     } 
                 },
@@ -1610,14 +1610,14 @@ function drawInteractiveDonutChart(canvasId, labels, dataArr, isEmptyState = fal
                             if (currentPieState.level < 3) {
                                 suffix = ' (Click to zoom)';
                             }
-                            
+
                             let activeNature = (currentPieState.level === 1) ? context.label : currentPieState.level1Target;
                             let unitStr = "Requests"; 
-                            
+
                             if (activeNature === 'Invitation') unitStr = 'Invitations';
                             else if (activeNature === 'For Information') unitStr = 'Information';
                             else if (activeNature === 'Offer/Proposal') unitStr = 'Offers/Proposals';
-                            
+
                             return `${context.raw} ${unitStr}${suffix}`;
                         }
                     }
@@ -1650,7 +1650,7 @@ function updateCustomLegend(labels, data, isEmptyState = false) {
 // ==========================================
 function processTrainingsData(data) {
     let workingData = Array.isArray(data) ? data : [];
-    
+
     globalTrainLineData = []; 
     calDataMap = {}; 
     let latestEventDateObj = null;
@@ -1679,7 +1679,7 @@ function processTrainingsData(data) {
 
         if (cat && String(cat).trim() !== "") {
             let c = String(cat).trim().toUpperCase();
-            
+
             if (dates) {
                 let parsedDate = parseTrainingDate(dates);
                 if (parsedDate) {
@@ -1728,12 +1728,12 @@ function renderTrainingOverview(monthFilter) {
     let categoryCounts = {};
     let statusCounts = {};
     let paxByCategory = {};
-    
+
     globalRemarksDetails = {}; 
 
     rawTrainingsData.forEach(row => {
         let dates = getRobustValue(row, ['INCLUSIVE DATES', 'DATES', 'DATE'], ['Column A']);
-        
+
         if (monthFilter !== 'all') {
             let parsedDate = parseTrainingDate(dates);
             if (!parsedDate || monthOrder[parsedDate.getMonth()] !== monthFilter.toUpperCase()) {
@@ -1774,7 +1774,7 @@ function renderTrainingOverview(monthFilter) {
 
     drawTrainBarChart('trainTypesChart', Object.keys(categoryCounts), Object.values(categoryCounts));
     drawTrainBarChart('trainNumbersChart', Object.keys(paxByCategory), Object.values(paxByCategory)); 
-    
+
     let statusLabels = Object.keys(statusCounts);
     let statusData = Object.values(statusCounts);
     let statusColors = statusLabels.map(label => {
@@ -1790,7 +1790,7 @@ function initCalendarControls() {
     const catFilter = document.getElementById('trainCategoryFilter'); 
     const btnPrev = document.getElementById('calPrevBtn');
     const btnNext = document.getElementById('calNextBtn');
-    
+
     if(timeFilter) {
         let newTimeFilter = timeFilter.cloneNode(true);
         timeFilter.parentNode.replaceChild(newTimeFilter, timeFilter);
@@ -1838,30 +1838,30 @@ function renderCalendar() {
     const container = document.getElementById('trainingCalendarContainer');
     const label = document.getElementById('calCurrentLabel');
     if(!container || !label) return;
-    
+
     calDataMap = {};
     globalTrainLineData.forEach(item => {
         if (currentCalCategory !== 'all' && item.category !== currentCalCategory) return; 
-        
+
         let yyyy = item.dateObj.getFullYear();
         let mm = String(item.dateObj.getMonth() + 1).padStart(2, '0');
         let dd = String(item.dateObj.getDate()).padStart(2, '0');
         let dateKey = `${yyyy}-${mm}-${dd}`;
-        
+
         if(!calDataMap[dateKey]) calDataMap[dateKey] = [];
         calDataMap[dateKey].push(item);
     });
 
     container.classList.remove('cal-anim-active');
     container.classList.add('cal-anim-enter');
-    
+
     setTimeout(() => {
         let html = '';
         let viewClass = `cal-view-${currentCalView}`;
-        
+
         let targetYear = currentCalDate.getFullYear();
         let targetMonth = currentCalDate.getMonth();
-        
+
         if (currentCalView === 'monthly') {
             label.innerText = `${monthOrder[targetMonth]} ${targetYear}`;
             html = `<div class="cal-grid-container ${viewClass}">${buildMonthHTML(targetYear, targetMonth, false)}</div>`;
@@ -1881,35 +1881,35 @@ function renderCalendar() {
             }
             html = `<div class="cal-grid-container ${viewClass}">${monthsHtml}</div>`;
         }
-        
+
         container.innerHTML = html;
-        
+
         void container.offsetWidth;
         container.classList.remove('cal-anim-enter');
         container.classList.add('cal-anim-active');
-        
+
     }, 250); 
 }
 
 function buildMonthHTML(year, month, isSmallScale) {
     let daysInMonth = new Date(year, month + 1, 0).getDate();
     let firstDay = new Date(year, month, 1).getDay(); 
-    
+
     let html = `<div class="cal-month">`;
     html += `<div class="cal-month-title">${monthOrder[month]}</div>`;
     html += `<div class="cal-weekdays"><div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div></div>`;
     html += `<div class="cal-days">`;
-    
+
     for(let i=0; i<firstDay; i++) {
         html += `<div class="cal-day empty"></div>`;
     }
-    
+
     for(let day=1; day<=daysInMonth; day++) {
         let padMonth = String(month + 1).padStart(2, '0');
         let padDay = String(day).padStart(2, '0');
         let dateKey = `${year}-${padMonth}-${padDay}`;
         let events = calDataMap[dateKey];
-        
+
         if (events && events.length > 0) {
             let linesHtml = '';
             let maxLines = 3; 
@@ -1918,7 +1918,7 @@ function buildMonthHTML(year, month, isSmallScale) {
                 linesHtml += `<div class="cal-line ${lineClass}"></div>`;
             }
             if(events.length > maxLines) linesHtml += `<span style="font-size:0.55rem; line-height:4px; color:#64748b; font-weight: 800; margin-left: 2px;">+</span>`;
-            
+
             let tooltipListHtml = events.map((e, idx) => `
                 <div style="margin-bottom:${idx === events.length-1 ? '0' : '8px'}; text-align:left;">
                     <div style="display:flex; align-items:flex-start; gap:6px; margin-bottom:4px;">
@@ -1941,7 +1941,7 @@ function buildMonthHTML(year, month, isSmallScale) {
                     ${tooltipListHtml}
                 </div>
             `;
-            
+
             html += `
                 <div class="cal-day has-event has-tooltip">
                     ${day}
@@ -1953,7 +1953,7 @@ function buildMonthHTML(year, month, isSmallScale) {
             html += `<div class="cal-day">${day}</div>`;
         }
     }
-    
+
     html += `</div></div>`;
     return html;
 }
@@ -1962,7 +1962,7 @@ function drawTrainBarChart(canvasId, labels, dataArr, customColors = null) {
     const canvas = document.getElementById(canvasId);
     if(!canvas) return;
     const ctx = canvas.getContext('2d');
-    
+
     if (!labels || labels.length === 0) {
         labels = ["No Data"];
         dataArr = [0];
@@ -1991,9 +1991,9 @@ function populateAllList(containerId, dataObj) {
     const container = document.getElementById(containerId);
     if (!container) return;
     container.innerHTML = '';
-    
+
     let sorted = Object.keys(dataObj).map(k => ({name: k, count: dataObj[k]})).sort((a,b) => b.count - a.count);
-    
+
     if (sorted.length === 0) {
         container.innerHTML = `<div style="color: #94a3b8; font-size: 0.7rem; padding: 10px;">No Data</div>`;
         return;
@@ -2013,9 +2013,9 @@ function populateModalList(dataObj) {
     const container = document.getElementById('modal-title-list');
     if (!container) return;
     container.innerHTML = '';
-    
+
     let sorted = Object.keys(dataObj).map(k => ({name: k, count: dataObj[k]})).sort((a,b) => b.count - a.count);
-    
+
     if (sorted.length === 0) {
         container.innerHTML = `<div style="color: #94a3b8; font-size: 0.9rem; padding: 20px; text-align:center;">No Data Available</div>`;
         return;
@@ -2038,7 +2038,7 @@ function populateRemarksModal(detailsObj) {
     const container = document.getElementById('modal-remarks-list');
     if (!container) return;
     container.innerHTML = '';
-    
+
     if (!detailsObj || Object.keys(detailsObj).length === 0) {
         container.innerHTML = `<div style="color: #94a3b8; font-size: 0.9rem; padding: 20px; text-align:center;">No Data Available</div>`;
         return;
@@ -2051,7 +2051,7 @@ function populateRemarksModal(detailsObj) {
         let color = status === 'WITH AAR' ? '#10b981' : (status === 'NO AAR' ? '#f43f5e' : '#64748b'); 
 
         let html = `<h3 style="font-size: 0.9rem; color: ${color}; margin-top: 16px; margin-bottom: 8px; border-bottom: 2px solid #f1f5f9; padding-bottom: 6px;">${status} (${items.length})</h3>`;
-        
+
         items.forEach((item, index) => {
             html += `
                 <div class="legend-item" style="padding: 12px 0; border-bottom: 1px solid #f8fafc; align-items: flex-start; animation-delay: ${index * 0.02}s;">
@@ -2115,4 +2115,585 @@ function processVolunteersData(data) {
         let indOrgKey = keys.find(k => k.trim().toUpperCase() === 'ORGANIZATION') || keys[3];
         let indGenderKey = keys.find(k => k.trim().toUpperCase() === 'GENDER') || keys[4];
 
-        let indOrg = row[indOrgKey] ? String(row[indOrgSorry, something went wrong. Please try your request again.
+        let indOrg = row[indOrgKey] ? String(row[indOrgKey]).trim() : '';
+        let indGender = row[indGenderKey] ? String(row[indGenderKey]).trim() : '';
+
+        if (indOrg && indGender) {
+            let search = indOrg.toUpperCase();
+
+            let matchedOrgObj = orgList.find(o => o.name.toUpperCase() === search);
+            if (!matchedOrgObj) {
+                matchedOrgObj = orgList.find(o => o.name.toUpperCase().includes(search) || search.includes(o.name.toUpperCase()));
+            }
+
+            if (matchedOrgObj) {
+                let finalOrgName = matchedOrgObj.name;
+                let genderUpper = indGender.toUpperCase();
+                if(genderUpper.includes('MALE') && !genderUpper.includes('FEMALE')) {
+                    globalOrgGenderMap[finalOrgName].Male++;
+                } else if(genderUpper.includes('FEMALE')) {
+                    globalOrgGenderMap[finalOrgName].Female++;
+                }
+                globalOrgGenderMap[finalOrgName].TallyTotal++;
+            }
+        }
+    });
+
+    orgList.forEach((org, index) => {
+        let tr = document.createElement('tr');
+        tr.style.animationDelay = `${index * 0.03}s`;
+
+        let tdName = document.createElement('td');
+        tdName.innerHTML = `
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span style="color:#94a3b8; font-weight:800; font-size:0.6rem;">${index + 1}</span>
+                <span>${org.name}</span>
+            </div>
+        `;
+
+        let tdCount = document.createElement('td');
+        let percentage = (org.count / maxCount) * 100;
+        tdCount.innerHTML = `
+            <div style="display:flex; align-items:center; gap:12px; width:100%;">
+                <span style="width: 30px; font-weight:800;">${org.count.toLocaleString()}</span>
+                <div style="flex:1; height:6px; background:#f1f5f9; border-radius:3px; overflow:hidden;">
+                    <div style="height:100%; width:${percentage}%; background:linear-gradient(90deg, #06b6d4, #2563eb); border-radius:3px; transition: width 1s ease-in-out;"></div>
+                </div>
+            </div>
+        `; 
+
+        tr.appendChild(tdName);
+        tr.appendChild(tdCount);
+        tbody.appendChild(tr);
+    });
+
+    document.getElementById('vol-orgs').innerText = totalOrgs.toLocaleString(); 
+    const orgMembersEl = document.getElementById('vol-org-members');
+    if (orgMembersEl) orgMembersEl.innerText = totalIndividualsInOrgs.toLocaleString();
+    document.getElementById('vol-ind').innerText = standaloneIndividuals.toLocaleString();
+
+    const dropdownContainer = document.getElementById('orgGenderDropdown');
+    let selectedText = document.getElementById('orgGenderSelectedText');
+    const optionsContainer = document.getElementById('orgGenderOptions');
+
+    if (dropdownContainer && optionsContainer) {
+        optionsContainer.innerHTML = '';
+
+        const selectedBox = document.getElementById('orgGenderSelected');
+        let newBox = selectedBox.cloneNode(true);
+        selectedBox.parentNode.replaceChild(newBox, selectedBox);
+
+        selectedText = document.getElementById('orgGenderSelectedText');
+
+        if (orgList.length > 0) {
+            orgList.forEach((org, idx) => {
+                let opt = document.createElement('div');
+                opt.className = 'custom-dropdown-option';
+                if(idx === 0) opt.classList.add('selected');
+                opt.innerText = org.name;
+                opt.onclick = function() {
+                    Array.from(optionsContainer.children).forEach(c => c.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedText.innerText = org.name; 
+                    dropdownContainer.classList.remove('active');
+                    renderPictogram(org.name);
+                };
+                optionsContainer.appendChild(opt);
+            });
+
+            selectedText.innerText = orgList[0].name;
+            renderPictogram(orgList[0].name);
+        } else {
+            optionsContainer.innerHTML = '<div class="custom-dropdown-option">No Data</div>';
+            selectedText.innerText = "No Data";
+            renderPictogram('');
+        }
+
+        newBox.addEventListener('click', function(e) {
+            e.stopPropagation();
+            dropdownContainer.classList.toggle('active');
+        });
+    }
+}
+
+function renderPictogram(orgName) {
+    const container = document.getElementById('pictogramContainer');
+    if(!container) return;
+
+    let data = globalOrgGenderMap[orgName];
+    if (!data || data.OfficialTotal === 0) {
+        container.innerHTML = `<div style="text-align:center; padding: 40px; color:#94a3b8; font-weight:600;">No data available for this organization.</div>`;
+        return;
+    }
+
+    let displayMale = 0;
+    let displayFemale = 0;
+    let pctMale = 0;
+    let pctFemale = 0;
+
+    if (data.TallyTotal > 0) {
+        let ratioMale = data.Male / data.TallyTotal;
+        displayMale = Math.round(data.OfficialTotal * ratioMale);
+        displayFemale = data.OfficialTotal - displayMale;
+
+        pctMale = Math.round(ratioMale * 100);
+        pctFemale = 100 - pctMale;
+    } else {
+        container.innerHTML = `
+            <div style="text-align:center; padding: 40px; color:#94a3b8;">
+                <div style="font-size: 2rem; font-weight: 800; color: #1e293b;">${data.OfficialTotal}</div>
+                <div style="font-weight:600; text-transform: uppercase; font-size: 0.7rem; margin-top: 5px;">Total Volunteers</div>
+                <div style="font-size: 0.65rem; margin-top: 10px;">Gender breakdown not specified in individual records.</div>
+            </div>
+        `;
+        return;
+    }
+
+    let maleIcon = `<svg viewBox="0 0 320 512" width="14" height="14" fill="currentColor" style="margin:2px;"><path d="M112 48a48 48 0 1 1 96 0 48 48 0 1 1 -96 0zm40 304V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V256.9L59.4 304.5c-9.1 15.1-28.8 20-43.9 10.9s-20-28.8-10.9-43.9l58.3-97c17.4-28.9 48.6-46.6 82.3-46.6h29.7c33.7 0 64.9 17.7 82.3 46.6l58.3 97c9.1 15.1 4.2 34.8-10.9 43.9s-34.8 4.2-43.9-10.9L232 256.9V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V352H152z"/></svg>`;
+    let femaleIcon = `<svg viewBox="0 0 320 512" width="14" height="14" fill="currentColor" style="margin:2px;"><path d="M160 48a48 48 0 1 1 0 96 48 48 0 1 1 0-96zM74.5 289.1c-7.6 13-24.5 17.3-37.5 9.8s-17.3-24.5-9.8-37.5L65.6 195C82.8 165.6 114 148 148.1 148h23.8c34.1 0 65.3 17.6 82.5 47l38.4 66.5c7.6 13 3.2 29.9-9.8 37.5s-29.9 3.2-37.5-9.8L207.2 222V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V352H176v128c0 17.7-14.3 32-32 32s-32-14.3-32-32V222L74.5 289.1z"/></svg>`;
+
+    let maleIconsHtml = '';
+    let renderMaleCount = displayMale > 300 ? 300 : displayMale;
+    let renderFemaleCount = displayFemale > 300 ? 300 : displayFemale;
+    let noteHtml = (displayMale > 300 || displayFemale > 300) ? `<div style="font-size: 0.6rem; color: #94a3b8; text-align: center; margin-top: 10px;">*Icons capped at 300 for browser performance.</div>` : '';
+
+    for(let i=0; i<renderMaleCount; i++) maleIconsHtml += maleIcon;
+    let femaleIconsHtml = '';
+    for(let i=0; i<renderFemaleCount; i++) femaleIconsHtml += femaleIcon;
+
+    container.innerHTML = `
+        <div style="display:flex; justify-content:space-between; margin-bottom: 16px;">
+            <div style="background:#eff6ff; border: 1px solid #bfdbfe; border-radius:8px; padding:10px 16px; flex:1; margin-right:8px; display:flex; flex-direction:column; align-items:center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <span style="font-size:0.6rem; font-weight:800; color:#3b82f6; text-transform:uppercase; letter-spacing: 0.5px;">Male</span>
+                <span style="font-size:1.4rem; font-weight:800; color:#1e40af; margin-top:2px;">${displayMale}</span>
+                <span style="font-size:0.65rem; font-weight:700; color:#60a5fa; margin-top:2px;">${pctMale}%</span>
+            </div>
+            <div style="background:#fff1f2; border: 1px solid #fecdd3; border-radius:8px; padding:10px 16px; flex:1; margin-left:8px; display:flex; flex-direction:column; align-items:center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <span style="font-size:0.6rem; font-weight:800; color:#f43f5e; text-transform:uppercase; letter-spacing: 0.5px;">Female</span>
+                <span style="font-size:1.4rem; font-weight:800; color:#9f1239; margin-top:2px;">${displayFemale}</span>
+                <span style="font-size:0.65rem; font-weight:700; color:#fb7185; margin-top:2px;">${pctFemale}%</span>
+            </div>
+        </div>
+        
+        <div style="display:flex; flex-direction:column; gap:16px;">
+            ${displayMale > 0 ? `
+            <div>
+                <div style="font-size:0.65rem; font-weight:800; color:#3b82f6; margin-bottom:4px; text-transform:uppercase;">Male Volunteers</div>
+                <div style="color:#60a5fa; display:flex; flex-wrap:wrap;">
+                    ${maleIconsHtml}
+                </div>
+            </div>` : ''}
+            
+            ${displayFemale > 0 ? `
+            <div>
+                <div style="font-size:0.65rem; font-weight:800; color:#f43f5e; margin-bottom:4px; text-transform:uppercase;">Female Volunteers</div>
+                <div style="color:#fb7185; display:flex; flex-wrap:wrap;">
+                    ${femaleIconsHtml}
+                </div>
+            </div>` : ''}
+        </div>
+        ${noteHtml}
+    `;
+}
+
+// ==========================================
+// MAP MODAL LOGIC
+// ==========================================
+window.openMapModal = function(url, title) {
+    const modal = document.getElementById('mapModal'); const titleEl = document.getElementById('mapModalTitle'); const bodyEl = document.getElementById('mapModalBody');
+    if(titleEl) titleEl.innerText = title;
+    if(bodyEl) bodyEl.innerHTML = `<iframe src="${url}" allowfullscreen></iframe>`;
+    if(modal) modal.classList.add('active');
+}
+
+window.closeMapModal = function() {
+    const modal = document.getElementById('mapModal'); const bodyEl = document.getElementById('mapModalBody');
+    if(modal) modal.classList.remove('active');
+    setTimeout(() => { if(bodyEl) bodyEl.innerHTML = ''; }, 300);
+}
+
+const mapModalEl = document.getElementById('mapModal');
+if(mapModalEl) { mapModalEl.addEventListener('click', function(e) { if(e.target === this) closeMapModal(); }); }
+
+// ==========================================
+// DOCUMENT DETAILS MODAL LOGIC (LEVEL 3 POPUP)
+// ==========================================
+window.openDocDetailsModal = function(officeName) {
+    const modal = document.getElementById('docDetailsModal');
+    const titleEl = document.getElementById('docDetailsModalTitle');
+    const listEl = document.getElementById('modal-doc-details-list');
+    if(!modal || !titleEl || !listEl) return;
+
+    titleEl.innerHTML = `${officeName.toUpperCase()} <span style="color: #64748b; font-size: 0.7rem; font-weight: 600;">(${currentPieState.level2Target})</span>`;
+    listEl.innerHTML = '';
+
+    let filteredDocs = globalDocRecords.filter(record => {
+        let match = record.level1 === currentPieState.level1Target && 
+                    record.level2 === currentPieState.level2Target && 
+                    record.level3 === officeName;
+
+        if (currentPieState.filterKey !== 'all') {
+            match = match && record.dateKey === currentPieState.filterKey;
+        }
+        return match;
+    });
+
+    filteredDocs.sort((a, b) => b.dateObj - a.dateObj);
+
+    if(filteredDocs.length === 0) {
+        listEl.innerHTML = `<div style="color: #94a3b8; font-size: 0.9rem; padding: 20px; text-align:center;">No Details Available</div>`;
+    } else {
+        let html = '';
+        filteredDocs.forEach((doc, idx) => {
+            let formattedDate = doc.dateObj ? doc.dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : doc.displayDate;
+
+            html += `
+                <div class="legend-item" style="padding: 12px 0; border-bottom: 1px solid #f8fafc; align-items: flex-start; animation-delay: ${idx * 0.02}s;">
+                    <div class="legend-text" style="font-size: 0.8rem; white-space: normal; line-height: 1.4;">
+                        <span style="font-size: 0.7rem; color: #3b82f6; font-weight: 800; display: block; margin-bottom: 4px; letter-spacing: 0.5px;">${formattedDate}</span>
+                        <span style="font-weight: 600; color: #1e293b;">${doc.particulars}</span>
+                    </div>
+                </div>
+            `;
+        });
+        listEl.innerHTML = html;
+    }
+
+    modal.classList.add('active');
+}
+
+// ==========================================
+// FIREBASE AUTHENTICATION & CHAT LOGIC
+// ==========================================
+const firebaseConfig = {
+    apiKey: "AIzaSyDSCB9jQIzyn9WxGZ58sLkyJPHCj5oeEKQ", 
+    authDomain: "pdrrmo-dashboard.firebaseapp.com",
+    databaseURL: "https://pdrrmo-dashboard-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "pdrrmo-dashboard",
+    storageBucket: "pdrrmo-dashboard.firebasestorage.app",
+    messagingSenderId: "555106842078",
+    appId: "1:555106842078:web:38f0275bc89499669ad94f"
+};
+
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const auth = firebase.auth();
+const db = firebase.database();
+const storage = firebase.storage();
+
+let currentChatAlias = "";
+
+auth.onAuthStateChanged(user => {
+    const loginOverlay = document.getElementById('login-overlay');
+    const loader = document.getElementById('global-loader');
+    const chatWidget = document.getElementById('chatWidget');
+
+    if (user) {
+        if(loginOverlay) loginOverlay.style.display = 'none';
+        if(loader) { loader.style.display = 'flex'; loader.style.visibility = 'visible'; loader.style.opacity = '1'; }
+
+        db.ref('users/' + user.uid).once('value').then(snapshot => {
+            if (snapshot.exists() && snapshot.val().nickname) {
+                currentChatAlias = snapshot.val().nickname;
+                if(chatWidget) chatWidget.style.display = 'flex';
+                initChat(); 
+                loadAllData();
+            } else {
+                if(loader) loader.style.display = 'none';
+                const nickModal = document.getElementById('nicknameModal');
+                nickModal.style.display = 'flex';
+                nickModal.classList.add('active');
+            }
+        });
+    } else {
+        if(loginOverlay) loginOverlay.style.display = 'flex';
+        if(loader) loader.style.display = 'none';
+        if(chatWidget) chatWidget.style.display = 'none';
+    }
+});
+
+window.handleLogin = function() {
+    const email = document.getElementById('loginEmail').value;
+    const pass = document.getElementById('loginPassword').value;
+    const errorEl = document.getElementById('loginError');
+    const btn = document.getElementById('loginBtn');
+
+    if(!email || !pass) { if(errorEl) errorEl.innerText = "Please enter both email and password."; return; }
+
+    if(btn) btn.innerText = "AUTHENTICATING...";
+    if(errorEl) errorEl.innerText = "";
+
+    auth.signInWithEmailAndPassword(email, pass)
+        .then(() => { if(btn) btn.innerText = "SECURE LOGIN"; })
+        .catch(error => {
+            if(btn) btn.innerText = "SECURE LOGIN";
+            if(errorEl) errorEl.innerText = "Invalid credentials. Please try again.";
+            console.error("Login failed:", error.message);
+        });
+}
+
+window.handleLogout = function() {
+    auth.signOut().then(() => { rawOperationsData = []; rawDocumentsData = []; rawTrainingsData = []; location.reload(); });
+}
+
+// ==========================================
+// CHATBOX & SNIPPING TOOL LOGIC
+// CHATBOX & SNIPPING TOOL LOGIC (IMAGE AVATAR VERSION)
+// ==========================================
+let selectedAvatarEmoji = '🦁'; // Default fallback
+
+let selectedAvatarFile = 'avatar1.png'; // Default fallback
+let currentChatAvatar = ''; // Store it globally for the active user
+
+// Handles the visual selection in the grid
+window.selectAvatar = function(element, emoji) {
+window.selectAvatar = function(element, fileName) {
+    document.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
+    element.classList.add('selected');
+    selectedAvatarEmoji = emoji;
+    selectedAvatarFile = fileName;
+}
+
+// 1. UPDATE THE PROFILE SAVE LOGIC
+window.saveNickname = function() {
+    const input = document.getElementById('nicknameInput').value.trim();
+    const errorEl = document.getElementById('nicknameError');
+    const btn = document.getElementById('nicknameBtn');
+
+    if(input.length < 2) { errorEl.innerText = "Name must be at least 2 characters."; return; }
+    if(input.length > 20) { errorEl.innerText = "Keep it under 20 characters."; return; }
+
+    btn.innerText = "SAVING...";
+    const user = auth.currentUser;
+
+    // Combines the chosen avatar and the typed text into one string separated by a space (e.g., "🦁 Maverick")
+    const finalAlias = `${selectedAvatarEmoji} ${input}`;
+    // Save BOTH the text name and the image filename separately to Firebase
+    db.ref('users/' + user.uid).set({ 
+        nickname: input,
+        avatarFile: selectedAvatarFile 
+    }).then(() => {
+        document.getElementById('nicknameModal').style.display = 'none';
+        currentChatAlias = input;
+        currentChatAvatar = selectedAvatarFile;
+        document.getElementById('chatWidget').style.display = 'flex';
+        
+        const loader = document.getElementById('global-loader');
+        if(loader) { loader.style.display = 'flex'; loader.style.visibility = 'visible'; loader.style.opacity = '1'; }
+        initChat();
+        loadAllData();
+    }).catch(err => {
+        btn.innerText = "SAVE PROFILE";
+        errorEl.innerText = "Error saving profile.";
+    });
+}
+
+// 2. UPDATE THE AUTH CHECK TO LOAD THE IMAGE
+auth.onAuthStateChanged(user => {
+    const loginOverlay = document.getElementById('login-overlay');
+    const loader = document.getElementById('global-loader');
+    const chatWidget = document.getElementById('chatWidget');
+
+    db.ref('users/' + user.uid).set({ nickname: finalAlias })
+        .then(() => {
+            document.getElementById('nicknameModal').style.display = 'none';
+            currentChatAlias = finalAlias;
+            document.getElementById('chatWidget').style.display = 'flex';
+            
+            const loader = document.getElementById('global-loader');
+            if(loader) { loader.style.display = 'flex'; loader.style.visibility = 'visible'; loader.style.opacity = '1'; }
+            initChat();
+            loadAllData();
+        }).catch(err => {
+            btn.innerText = "SAVE PROFILE";
+            errorEl.innerText = "Error saving profile.";
+    if (user) {
+        if(loginOverlay) loginOverlay.style.display = 'none';
+        if(loader) { loader.style.display = 'flex'; loader.style.visibility = 'visible'; loader.style.opacity = '1'; }
+        
+        db.ref('users/' + user.uid).once('value').then(snapshot => {
+            if (snapshot.exists() && snapshot.val().nickname) {
+                currentChatAlias = snapshot.val().nickname;
+                // Grab their saved image file
+                currentChatAvatar = snapshot.val().avatarFile || 'avatar1.png'; 
+                
+                if(chatWidget) chatWidget.style.display = 'flex';
+                initChat(); 
+                loadAllData();
+            } else {
+                if(loader) loader.style.display = 'none';
+                const nickModal = document.getElementById('nicknameModal');
+                nickModal.style.display = 'flex';
+                nickModal.classList.add('active');
+            }
+        });
+}
+    } else {
+        if(loginOverlay) loginOverlay.style.display = 'flex';
+        if(loader) loader.style.display = 'none';
+        if(chatWidget) chatWidget.style.display = 'none';
+    }
+});
+
+
+window.toggleChat = function() {
+    const panel = document.getElementById('chatPanel');
+    if(panel) panel.classList.toggle('active');
+}
+
+// 3. UPDATE THE MESSAGE SENDER TO ATTACH THE IMAGE
+window.sendChatMessage = function() {
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if(!text) return;
+    
+    input.value = '';
+    
+    db.ref('chat').push({
+        uid: auth.currentUser.uid,
+        alias: currentChatAlias,
+        avatarFile: currentChatAvatar, // Attach the image to the message!
+        text: text,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+}
+
+// 4. UPDATE THE UI EXTRACTOR TO RENDER AN IMAGE TAG
+function initChat() {
+    const chatBody = document.getElementById('chatBody');
+    chatBody.innerHTML = ''; // KILL SWITCH 1: Clear the board so old messages don't duplicate visually
+    chatBody.innerHTML = ''; 
+
+    const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000); 
+
+    db.ref('chat').orderByChild('timestamp').endAt(thirtyDaysAgo).once('value', snapshot => {
+        snapshot.forEach(childSnapshot => {
+            if(childSnapshot.val().imageUrl) {
+                storage.refFromURL(childSnapshot.val().imageUrl).delete().catch(()=>console.log('Orphaned image.'));
+            }
+            childSnapshot.ref.remove();
+        });
+    });
+
+    db.ref('chat').off('child_added'); // KILL SWITCH 2: Destroy old ghost listeners before making a new one
+    db.ref('chat').off('child_added'); 
+
+    db.ref('chat').on('child_added', snapshot => {
+        const msg = snapshot.val();
+        const isMine = msg.uid === auth.currentUser.uid;
+
+        const timeStr = new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        const dateStr = new Date(msg.timestamp).toLocaleDateString([], {month: 'short', day: 'numeric'});
+
+        let contentHtml = '';
+        if(msg.text) contentHtml += `<div>${msg.text}</div>`;
+        if(msg.imageUrl) contentHtml += `<img src="${msg.imageUrl}" onclick="window.open('${msg.imageUrl}', '_blank')">`;
+
+        // AVATAR EXTRACTION FIX: Safely split the emoji from the text
+        const parts = msg.alias.split(' ');
+        const avatarEmoji = parts[0] || '👤'; // Puts ONLY the emoji in the circle
+        const justTheName = parts.slice(1).join(' ') || msg.alias; // Keeps the name above the bubble clean
+        const senderName = isMine ? `You - ${justTheName}` : justTheName;
+        // Render an actual image tag using the saved file name
+        let avatarHtml = `<img src="${msg.avatarFile || 'avatar1.png'}" alt="User">`;
+        
+        // Since alias is pure text now, we don't need to split it
+        const senderName = isMine ? `You - ${msg.alias}` : msg.alias;
+
+        const rowDiv = document.createElement('div');
+        rowDiv.className = `chat-message-row ${isMine ? 'row-mine' : 'row-others'}`;
+
+        rowDiv.innerHTML = `
+            <div class="chat-avatar">${avatarEmoji}</div>
+            <div class="chat-avatar">${avatarHtml}</div>
+            <div class="chat-message ${isMine ? 'msg-mine' : 'msg-others'}">
+                <span class="msg-sender">${senderName}</span>
+                <div class="msg-bubble">${contentHtml}</div>
+                <span class="msg-timestamp">${dateStr} • ${timeStr}</span>
+            </div>
+        `;
+
+        chatBody.appendChild(rowDiv);
+        chatBody.scrollTop = chatBody.scrollHeight;
+    });
+
+    const chatInput = document.getElementById('chatInput');
+    // Ensure we don't attach multiple paste listeners
+    chatInput.replaceWith(chatInput.cloneNode(true));
+    const newChatInput = document.getElementById('chatInput');
+
+    newChatInput.addEventListener('paste', function(e) {
+        let items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (let index in items) {
+            let item = items[index];
+            if (item.kind === 'file' && item.type.includes('image/')) {
+                let blob = item.getAsFile();
+                uploadSnipAndSend(blob);
+                e.preventDefault(); 
+            }
+        }
+    });
+}
+
+window.sendChatMessage = function() {
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if(!text) return;
+    
+    input.value = '';
+    
+    db.ref('chat').push({
+        uid: auth.currentUser.uid,
+        alias: currentChatAlias,
+        text: text,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+}
+
+function uploadSnipAndSend(imageFile) {
+    const chatBody = document.getElementById('chatBody');
+    const input = document.getElementById('chatInput');
+    let text = input.value.trim();
+    input.value = '';
+
+    const tempId = 'loading-' + Date.now();
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = tempId;
+    loadingDiv.className = 'upload-msg';
+    loadingDiv.innerText = 'Uploading snip...';
+    chatBody.appendChild(loadingDiv);
+    chatBody.scrollTop = chatBody.scrollHeight;
+
+    const fileRef = storage.ref('snips/' + Date.now() + '.png');
+
+    fileRef.put(imageFile).then(snapshot => {
+        return snapshot.ref.getDownloadURL();
+    }).then(downloadURL => {
+        document.getElementById(tempId).remove();
+        db.ref('chat').push({
+            uid: auth.currentUser.uid,
+            alias: currentChatAlias,
+            avatarFile: currentChatAvatar, // Attach image to snipping tool sends too
+            text: text, 
+            imageUrl: downloadURL,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
+    }).catch(error => {
+        document.getElementById(tempId).innerText = "Upload failed.";
+        setTimeout(() => document.getElementById(tempId).remove(), 3000);
+        console.error(error);
+    });
+}
+
+window.toggleEmojiPicker = function() {
+    const picker = document.getElementById('emojiPicker');
+    if(picker) picker.classList.toggle('active');
+}
+
+window.addEmoji = function(emoji) {
+    const input = document.getElementById('chatInput');
+    input.value += emoji;
+    input.focus();
+    document.getElementById('emojiPicker').classList.remove('active');
+}
