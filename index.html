@@ -1110,14 +1110,13 @@
             </svg>
         </div>
     
-    <!-- SUGGESTIONS INBOX MODAL -->
-    <div id="inboxModal" class="modal-overlay">
+  <!-- SUGGESTIONS INBOX MODAL -->
+    <div id="inboxModal" class="modal-overlay" style="pointer-events: auto !important;">
         <div class="modal-content" style="max-width: 800px; width: 95%; background: #ffffff;">
             <div class="modal-header">
                 <h2>Suggestions & Reports Inbox</h2>
                 <button onclick="closeSuggestionsInbox()" class="btn-close-modal">&times;</button>
             </div>
-            <!-- FIXED: Added bottom border-radius and changed background to blend seamlessly -->
             <div class="modal-body" style="min-height: 300px; max-height: 70vh; background: #ffffff; padding: 24px; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; overflow-y: auto;">
                 <div id="inboxList" style="display: flex; flex-direction: column; gap: 12px;">
                     <!-- JS injects the suggestion cards here -->
