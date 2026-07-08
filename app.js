@@ -2382,34 +2382,22 @@ const auth = firebase.auth();
 const db = firebase.database();
 const storage = firebase.storage();
 
-let currentChatAlias = "";
-
 auth.onAuthStateChanged(user => {
     const loginOverlay = document.getElementById('login-overlay');
     const loader = document.getElementById('global-loader');
-    const chatWidget = document.getElementById('chatWidget');
-
+    const sugWidget = document.getElementById('suggestionWidget');
+    
     if (user) {
         if(loginOverlay) loginOverlay.style.display = 'none';
         if(loader) { loader.style.display = 'flex'; loader.style.visibility = 'visible'; loader.style.opacity = '1'; }
-
-        db.ref('users/' + user.uid).once('value').then(snapshot => {
-            if (snapshot.exists() && snapshot.val().nickname) {
-                currentChatAlias = snapshot.val().nickname;
-                if(chatWidget) chatWidget.style.display = 'flex';
-                initChat(); 
-                loadAllData();
-            } else {
-                if(loader) loader.style.display = 'none';
-                const nickModal = document.getElementById('nicknameModal');
-                nickModal.style.display = 'flex';
-                nickModal.classList.add('active');
-            }
-        });
+        if(sugWidget) sugWidget.style.display = 'flex';
+        
+        loadAllData();
+        listenForSuggestions(); // Start listening for unread suggestions
     } else {
         if(loginOverlay) loginOverlay.style.display = 'flex';
         if(loader) loader.style.display = 'none';
-        if(chatWidget) chatWidget.style.display = 'none';
+        if(sugWidget) sugWidget.style.display = 'none';
     }
 });
 
@@ -2438,262 +2426,152 @@ window.handleLogout = function() {
 }
 
 // ==========================================
-// CHATBOX & SNIPPING TOOL LOGIC
-// CHATBOX & SNIPPING TOOL LOGIC (IMAGE AVATAR VERSION)
+// SUGGESTION BOX LOGIC
 // ==========================================
-let selectedAvatarEmoji = '🦁'; // Default fallback
+let currentSuggestionTopic = "";
+let pendingSuggestionImage = null;
 
-let selectedAvatarFile = 'avatar1.png'; // Default fallback
-let currentChatAvatar = ''; // Store it globally for the active user
-
-// Handles the visual selection in the grid
-window.selectAvatar = function(element, emoji) {
-window.selectAvatar = function(element, fileName) {
-    document.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
-    element.classList.add('selected');
-    selectedAvatarEmoji = emoji;
-    selectedAvatarFile = fileName;
-}
-
-// 1. UPDATE THE PROFILE SAVE LOGIC
-window.saveNickname = function() {
-    const input = document.getElementById('nicknameInput').value.trim();
-    const errorEl = document.getElementById('nicknameError');
-    const btn = document.getElementById('nicknameBtn');
-
-    if(input.length < 2) { errorEl.innerText = "Name must be at least 2 characters."; return; }
-    if(input.length > 20) { errorEl.innerText = "Keep it under 20 characters."; return; }
-
-    btn.innerText = "SAVING...";
-    const user = auth.currentUser;
-
-    // Combines the chosen avatar and the typed text into one string separated by a space (e.g., "🦁 Maverick")
-    const finalAlias = `${selectedAvatarEmoji} ${input}`;
-    // Save BOTH the text name and the image filename separately to Firebase
-    db.ref('users/' + user.uid).set({ 
-        nickname: input,
-        avatarFile: selectedAvatarFile 
-    }).then(() => {
-        document.getElementById('nicknameModal').style.display = 'none';
-        currentChatAlias = input;
-        currentChatAvatar = selectedAvatarFile;
-        document.getElementById('chatWidget').style.display = 'flex';
-        
-        const loader = document.getElementById('global-loader');
-        if(loader) { loader.style.display = 'flex'; loader.style.visibility = 'visible'; loader.style.opacity = '1'; }
-        initChat();
-        loadAllData();
-    }).catch(err => {
-        btn.innerText = "SAVE PROFILE";
-        errorEl.innerText = "Error saving profile.";
-    });
-}
-
-// 2. UPDATE THE AUTH CHECK TO LOAD THE IMAGE
-auth.onAuthStateChanged(user => {
-    const loginOverlay = document.getElementById('login-overlay');
-    const loader = document.getElementById('global-loader');
-    const chatWidget = document.getElementById('chatWidget');
-
-    db.ref('users/' + user.uid).set({ nickname: finalAlias })
-        .then(() => {
-            document.getElementById('nicknameModal').style.display = 'none';
-            currentChatAlias = finalAlias;
-            document.getElementById('chatWidget').style.display = 'flex';
-            
-            const loader = document.getElementById('global-loader');
-            if(loader) { loader.style.display = 'flex'; loader.style.visibility = 'visible'; loader.style.opacity = '1'; }
-            initChat();
-            loadAllData();
-        }).catch(err => {
-            btn.innerText = "SAVE PROFILE";
-            errorEl.innerText = "Error saving profile.";
-    if (user) {
-        if(loginOverlay) loginOverlay.style.display = 'none';
-        if(loader) { loader.style.display = 'flex'; loader.style.visibility = 'visible'; loader.style.opacity = '1'; }
-        
-        db.ref('users/' + user.uid).once('value').then(snapshot => {
-            if (snapshot.exists() && snapshot.val().nickname) {
-                currentChatAlias = snapshot.val().nickname;
-                // Grab their saved image file
-                currentChatAvatar = snapshot.val().avatarFile || 'avatar1.png'; 
-                
-                if(chatWidget) chatWidget.style.display = 'flex';
-                initChat(); 
-                loadAllData();
-            } else {
-                if(loader) loader.style.display = 'none';
-                const nickModal = document.getElementById('nicknameModal');
-                nickModal.style.display = 'flex';
-                nickModal.classList.add('active');
-            }
-        });
-}
-    } else {
-        if(loginOverlay) loginOverlay.style.display = 'flex';
-        if(loader) loader.style.display = 'none';
-        if(chatWidget) chatWidget.style.display = 'none';
-    }
-});
-
-
-window.toggleChat = function() {
-    const panel = document.getElementById('chatPanel');
+window.toggleSuggestionBox = function() {
+    const panel = document.getElementById('suggestionPanel');
     if(panel) panel.classList.toggle('active');
 }
 
-// 3. UPDATE THE MESSAGE SENDER TO ATTACH THE IMAGE
-window.sendChatMessage = function() {
-    const input = document.getElementById('chatInput');
-    const text = input.value.trim();
-    if(!text) return;
+window.selectSuggestionTopic = function(element, topicName) {
+    document.querySelectorAll('.sug-topic').forEach(el => el.classList.remove('selected'));
+    element.classList.add('selected');
     
-    input.value = '';
+    currentSuggestionTopic = topicName;
+    document.getElementById('activeTopicLabel').innerText = `Selected: ${topicName}`;
     
-    db.ref('chat').push({
-        uid: auth.currentUser.uid,
-        alias: currentChatAlias,
-        avatarFile: currentChatAvatar, // Attach the image to the message!
-        text: text,
-        timestamp: firebase.database.ServerValue.TIMESTAMP
-    });
+    const input = document.getElementById('suggestionInput');
+    const btn = document.getElementById('sugSendBtn');
+    input.disabled = false;
+    btn.disabled = false;
+    input.focus();
 }
 
-// 4. UPDATE THE UI EXTRACTOR TO RENDER AN IMAGE TAG
-function initChat() {
-    const chatBody = document.getElementById('chatBody');
-    chatBody.innerHTML = ''; // KILL SWITCH 1: Clear the board so old messages don't duplicate visually
-    chatBody.innerHTML = ''; 
+window.handleSugImageSelect = function(event) {
+    const file = event.target.files[0];
+    if(!file) return;
+    pendingSuggestionImage = file;
+    
+    const preview = document.getElementById('sugAttachmentPreview');
+    preview.style.display = 'flex';
+    preview.innerHTML = `
+        <img src="${URL.createObjectURL(file)}" alt="Preview">
+        <span>Image attached ready for sending.</span>
+        <button class="btn-remove-attach" onclick="removeSugImage()">&times;</button>
+    `;
+}
 
-    const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000); 
+window.removeSugImage = function() {
+    pendingSuggestionImage = null;
+    document.getElementById('sugImageUpload').value = '';
+    const preview = document.getElementById('sugAttachmentPreview');
+    preview.style.display = 'none';
+    preview.innerHTML = '';
+}
 
-    db.ref('chat').orderByChild('timestamp').endAt(thirtyDaysAgo).once('value', snapshot => {
-        snapshot.forEach(childSnapshot => {
-            if(childSnapshot.val().imageUrl) {
-                storage.refFromURL(childSnapshot.val().imageUrl).delete().catch(()=>console.log('Orphaned image.'));
-            }
-            childSnapshot.ref.remove();
+window.sendSuggestion = function() {
+    if(!currentSuggestionTopic) return;
+    
+    const input = document.getElementById('suggestionInput');
+    const text = input.value.trim();
+    
+    if(!text && !pendingSuggestionImage) return;
+
+    const btn = document.getElementById('sugSendBtn');
+    btn.disabled = true;
+    input.disabled = true;
+    
+    const sendData = (imageUrl = null) => {
+        db.ref('suggestions').push({
+            uid: auth.currentUser.uid,
+            email: auth.currentUser.email,
+            topic: currentSuggestionTopic,
+            text: text,
+            imageUrl: imageUrl,
+            timestamp: firebase.database.ServerValue.TIMESTAMP,
+            read: false // Controls the notification badge
+        }).then(() => {
+            input.value = '';
+            removeSugImage();
+            btn.disabled = false;
+            input.disabled = false;
+            toggleSuggestionBox();
+            
+            // Brief success feedback
+            document.getElementById('activeTopicLabel').innerText = "Feedback Sent Successfully! Select another topic to send more.";
+            document.querySelectorAll('.sug-topic').forEach(el => el.classList.remove('selected'));
+            currentSuggestionTopic = "";
+            input.disabled = true;
+            btn.disabled = true;
+            
+        }).catch(err => {
+            console.error("Error sending suggestion", err);
+            btn.disabled = false;
+            input.disabled = false;
         });
-    });
+    };
 
-    db.ref('chat').off('child_added'); // KILL SWITCH 2: Destroy old ghost listeners before making a new one
-    db.ref('chat').off('child_added'); 
+    if (pendingSuggestionImage) {
+        const fileRef = storage.ref('suggestions/' + Date.now() + '_' + pendingSuggestionImage.name);
+        fileRef.put(pendingSuggestionImage).then(snapshot => {
+            return snapshot.ref.getDownloadURL();
+        }).then(downloadURL => {
+            sendData(downloadURL);
+        }).catch(err => {
+            console.error("Image upload failed", err);
+            alert("Failed to upload image. Submitting text only.");
+            sendData(null);
+        });
+    } else {
+        sendData(null);
+    }
+}
 
-    db.ref('chat').on('child_added', snapshot => {
-        const msg = snapshot.val();
-        const isMine = msg.uid === auth.currentUser.uid;
+// Support Copy & Pasting images (Snipping Tool) directly into the suggestion input
+document.addEventListener("DOMContentLoaded", function() {
+    const sugInput = document.getElementById('suggestionInput');
+    if(sugInput) {
+        sugInput.addEventListener('paste', function(e) {
+            let items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (let index in items) {
+                let item = items[index];
+                if (item.kind === 'file' && item.type.includes('image/')) {
+                    let blob = item.getAsFile();
+                    let file = new File([blob], "pasted-snip.png", { type: blob.type });
+                    
+                    // Route to standard image handler
+                    handleSugImageSelect({ target: { files: [file] } });
+                    e.preventDefault(); 
+                }
+            }
+        });
+    }
+});
 
-        const timeStr = new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        const dateStr = new Date(msg.timestamp).toLocaleDateString([], {month: 'short', day: 'numeric'});
-
-        let contentHtml = '';
-        if(msg.text) contentHtml += `<div>${msg.text}</div>`;
-        if(msg.imageUrl) contentHtml += `<img src="${msg.imageUrl}" onclick="window.open('${msg.imageUrl}', '_blank')">`;
-
-        // AVATAR EXTRACTION FIX: Safely split the emoji from the text
-        const parts = msg.alias.split(' ');
-        const avatarEmoji = parts[0] || '👤'; // Puts ONLY the emoji in the circle
-        const justTheName = parts.slice(1).join(' ') || msg.alias; // Keeps the name above the bubble clean
-        const senderName = isMine ? `You - ${justTheName}` : justTheName;
-        // Render an actual image tag using the saved file name
-        let avatarHtml = `<img src="${msg.avatarFile || 'avatar1.png'}" alt="User">`;
+function listenForSuggestions() {
+    // Listens for unread suggestions to update the sidebar badge
+    db.ref('suggestions').orderByChild('read').equalTo(false).on('value', snapshot => {
+        let unreadCount = 0;
+        if(snapshot.exists()) {
+            unreadCount = Object.keys(snapshot.val()).length;
+        }
         
-        // Since alias is pure text now, we don't need to split it
-        const senderName = isMine ? `You - ${msg.alias}` : msg.alias;
-
-        const rowDiv = document.createElement('div');
-        rowDiv.className = `chat-message-row ${isMine ? 'row-mine' : 'row-others'}`;
-
-        rowDiv.innerHTML = `
-            <div class="chat-avatar">${avatarEmoji}</div>
-            <div class="chat-avatar">${avatarHtml}</div>
-            <div class="chat-message ${isMine ? 'msg-mine' : 'msg-others'}">
-                <span class="msg-sender">${senderName}</span>
-                <div class="msg-bubble">${contentHtml}</div>
-                <span class="msg-timestamp">${dateStr} • ${timeStr}</span>
-            </div>
-        `;
-
-        chatBody.appendChild(rowDiv);
-        chatBody.scrollTop = chatBody.scrollHeight;
-    });
-
-    const chatInput = document.getElementById('chatInput');
-    // Ensure we don't attach multiple paste listeners
-    chatInput.replaceWith(chatInput.cloneNode(true));
-    const newChatInput = document.getElementById('chatInput');
-
-    newChatInput.addEventListener('paste', function(e) {
-        let items = (e.clipboardData || e.originalEvent.clipboardData).items;
-        for (let index in items) {
-            let item = items[index];
-            if (item.kind === 'file' && item.type.includes('image/')) {
-                let blob = item.getAsFile();
-                uploadSnipAndSend(blob);
-                e.preventDefault(); 
+        const badge = document.getElementById('suggestionBadge');
+        if(badge) {
+            if(unreadCount > 0) {
+                badge.innerText = unreadCount;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
             }
         }
     });
 }
 
-window.sendChatMessage = function() {
-    const input = document.getElementById('chatInput');
-    const text = input.value.trim();
-    if(!text) return;
-    
-    input.value = '';
-    
-    db.ref('chat').push({
-        uid: auth.currentUser.uid,
-        alias: currentChatAlias,
-        text: text,
-        timestamp: firebase.database.ServerValue.TIMESTAMP
-    });
-}
-
-function uploadSnipAndSend(imageFile) {
-    const chatBody = document.getElementById('chatBody');
-    const input = document.getElementById('chatInput');
-    let text = input.value.trim();
-    input.value = '';
-
-    const tempId = 'loading-' + Date.now();
-    const loadingDiv = document.createElement('div');
-    loadingDiv.id = tempId;
-    loadingDiv.className = 'upload-msg';
-    loadingDiv.innerText = 'Uploading snip...';
-    chatBody.appendChild(loadingDiv);
-    chatBody.scrollTop = chatBody.scrollHeight;
-
-    const fileRef = storage.ref('snips/' + Date.now() + '.png');
-
-    fileRef.put(imageFile).then(snapshot => {
-        return snapshot.ref.getDownloadURL();
-    }).then(downloadURL => {
-        document.getElementById(tempId).remove();
-        db.ref('chat').push({
-            uid: auth.currentUser.uid,
-            alias: currentChatAlias,
-            avatarFile: currentChatAvatar, // Attach image to snipping tool sends too
-            text: text, 
-            imageUrl: downloadURL,
-            timestamp: firebase.database.ServerValue.TIMESTAMP
-        });
-    }).catch(error => {
-        document.getElementById(tempId).innerText = "Upload failed.";
-        setTimeout(() => document.getElementById(tempId).remove(), 3000);
-        console.error(error);
-    });
-}
-
-window.toggleEmojiPicker = function() {
-    const picker = document.getElementById('emojiPicker');
-    if(picker) picker.classList.toggle('active');
-}
-
-window.addEmoji = function(emoji) {
-    const input = document.getElementById('chatInput');
-    input.value += emoji;
-    input.focus();
-    document.getElementById('emojiPicker').classList.remove('active');
+// Placeholder for when you build the Admin view
+window.openSuggestionsInbox = function() {
+    alert("Suggestions Inbox: We can build this next! It will open a modal or new page showing all submitted feedback.");
 }
