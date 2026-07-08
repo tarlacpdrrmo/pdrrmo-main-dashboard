@@ -1401,10 +1401,18 @@ td {
     padding-left: 0;
     margin: 0 0 10px 24px; /* Indent under the parent */
     border-left: 2px solid rgba(148, 163, 184, 0.2);
+    max-height: 160px; /* Limits height so it doesn't push the menu down too far */
+    overflow-y: auto; /* Adds the vertical scrollbar */
 }
 .submenu-list.active {
     display: block;
 }
+/* Sleek custom scrollbar for the submenus */
+.submenu-list::-webkit-scrollbar { width: 4px; }
+.submenu-list::-webkit-scrollbar-track { background: transparent; }
+.submenu-list::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+.submenu-list::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
 .submenu-list li {
     padding: 8px 12px !important;
     font-size: 0.65rem !important;
@@ -1412,6 +1420,7 @@ td {
     margin-bottom: 2px !important;
     border-radius: 0 6px 6px 0 !important;
     transition: all 0.2s ease;
+    cursor: pointer;
 }
 .submenu-list li:hover {
     color: #ffffff !important;
