@@ -2668,3 +2668,13 @@ document.addEventListener("DOMContentLoaded", function() {
         }); 
     }
 });
+// ==========================================
+// SIDEBAR DROPDOWN LOGIC
+// ==========================================
+window.toggleSubmenu = function(submenuId, el) {
+    const submenu = document.getElementById(submenuId);
+    if(submenu) {
+        submenu.classList.toggle('active');
+        el.classList.toggle('open');
+    }
+}
