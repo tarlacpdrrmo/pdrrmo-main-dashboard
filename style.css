@@ -1295,13 +1295,15 @@ td {
 
 .suggestion-toggle-btn {
     width: 56px; height: 56px; border-radius: 50%;
-    background: linear-gradient(135deg, #f59e0b, #ea580c);
+    /* Sleek Professional Blue Gradient instead of Orange */
+    background: linear-gradient(135deg, #2563eb, #1e40af);
     color: white; display: flex; justify-content: center; align-items: center;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3); cursor: pointer; pointer-events: auto;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); cursor: pointer; pointer-events: auto;
     transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
 }
 .suggestion-toggle-btn:hover {
-    transform: scale(1.08) translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    transform: scale(1.08) translateY(-2px); 
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.5);
 }
 
 .suggestion-panel {
