@@ -2678,3 +2678,17 @@ window.toggleSubmenu = function(submenuId, el) {
         el.classList.toggle('open');
     }
 }
+// ==========================================
+// TOAST NOTIFICATION LOGIC
+// ==========================================
+window.showToast = function(message) {
+    const toast = document.getElementById("custom-toast");
+    if(!toast) return;
+    toast.innerHTML = message;
+    toast.classList.add("show");
+    
+    // Automatically hide after 3 seconds
+    setTimeout(function() { 
+        toast.classList.remove("show"); 
+    }, 3000);
+}
