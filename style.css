@@ -1399,10 +1399,11 @@ td {
     display: none;
     list-style: none;
     padding-left: 0;
-    margin: 0 0 10px 24px; /* Indent under the parent */
+    margin: 0 8px 10px 24px; /* Added 8px right margin to pull it away from the scrollbar */
     border-left: 2px solid rgba(148, 163, 184, 0.2);
-    max-height: 160px; /* Limits height so it doesn't push the menu down too far */
-    overflow-y: auto; /* Adds the vertical scrollbar */
+    max-height: 160px; 
+    overflow-y: auto; 
+    overflow-x: hidden; /* Safely hides any horizontal spill */
 }
 .submenu-list.active {
     display: block;
@@ -1414,6 +1415,10 @@ td {
 .submenu-list::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
 .submenu-list li {
+    display: block !important; /* MAGIC FIX 1: Stops the text from forcing a single line */
+    white-space: normal !important; /* MAGIC FIX 2: Allows long text to wrap to the next line */
+    word-wrap: break-word !important;
+    line-height: 1.4 !important;
     padding: 8px 12px !important;
     font-size: 0.65rem !important;
     color: #94a3b8 !important;
