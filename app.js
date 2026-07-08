@@ -2659,3 +2659,12 @@ function loadInboxData() {
         });
     });
 }
+// Close Inbox modal when clicking the dark overlay background
+document.addEventListener("DOMContentLoaded", function() {
+    const inboxModalEl = document.getElementById('inboxModal');
+    if(inboxModalEl) { 
+        inboxModalEl.addEventListener('click', function(e) { 
+            if(e.target === this) closeSuggestionsInbox(); 
+        }); 
+    }
+});
