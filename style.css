@@ -1505,3 +1505,13 @@ td {
     opacity: 1;
     bottom: 40px; /* Slides up smoothly */
 }
+/* --- OVERRIDE SUGGESTION BUTTON BACKGROUND --- */
+.suggestion-toggle-btn {
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.suggestion-toggle-btn:hover {
+    background: transparent !important;
+    transform: scale(1.1); /* Adds a nice little zoom effect when you hover instead of changing colors */
+}
