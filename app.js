@@ -174,6 +174,7 @@ let rawOperationsData = [];
 let rawDocumentsData = [];
 let rawVolunteersData = [];
 let rawTrainingsData = []; 
+let rawFiretruckData = [];
 
 // Global Chart & State Trackers
 let docPieChartInstance = null;
@@ -594,6 +595,11 @@ if (trainRes && trainRes.ok) {
 const trainData = await trainRes.json();
 if (!trainData.error) rawTrainingsData = trainData;
 }
+const fireRes = await fetch(`${webAppUrl}?type=firetruck`).catch(() => null);
+        if (fireRes && fireRes.ok) {
+            const fireData = await fireRes.json();
+            if (!fireData.error) rawFiretruckData = fireData;
+        }
 
 let yearsSet = new Set();
 
@@ -628,6 +634,7 @@ applyGlobalYearFilter(yearSelect ? yearSelect.value : 'all');
 if (rawVolunteersData.length > 0) processVolunteersData(rawVolunteersData);
 
 processTrainingsData(rawTrainingsData);
+if (rawFiretruckData.length > 0) processFiretruckData(rawFiretruckData);
 
 hideLoader();
 
@@ -2691,4 +2698,45 @@ window.showToast = function(message) {
     setTimeout(function() { 
         toast.classList.remove("show"); 
     }, 3000);
+}
+// ==========================================
+// FIRETRUCK TABULAR PROCESSING
+// ==========================================
+function processFiretruckData(data) {
+    const tbody = document.querySelector('#firetruckTable tbody');
+    if(!tbody) return;
+    tbody.innerHTML = ''; 
+
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#94a3b8; padding: 20px;">No dispatch records found.</td></tr>';
+        return;
+    }
+
+    data.forEach((row, index) => {
+        // Targets the specific columns from your Google Sheet
+        let dateStr = getRobustValue(row, ['DATE', 'Date'], ['Column B']);
+        let requestor = getRobustValue(row, ['REQUESTOR', 'Requestor'], ['Column I']);
+        let assistance = getRobustValue(row, ['ASSISTANCE PROVIDED', 'Assistance Provided'], ['Column J']);
+        let location = getRobustValue(row, ['LOCATION', 'Location'], ['Column K']);
+
+        // Only create a row if at least one of the main columns has data
+        if (requestor || assistance || location) {
+            let tr = document.createElement('tr');
+            tr.style.animationDelay = `${index * 0.02}s`; 
+            
+            // Format the date if it exists
+            let displayDate = dateStr ? String(dateStr).trim() : 'N/A';
+            if (displayDate.length > 10 && displayDate.includes('T')) {
+                displayDate = new Date(displayDate).toLocaleDateString();
+            }
+
+            tr.innerHTML = `
+                <td style="font-weight: 600; color: #3b82f6;">${displayDate}</td>
+                <td style="font-weight: 700; color: #1e293b;">${requestor || '-'}</td>
+                <td>${assistance || '-'}</td>
+                <td style="color: #64748b; font-size: 0.7rem;">${location || '-'}</td>
+            `;
+            tbody.appendChild(tr);
+        }
+    });
 }
