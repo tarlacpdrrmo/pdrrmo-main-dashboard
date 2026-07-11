@@ -10,14 +10,13 @@
             font-family: 'Inter', sans-serif; 
             margin: 0; 
             padding: 0; 
-            background-color: #f8fafc; /* Slightly softer background */
+            background-color: #f8fafc; 
             color: #1e293b; 
             height: 100vh; 
             display: flex;
             overflow: hidden; 
         }
         
-        /* Main Container */
         .dashboard-container {
             background: #ffffff;
             padding: 24px 32px;
@@ -27,11 +26,9 @@
             display: flex;
             flex-direction: column; 
             flex: 1;
-            /* Subtle inner shadow for depth */
             box-shadow: inset 0 4px 20px rgba(0,0,0,0.02);
         }
 
-        /* Header & Filters */
         .header-top {
             display: flex;
             justify-content: space-between;
@@ -55,6 +52,11 @@
             border-radius: 8px;
             width: 24px;
             height: 24px;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .header-title-wrapper:hover svg {
+            transform: rotate(15deg) scale(1.1);
         }
 
         .header-top h2 { 
@@ -66,7 +68,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* PREMIUM RECORD COUNT BADGE */
         .record-count {
             display: flex;
             align-items: center;
@@ -84,17 +85,17 @@
         }
         .record-count:hover {
             transform: translateY(-2px) scale(1.02);
-            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+            box-shadow: 0 8px 25px rgba(37, 99, 235, 0.4);
         }
+        
         #recordNum {
             font-size: 1.1rem;
             display: inline-block;
-            transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
         }
-        /* Pulse effect class for the number */
         .count-pop {
-            transform: scale(1.4);
-            color: #93c5fd;
+            transform: scale(1.5);
+            color: #bfdbfe;
         }
 
         .filter-panel {
@@ -137,23 +138,26 @@
             font-weight: 600;
             color: #1e293b;
             background-color: #f8fafc;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
             cursor: pointer;
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.01);
         }
         
+        /* Floating Dropdown Hover Effect */
         .filter-input:hover {
             border-color: #94a3b8;
             background-color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.05);
         }
 
         .filter-input:focus { 
             border-color: #3b82f6; 
             background-color: #ffffff;
             box-shadow: 0 0 0 3px rgba(59,130,246,0.15); 
+            transform: translateY(-2px);
         }
 
-        /* TACTILE BUTTONS */
         .btn-reset {
             background-color: #ffffff;
             color: #475569;
@@ -173,24 +177,27 @@
             align-items: center;
             gap: 6px;
         }
+        
         .btn-reset:hover {
             border-color: #94a3b8;
             color: #0f172a;
             transform: translateY(-2px);
             box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
+        
         .btn-reset:active {
             transform: translateY(1px) scale(0.96);
             box-shadow: 0 1px 2px rgba(0,0,0,0.02);
         }
+        
         .btn-reset svg {
             transition: transform 0.4s ease;
         }
+        
         .btn-reset:hover svg {
             transform: rotate(-180deg);
         }
 
-        /* Table Styles */
         .table-container { 
             width: 100%; 
             overflow: auto; 
@@ -199,6 +206,7 @@
             flex: 1; 
             min-height: 0; 
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            background: #ffffff;
         }
         table { 
             width: 100%; 
@@ -206,7 +214,7 @@
             text-align: left; 
         }
         th { 
-            background-color: #f8fafc; 
+            background-color: rgba(248, 250, 252, 0.95); 
             color: #475569; 
             font-size: 0.65rem; 
             font-weight: 800; 
@@ -217,8 +225,9 @@
             top: 0; 
             letter-spacing: 0.5px; 
             z-index: 10;
-            backdrop-filter: blur(8px); /* Modern blur effect */
+            backdrop-filter: blur(8px); 
         }
+        
         td { 
             padding: 16px 20px; 
             font-size: 0.75rem; 
@@ -226,17 +235,33 @@
             border-bottom: 1px solid #f1f5f9; 
             font-weight: 600;
             text-transform: uppercase;
-            transition: background-color 0.2s ease;
-        }
-        tr:hover td { 
-            background-color: #eff6ff; /* Soft blue highlight on hover */
-            color: #0f172a;
+            /* Smooth transition for the magnetic hover effect */
+            transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
         }
         
-        /* Modern Pill Badge for Assistance Provided */
+        tr {
+            transition: background-color 0.3s ease;
+        }
+
+        /* MAGNETIC ROW HOVER EFFECT */
+        tr:hover td { 
+            background-color: #eff6ff; 
+            color: #0f172a;
+            /* Slides the text slightly to the right */
+            transform: translateX(4px); 
+            border-bottom-color: transparent;
+        }
+        
+        /* Blue Accent Bar on Hover */
+        tr:hover td:first-child {
+            box-shadow: inset 4px 0 0 #2563eb;
+            color: #1d4ed8 !important;
+        }
+        
+        /* Reactive Pill Badge */
         .badge-pill {
             background: #f1f5f9; 
-            color: #334155; 
+            color: #475569; 
             padding: 6px 12px; 
             border-radius: 20px; 
             font-size: 0.65rem; 
@@ -244,12 +269,16 @@
             letter-spacing: 0.5px;
             display: inline-block;
             border: 1px solid #e2e8f0;
-            transition: all 0.2s ease;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
+        
+        /* Badge Lights up on Row Hover */
         tr:hover .badge-pill {
-            background: #ffffff;
-            border-color: #cbd5e1;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            background: #2563eb;
+            color: #ffffff;
+            border-color: #2563eb;
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(37,99,235,0.3);
         }
 
         .empty-state { 
@@ -271,14 +300,15 @@
             gap: 10px;
         }
         
-        /* STAGGERED ROW ANIMATIONS */
-        @keyframes fadeSlideUp {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
+        /* FIXED STAGGERED ROW ANIMATIONS */
+        @keyframes slideInUp {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
         }
+        
         .animate-row {
-            animation: fadeSlideUp 0.4s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
-            opacity: 0; 
+            /* 'both' ensures the row is completely invisible before its delay starts */
+            animation: slideInUp 0.5s cubic-bezier(0.165, 0.84, 0.44, 1) both;
         }
     </style>
 </head>
@@ -357,8 +387,7 @@
     </div>
 
     <script>
-        // *** PASTE YOUR WEB APP URL HERE ***
-        const WEB_APP_URL = "YOUR_NEW_WEB_APP_URL_HERE"; 
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyTNh96ex_BnTTjiBRXbxU52DixCKzecQ9qWvpjThTA3nxjjitfbra-vixyzE1rU8mx/exec"; 
         
         let rawTableData = [];
 
@@ -477,21 +506,24 @@
             renderTable(filteredData);
         }
 
-        // ANIMATED PULSE FUNCTION FOR NUMBER
         function updateCounter(number) {
             const numEl = document.getElementById('recordNum');
             numEl.innerText = number;
+            
+            // Remove the class instantly, force a reflow, then add it back to restart the animation
+            numEl.classList.remove('count-pop');
+            void numEl.offsetWidth; 
             numEl.classList.add('count-pop');
+            
             setTimeout(() => {
                 numEl.classList.remove('count-pop');
-            }, 300);
+            }, 400);
         }
 
         function renderTable(data) {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
             
-            // Trigger dynamic number pulse
             updateCounter(data.length);
 
             if (data.length === 0) {
@@ -518,13 +550,13 @@
                 if (controlNo === '-' && dateVal === '-' && requestor === '-') return;
 
                 const tr = document.createElement('tr');
-                // Apply Staggered Animation
+                // The 'both' property in the CSS ensures this works perfectly every time it's called
                 tr.className = 'animate-row';
-                tr.style.animationDelay = `${index * 0.02}s`; // Rows cascade in 0.02s apart
+                tr.style.animationDelay = `${index * 0.03}s`;
 
                 tr.innerHTML = `
                     <td style="font-weight: 800; color: #2563eb;">${controlNo}</td>
-                    <td style="color: #475569;">${dateVal}</td>
+                    <td style="color: #64748b;">${dateVal}</td>
                     <td style="font-weight: 700; color: #0f172a;">${requestor}</td>
                     <td><span class="badge-pill">${cleanAst}</span></td>
                     <td style="color: #475569;">${location}</td>
