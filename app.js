@@ -2704,28 +2704,28 @@ function triggerSendAnimation() {
     const startRect = sendBtn.getBoundingClientRect();
     const targetRect = targetBadge.parentElement.getBoundingClientRect();
 
-    // Adjusted for the new massive 64px size
     const startX = startRect.left + (startRect.width / 2) - 32;
     const startY = startRect.top + (startRect.height / 2) - 32;
     
-    // Land squarely on the sidebar
     const endX = targetRect.right - 50; 
     const endY = targetRect.top + (targetRect.height / 2) - 32;
 
     const plane = document.createElement('div');
     plane.className = 'flying-paper-plane';
+    
+    // Using the solid paper plane SVG
     plane.innerHTML = `<svg viewBox="0 0 512 512" fill="currentColor"><path d="M498.1 5.6c10.1 7 15.4 19.1 13.5 31.2l-64 416c-1.5 9.7-7.4 18.2-16 23s-18.9 5.4-28 1.6L284 427.7l-68.5 74.1c-8.9 9.7-22.9 12.9-35.2 8.1S160 493.2 160 480V396.4c0-4 1.5-7.8 4.2-10.7L331.8 202.8c5.8-6.3 5.6-16-.4-22s-15.7-6.4-22-.7L106 360.8 17.7 316.6C7.1 311.3 .3 300.7 0 288.9s5.9-22.8 16.1-28.7l448-256c10.7-6.1 23.9-5.5 34 1.4z"/></svg>`;
     
-    // 1. Start it HUGE (1.5x scale) and highly visible
-    plane.style.transform = `translate(${startX}px, ${startY}px) rotate(-15deg) scale(1.5)`;
+    // 1. Aim directly LEFT (West) at the sidebar by rotating -135 degrees
+    plane.style.transform = `translate(${startX}px, ${startY}px) rotate(-135deg) scale(1.5)`;
     plane.style.opacity = '1';
     document.body.appendChild(plane);
 
     // Force reflow
     void plane.offsetWidth;
 
-    // 2. Fly it slowly, shrink it to a normal size (0.6x), and don't make it fully invisible
-    plane.style.transform = `translate(${endX}px, ${endY}px) rotate(-45deg) scale(0.6)`;
+    // 2. Add a slight dive (-145deg) as it approaches the inbox
+    plane.style.transform = `translate(${endX}px, ${endY}px) rotate(-145deg) scale(0.6)`;
     plane.style.opacity = '0.4'; 
 
     // 3. Wait the full 1.5 seconds before hiding it and popping the badge
@@ -2737,7 +2737,7 @@ function triggerSendAnimation() {
         
         setTimeout(() => {
             targetBadge.classList.remove('catch-pop');
-        }, 400); // 400ms badge pop
+        }, 400); 
         
-    }, 1500); // Matches the new 1.5s CSS transition
+    }, 1500); 
 }
