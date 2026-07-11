@@ -1,7 +1,7 @@
 Chart.register(ChartDataLabels);
 
 // 1. YOUR SECURE GOOGLE APPS SCRIPT WEB APP URL
-const webAppUrl = "https://script.google.com/macros/s/AKfycbwYUt0YFQClUUXRGwrNdnC5INPXWzWyGUeN3J8E5tRKsO2ME-Y6zu5Fv0a56fCtxhwzTg/exec";
+const webAppUrl = "https://script.google.com/macros/s/AKfycbwFUkUOgJwS6T1cpmXl12K0uSyNvvydoutEaIqWkLDSDTPfNfVXSTqg-lprcFQV4nSRVQ/exec";
 // OPENWEATHERMAP CREDENTIALS
 const OWM_API_KEY = "3457c364d3f2840960216510c279837c"; 
 let rainChartInstance = null; 
