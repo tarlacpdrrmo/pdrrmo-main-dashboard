@@ -454,7 +454,7 @@
                             <li onclick="showToast('Coming Soon: We are currently updating this section.')">Patient Transport</li>
                             <li onclick="showToast('Coming Soon: We are currently updating this section.')">SUPPORT SERVICES (MANPOWER & OTHER RESOURCES)</li>
                             <li onclick="showToast('Coming Soon: We are currently updating this section.')">Clearing Operations</li>
-                            <li onclick="openTabularModal()">Firetruck</li>
+                            <li onclick="showToast('Coming Soon: We are currently updating this section.')">Firetruck</li>
                             <li onclick="showToast('Coming Soon: We are currently updating this section.')">Hauling</li>
                             <li onclick="showToast('Coming Soon: We are currently updating this section.')">Ledvan Truck</li>
                         </ul>
@@ -1033,7 +1033,7 @@
                     </div>
                 </div>
             </section>
-            
+
         </main>
     </div>
 
@@ -1172,33 +1172,6 @@
             </div>
         </div>
     </div>
-<!-- FIRETRUCK TABULAR DATA MODAL -->
-    <div id="tabularDataModal" class="modal-overlay">
-        <div class="map-modal-content" style="max-width: 1400px; height: 80vh;">
-            <div class="modal-header">
-                <h2>FIRETRUCK DISPATCH LOG</h2>
-                <button onclick="closeTabularModal()" class="btn-close-modal">&times;</button>
-            </div>
-            <div class="modal-body" style="padding: 0; background: #ffffff; overflow: hidden; display: flex; flex-direction: column;">
-                <div class="table-card" style="flex: 1; border-radius: 0; box-shadow: none; max-height: 100%;">
-                    <table id="firetruckTable" style="width: 100%;">
-                        <thead>
-                            <tr>
-                                <th style="width: 15%; text-align: left;">DATE</th>
-                                <th style="width: 20%; text-align: left;">REQUESTOR</th>
-                                <th style="width: 35%; text-align: left;">ASSISTANCE PROVIDED</th>
-                                <th style="width: 30%; text-align: left;">LOCATION</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Data will be injected here by app.js -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-        
 <!-- CUSTOM TOAST NOTIFICATION -->
     <div id="custom-toast" class="toast-notification"></div>
         
