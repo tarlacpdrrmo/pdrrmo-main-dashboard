@@ -2370,6 +2370,27 @@ modal.classList.add('active');
 }
 
 // ==========================================
+// TABULAR DATA MODAL LOGIC
+// ==========================================
+window.openTabularModal = function() {
+    document.getElementById('tabularDataModal').classList.add('active');
+}
+
+window.closeTabularModal = function() {
+    document.getElementById('tabularDataModal').classList.remove('active');
+}
+
+// Close the modal when clicking outside the box
+document.addEventListener("DOMContentLoaded", function() {
+    const tabModalEl = document.getElementById('tabularDataModal');
+    if(tabModalEl) { 
+        tabModalEl.addEventListener('click', function(e) { 
+            if(e.target === this) closeTabularModal(); 
+        }); 
+    }
+});
+
+// ==========================================
 // FIREBASE AUTHENTICATION & CHAT LOGIC
 // ==========================================
 const firebaseConfig = {
