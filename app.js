@@ -1,7 +1,7 @@
 Chart.register(ChartDataLabels);
 
 // 1. YOUR SECURE GOOGLE APPS SCRIPT WEB APP URL
-const webAppUrl = "https://script.google.com/macros/s/AKfycbwYUt0YFQClUUXRGwrNdnC5INPXWzWyGUeN3J8E5tRKsO2ME-Y6zu5Fv0a56fCtxhwzTg";
+const webAppUrl = "https://script.google.com/macros/s/AKfycbwYUt0YFQClUUXRGwrNdnC5INPXWzWyGUeN3J8E5tRKsO2ME-Y6zu5Fv0a56fCtxhwzTg/exec";
 // OPENWEATHERMAP CREDENTIALS
 const OWM_API_KEY = "3457c364d3f2840960216510c279837c"; 
 let rainChartInstance = null; 
@@ -2626,7 +2626,7 @@ function loadInboxData() {
         snapshot.forEach(child => {
             items.push({ id: child.key, ...child.val() });
         });
-
+        
         // Sort by newest first
         items.sort((a,b) => b.timestamp - a.timestamp);
 
@@ -2634,10 +2634,10 @@ function loadInboxData() {
             const dateObj = new Date(item.timestamp);
             const dateStr = dateObj.toLocaleDateString([], {month: 'short', day: 'numeric', year: 'numeric'}) + ' • ' + dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             const readClass = item.read ? '' : 'unread';
-
+            
             const card = document.createElement('div');
             card.className = `inbox-card ${readClass}`;
-
+            
             let imgHtml = '';
             if(item.imageUrl) {
                 imgHtml = `<img src="${item.imageUrl}" class="inbox-img" onclick="window.open('${item.imageUrl}', '_blank')" title="Click to view full size">`;
@@ -2654,12 +2654,12 @@ function loadInboxData() {
                 ${imgHtml}
                 <div class="inbox-actions" id="actions-${item.id}"></div>
             `;
-
+            
             listEl.appendChild(card);
 
             // Safely append buttons using Javascript to bypass HTML string breaking
             const actionsDiv = card.querySelector(`#actions-${item.id}`);
-
+            
             const readBtn = document.createElement('button');
             readBtn.className = item.read ? 'btn-inbox-action' : 'btn-inbox-action mark-read';
             readBtn.innerText = item.read ? 'Mark Unread' : 'Mark as Read';
@@ -2714,7 +2714,7 @@ window.showToast = function(message) {
     if(!toast) return;
     toast.innerHTML = message;
     toast.classList.add("show");
-
+    
     // Automatically hide after 3 seconds
     setTimeout(function() { 
         toast.classList.remove("show"); 
@@ -2744,7 +2744,7 @@ function processFiretruckData(data) {
         if (requestor || assistance || location) {
             let tr = document.createElement('tr');
             tr.style.animationDelay = `${index * 0.02}s`; 
-
+            
             // Format the date if it exists
             let displayDate = dateStr ? String(dateStr).trim() : 'N/A';
             if (displayDate.length > 10 && displayDate.includes('T')) {
