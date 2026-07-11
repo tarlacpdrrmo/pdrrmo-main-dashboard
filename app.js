@@ -2498,6 +2498,7 @@ input.value = '';
 removeSugImage();
 btn.disabled = false;
 input.disabled = false;
+triggerSendAnimation();
 toggleSuggestionBox();
 
 // Brief success feedback
