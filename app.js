@@ -2692,3 +2692,53 @@ window.showToast = function(message) {
         toast.classList.remove("show"); 
     }, 3000);
 }
+
+// --- PAPER PLANE FLIGHT PATH LOGIC ---
+function triggerSendAnimation() {
+    const sendBtn = document.getElementById('sugSendBtn');
+    const targetBadge = document.getElementById('suggestionBadge');
+    
+    // Safety check
+    if (!sendBtn || !targetBadge) return;
+
+    // 1. Get exact Start and End coordinates dynamically
+    const startRect = sendBtn.getBoundingClientRect();
+    const targetRect = targetBadge.parentElement.getBoundingClientRect(); // Target the sidebar link
+
+    const startX = startRect.left + (startRect.width / 2) - 16;
+    const startY = startRect.top + (startRect.height / 2) - 16;
+    
+    // Land exactly where the sidebar badge sits
+    const endX = targetRect.right - 40; 
+    const endY = targetRect.top + (targetRect.height / 2) - 16;
+
+    // 2. Create the flying plane element
+    const plane = document.createElement('div');
+    plane.className = 'flying-paper-plane';
+    plane.innerHTML = `<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`;
+    
+    // 3. Set starting position (rotated slightly backward like pulling a slingshot)
+    plane.style.transform = `translate(${startX}px, ${startY}px) rotate(-30deg) scale(1)`;
+    document.body.appendChild(plane);
+
+    // Force browser reflow to register the starting position
+    void plane.offsetWidth;
+
+    // 4. Fire the plane! (Translate to end position, shrink, and tilt down)
+    plane.style.transform = `translate(${endX}px, ${endY}px) rotate(-80deg) scale(0.2)`;
+    plane.style.opacity = '0';
+
+    // 5. Clean up and trigger the badge "catch" pulse
+    setTimeout(() => {
+        plane.remove();
+        
+        // Ensure badge is visible and pulse it
+        targetBadge.style.display = 'inline-block';
+        targetBadge.classList.add('catch-pop');
+        
+        setTimeout(() => {
+            targetBadge.classList.remove('catch-pop');
+        }, 300);
+        
+    }, 800); // 800ms matches the CSS transition time
+}
