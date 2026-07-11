@@ -1530,3 +1530,33 @@ td {
     animation: waveAndJump 5s infinite ease-in-out;
     transform-origin: bottom center; 
 }
+
+/* ==========================================
+   FLYING PAPER PLANE ANIMATION (60fps GPU)
+   ========================================== */
+.flying-paper-plane {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 9999999;
+    pointer-events: none;
+    will-change: transform, opacity; /* Forces Graphics Card rendering for 60-90fps */
+    /* Custom cubic-bezier creates a natural "throw" and "land" arc */
+    transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.8s ease-in;
+    filter: drop-shadow(0 6px 12px rgba(37, 99, 235, 0.4));
+}
+
+.flying-paper-plane svg {
+    width: 32px;
+    height: 32px;
+    color: #ffffff;
+    fill: #2563eb; /* PDRRMO Blue */
+}
+
+/* Ensure the sidebar badge pops when it catches the plane */
+.sidebar-badge {
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+.sidebar-badge.catch-pop {
+    transform: scale(1.6);
+}
