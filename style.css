@@ -1541,10 +1541,7 @@ td {
     z-index: 9999999;
     pointer-events: none;
     will-change: transform, opacity; 
-    /* Slowed down to 1.5s for a graceful, readable flight */
     transition: transform 1.5s ease-in-out, opacity 1.5s ease-in-out;
-    /* Added a heavier shadow to make it pop off the screen */
-    filter: drop-shadow(0 15px 25px rgba(37, 99, 235, 0.8));
 }
 
 .flying-paper-plane svg {
