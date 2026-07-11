@@ -2699,47 +2699,45 @@ function triggerSendAnimation() {
     const sendBtn = document.getElementById('sugSendBtn');
     const targetBadge = document.getElementById('suggestionBadge');
     
-    // Safety check
     if (!sendBtn || !targetBadge) return;
 
-    // 1. Get exact Start and End coordinates dynamically
     const startRect = sendBtn.getBoundingClientRect();
-    const targetRect = targetBadge.parentElement.getBoundingClientRect(); // Target the sidebar link
+    const targetRect = targetBadge.parentElement.getBoundingClientRect();
 
-    const startX = startRect.left + (startRect.width / 2) - 16;
-    const startY = startRect.top + (startRect.height / 2) - 16;
+    // Adjusted for the new massive 64px size
+    const startX = startRect.left + (startRect.width / 2) - 32;
+    const startY = startRect.top + (startRect.height / 2) - 32;
     
-    // Land exactly where the sidebar badge sits
-    const endX = targetRect.right - 40; 
-    const endY = targetRect.top + (targetRect.height / 2) - 16;
+    // Land squarely on the sidebar
+    const endX = targetRect.right - 50; 
+    const endY = targetRect.top + (targetRect.height / 2) - 32;
 
-    // 2. Create the flying plane element
     const plane = document.createElement('div');
     plane.className = 'flying-paper-plane';
-    plane.innerHTML = `<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`;
+    plane.innerHTML = `<svg viewBox="0 0 24 24" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`;
     
-    // 3. Set starting position (rotated slightly backward like pulling a slingshot)
-    plane.style.transform = `translate(${startX}px, ${startY}px) rotate(-30deg) scale(1)`;
+    // 1. Start it HUGE (1.5x scale) and highly visible
+    plane.style.transform = `translate(${startX}px, ${startY}px) rotate(-15deg) scale(1.5)`;
+    plane.style.opacity = '1';
     document.body.appendChild(plane);
 
-    // Force browser reflow to register the starting position
+    // Force reflow
     void plane.offsetWidth;
 
-    // 4. Fire the plane! (Translate to end position, shrink, and tilt down)
-    plane.style.transform = `translate(${endX}px, ${endY}px) rotate(-80deg) scale(0.2)`;
-    plane.style.opacity = '0';
+    // 2. Fly it slowly, shrink it to a normal size (0.6x), and don't make it fully invisible
+    plane.style.transform = `translate(${endX}px, ${endY}px) rotate(-45deg) scale(0.6)`;
+    plane.style.opacity = '0.4'; 
 
-    // 5. Clean up and trigger the badge "catch" pulse
+    // 3. Wait the full 1.5 seconds before hiding it and popping the badge
     setTimeout(() => {
         plane.remove();
         
-        // Ensure badge is visible and pulse it
         targetBadge.style.display = 'inline-block';
         targetBadge.classList.add('catch-pop');
         
         setTimeout(() => {
             targetBadge.classList.remove('catch-pop');
-        }, 300);
+        }, 400); // 400ms badge pop
         
-    }, 800); // 800ms matches the CSS transition time
+    }, 1500); // Matches the new 1.5s CSS transition
 }
