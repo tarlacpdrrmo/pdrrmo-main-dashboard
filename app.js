@@ -2796,7 +2796,8 @@ window.toggleDashboardMode = function() {
 // ==========================================
 // DASHBOARD HARDWARE TOGGLE (PDRRMO <-> MDRRMO)
 // ==========================================
-let currentDashMode = 'pdrrmo';
+// Using window.currentDashMode prevents the "already declared" SyntaxError
+window.currentDashMode = window.currentDashMode || 'pdrrmo';
 
 window.toggleDashboardMode = function() {
     const track = document.getElementById('view-slider-track');
@@ -2821,8 +2822,8 @@ window.toggleDashboardMode = function() {
     void pdrrmoSidebar.offsetWidth;
     void mdrrmoSidebar.offsetWidth;
 
-    if (currentDashMode === 'pdrrmo') {
-        currentDashMode = 'mdrrmo';
+    if (window.currentDashMode === 'pdrrmo') {
+        window.currentDashMode = 'mdrrmo';
         
         // Move the white slider behind the text
         toggleContainer.classList.add('mdrrmo-active');
@@ -2835,7 +2836,7 @@ window.toggleDashboardMode = function() {
         mdrrmoSidebar.style.display = 'block';
         mdrrmoSidebar.classList.add('sidebar-anim-enter');
     } else {
-        currentDashMode = 'pdrrmo';
+        window.currentDashMode = 'pdrrmo';
         
         // Move the white slider back
         toggleContainer.classList.remove('mdrrmo-active');
