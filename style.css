@@ -1846,7 +1846,7 @@ td {
     display: flex;
     gap: 20px;
     width: 100%;
-    align-items: stretch !important; /* Locks all columns to the exact same height */
+    align-items: flex-start !important; /* Kills the infinite stretching bug */
     padding-bottom: 30px;
 }
 
@@ -1854,14 +1854,13 @@ td {
 .training-col-main {
     flex: 4; 
     min-width: 0; 
-    display: flex;
+    height: 700px; /* HARD LOCK: Cuts the calendar off exactly at the charts' bottom line */
 }
 .training-col-main .card {
-    flex: 1; /* Stretches only to the bottom of the right column */
+    height: 100% !important;
     display: flex;
     flex-direction: column;
     margin-bottom: 0 !important;
-    min-height: 0 !important; /* CRITICAL: Stops the calendar from forcing the height */
 }
 .training-col-main .calendar-wrapper {
     flex: 1;
@@ -1875,24 +1874,25 @@ td {
     flex-direction: column;
     gap: 20px;
     min-width: 0;
+    height: 700px; /* HARD LOCK: Cuts the list off exactly at the charts' bottom line */
 }
 .training-col-side .card {
     margin-bottom: 0 !important;
 }
 .training-col-side .card:nth-child(2) {
-    flex: 1; /* Stretches only to the bottom of the right column */
+    flex: 1;
     display: flex;
     flex-direction: column;
-    min-height: 0 !important; /* CRITICAL: Stops the list from blowing out the grid height */
+    min-height: 0; /* Prevents the 28 items from breaking the 700px limit */
 }
 #top-title-list {
     flex: 1;
-    overflow-y: auto !important; /* Brings the scrollbar back */
-    min-height: 0 !important; 
-    max-height: none !important; 
+    overflow-y: auto !important; /* Reactivates the scrollbar inside the box */
+    min-height: 0 !important;
+    max-height: none !important;
 }
 
-/* Col 3: Filter & Mini Charts (THIS column now dictates the master height) */
+/* Col 3: Filter & Mini Charts (Natural Height) */
 .training-col-charts {
     flex: 0.9;
     display: flex;
