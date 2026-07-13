@@ -2751,11 +2751,9 @@ window.toggleDashboardMode = function() {
     const track = document.getElementById('view-slider-track');
     const pdrrmoSidebar = document.getElementById('pdrrmo-sidebar-menu');
     const mdrrmoSidebar = document.getElementById('mdrrmo-sidebar-menu');
-    const toggleContainer = document.querySelector('.modern-dashboard-toggle');
-    const lblPdrrmo = document.getElementById('lbl-pdrrmo');
-    const lblMdrrmo = document.getElementById('lbl-mdrrmo');
+    const toggleContainer = document.querySelector('.modern-segmented-control');
 
-    if (!track || !pdrrmoSidebar || !mdrrmoSidebar) return;
+    if (!track || !pdrrmoSidebar || !mdrrmoSidebar || !toggleContainer) return;
 
     // Reset smooth sidebar animations
     pdrrmoSidebar.classList.remove('sidebar-anim-enter');
@@ -2766,30 +2764,26 @@ window.toggleDashboardMode = function() {
     if (currentDashMode === 'pdrrmo') {
         currentDashMode = 'mdrrmo';
         
-        // 1. Move the toggle switch visually
+        // Move the white slider behind the text
         toggleContainer.classList.add('mdrrmo-active');
-        lblPdrrmo.classList.remove('active');
-        lblMdrrmo.classList.add('active');
 
-        // 2. Slide main content left
+        // Slide main content left
         track.style.transform = 'translateX(-50%)';
         
-        // 3. Swap sidebars
+        // Swap sidebars
         pdrrmoSidebar.style.display = 'none';
         mdrrmoSidebar.style.display = 'block';
         mdrrmoSidebar.classList.add('sidebar-anim-enter');
     } else {
         currentDashMode = 'pdrrmo';
         
-        // 1. Move the toggle switch visually
+        // Move the white slider back
         toggleContainer.classList.remove('mdrrmo-active');
-        lblMdrrmo.classList.remove('active');
-        lblPdrrmo.classList.add('active');
 
-        // 2. Slide main content right
+        // Slide main content right
         track.style.transform = 'translateX(0)';
         
-        // 3. Swap sidebars
+        // Swap sidebars
         mdrrmoSidebar.style.display = 'none';
         pdrrmoSidebar.style.display = 'flex'; 
         pdrrmoSidebar.classList.add('sidebar-anim-enter');
