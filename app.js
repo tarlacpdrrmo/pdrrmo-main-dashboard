@@ -2796,7 +2796,6 @@ window.toggleDashboardMode = function() {
 // ==========================================
 // DASHBOARD HARDWARE TOGGLE (PDRRMO <-> MDRRMO)
 // ==========================================
-// Using window.currentDashMode prevents the "already declared" SyntaxError
 window.currentDashMode = window.currentDashMode || 'pdrrmo';
 
 window.toggleDashboardMode = function() {
@@ -2805,18 +2804,17 @@ window.toggleDashboardMode = function() {
     const mdrrmoSidebar = document.getElementById('mdrrmo-sidebar-menu');
     const toggleContainer = document.querySelector('.modern-segmented-control');
     const scrollArea = document.getElementById('scroll-area');
+    
+    const panelPdrrmo = document.getElementById('panel-pdrrmo');
+    const panelMdrrmo = document.getElementById('panel-mdrrmo');
 
     if (!track || !pdrrmoSidebar || !mdrrmoSidebar || !toggleContainer) return;
 
-    // CRITICAL FIX: Buttery-smooth glide to the top instead of a harsh teleport
+    // Smooth glide to the top
     if (scrollArea) {
-        scrollArea.scrollTo({
-            top: 0,
-            behavior: 'smooth'
-        });
+        scrollArea.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // Reset smooth sidebar animations
     pdrrmoSidebar.classList.remove('sidebar-anim-enter');
     mdrrmoSidebar.classList.remove('sidebar-anim-enter');
     void pdrrmoSidebar.offsetWidth;
@@ -2824,27 +2822,29 @@ window.toggleDashboardMode = function() {
 
     if (window.currentDashMode === 'pdrrmo') {
         window.currentDashMode = 'mdrrmo';
-        
-        // Move the white slider behind the text
         toggleContainer.classList.add('mdrrmo-active');
-
-        // Slide main content left
-        track.style.transform = 'translateX(-50%)';
         
-        // Swap sidebars
+        // Slide exactly 1 screen width over
+        track.style.transform = 'translateX(-100%)';
+        
+        // Fade out PDRRMO, Fade in MDRRMO
+        if(panelPdrrmo) panelPdrrmo.classList.add('inactive');
+        if(panelMdrrmo) panelMdrrmo.classList.remove('inactive');
+
         pdrrmoSidebar.style.display = 'none';
         mdrrmoSidebar.style.display = 'block';
         mdrrmoSidebar.classList.add('sidebar-anim-enter');
     } else {
         window.currentDashMode = 'pdrrmo';
-        
-        // Move the white slider back
         toggleContainer.classList.remove('mdrrmo-active');
-
-        // Slide main content right
+        
+        // Slide exactly 1 screen width back
         track.style.transform = 'translateX(0)';
         
-        // Swap sidebars
+        // Fade out MDRRMO, Fade in PDRRMO
+        if(panelMdrrmo) panelMdrrmo.classList.add('inactive');
+        if(panelPdrrmo) panelPdrrmo.classList.remove('inactive');
+
         mdrrmoSidebar.style.display = 'none';
         pdrrmoSidebar.style.display = 'flex'; 
         pdrrmoSidebar.classList.add('sidebar-anim-enter');
