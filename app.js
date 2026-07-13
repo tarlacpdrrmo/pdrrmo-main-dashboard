@@ -2793,3 +2793,59 @@ window.toggleDashboardMode = function() {
         pdrrmoSidebar.classList.add('sidebar-anim-enter');
     }
 }
+// ==========================================
+// DASHBOARD HARDWARE TOGGLE (PDRRMO <-> MDRRMO)
+// ==========================================
+let currentDashMode = 'pdrrmo';
+
+window.toggleDashboardMode = function() {
+    const track = document.getElementById('view-slider-track');
+    const pdrrmoSidebar = document.getElementById('pdrrmo-sidebar-menu');
+    const mdrrmoSidebar = document.getElementById('mdrrmo-sidebar-menu');
+    const toggleContainer = document.querySelector('.modern-segmented-control');
+    const scrollArea = document.getElementById('scroll-area');
+
+    if (!track || !pdrrmoSidebar || !mdrrmoSidebar || !toggleContainer) return;
+
+    // CRITICAL FIX: Buttery-smooth glide to the top instead of a harsh teleport
+    if (scrollArea) {
+        scrollArea.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }
+
+    // Reset smooth sidebar animations
+    pdrrmoSidebar.classList.remove('sidebar-anim-enter');
+    mdrrmoSidebar.classList.remove('sidebar-anim-enter');
+    void pdrrmoSidebar.offsetWidth;
+    void mdrrmoSidebar.offsetWidth;
+
+    if (currentDashMode === 'pdrrmo') {
+        currentDashMode = 'mdrrmo';
+        
+        // Move the white slider behind the text
+        toggleContainer.classList.add('mdrrmo-active');
+
+        // Slide main content left
+        track.style.transform = 'translateX(-50%)';
+        
+        // Swap sidebars
+        pdrrmoSidebar.style.display = 'none';
+        mdrrmoSidebar.style.display = 'block';
+        mdrrmoSidebar.classList.add('sidebar-anim-enter');
+    } else {
+        currentDashMode = 'pdrrmo';
+        
+        // Move the white slider back
+        toggleContainer.classList.remove('mdrrmo-active');
+
+        // Slide main content right
+        track.style.transform = 'translateX(0)';
+        
+        // Swap sidebars
+        mdrrmoSidebar.style.display = 'none';
+        pdrrmoSidebar.style.display = 'flex'; 
+        pdrrmoSidebar.classList.add('sidebar-anim-enter');
+    }
+}
