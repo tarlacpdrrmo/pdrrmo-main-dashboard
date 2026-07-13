@@ -1784,19 +1784,3 @@ td {
     background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%) !important;
     box-shadow: 0 4px 12px rgba(0,0,0,0.3), inset 0 -2px 4px rgba(0,0,0,0.1) !important;
 }
-
-/* ==========================================
-   OPTIONAL: FULL GLASSMORPHISM TEST
-   (Delete this entire block if you don't like it!)
-   ========================================== */
-body {
-    background-image: url('bg.jpg');
-    background-size: cover;
-    background-attachment: fixed;
-}
-
-.main-content {
-    background: rgba(226, 232, 240, 0.85) !important;
-    backdrop-filter: blur(10px) !important;
-    -webkit-backdrop-filter: blur(10px) !important;
-}
