@@ -1634,3 +1634,9 @@ td {
     /* Increased from 0.4s to 0.75s, and used a silkier deceleration curve */
     animation: menuSlideDownFade 0.75s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
 }
+/* ==========================================
+   LOCK SLIDER BOUNDARIES & KILL X-SCROLL
+   ========================================== */
+.main-content, .view-slider-wrapper {
+    overflow-x: hidden !important;
+}
