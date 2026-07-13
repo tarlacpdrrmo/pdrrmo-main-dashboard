@@ -389,11 +389,13 @@
                     <img src="clean.jpg" alt="Tarlac PDRRMO Rescue Logo">
                 </div>
             </div>
-         <!-- ADDED SWITCHER HERE -->
-            <div class="dashboard-switcher">
-                <div id="switch-indicator" class="switch-indicator"></div>
-                <button id="btn-pdrrmo" class="switch-btn active" onclick="switchDashboard('pdrrmo')">PDRRMO</button>
-                <button id="btn-mdrrmo" class="switch-btn" onclick="switchDashboard('mdrrmo')">MDRRMOs</button>
+         <!-- HARDWARE TOGGLE SWITCHER -->
+            <div class="modern-dashboard-toggle" onclick="toggleDashboardMode()">
+                <span id="lbl-pdrrmo" class="toggle-lbl active">PDRRMO</span>
+                <div class="toggle-track">
+                    <div class="toggle-thumb"></div>
+                </div>
+                <span id="lbl-mdrrmo" class="toggle-lbl">MDRRMOs</span>
             </div>
 
             <!-- WRAPPER TO HIDE/SHOW EXISTING PDRRMO MENU -->
