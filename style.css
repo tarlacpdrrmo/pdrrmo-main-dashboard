@@ -1561,14 +1561,14 @@ td {
 }
 
 /* ==========================================
-   MODERN SEGMENTED CONTROL SWITCH (FLAT & CLEAN)
+   MODERN SEGMENTED CONTROL SWITCH (NO CRATER)
    ========================================== */
 .modern-segmented-control {
     position: relative;
     display: flex;
-    background: rgba(0, 0, 0, 0.2); /* Flat, subtle dark background */
-    border: 1px solid rgba(255, 255, 255, 0.05); /* Ultra-thin border */
-    border-radius: 8px; /* Modern rounded rectangle, no longer bubbly */
+    background: rgba(15, 23, 42, 0.6); /* Simple dark background */
+    border: 1px solid rgba(255, 255, 255, 0.1); /* Clean, thin border instead of a deep hole */
+    border-radius: 30px;
     margin: 0 12px 24px 12px;
     padding: 4px;
     cursor: pointer;
@@ -1581,15 +1581,14 @@ td {
     bottom: 4px;
     left: 4px;
     width: calc(50% - 4px);
-    background: rgba(255, 255, 255, 0.12); /* Soft frosted glass highlight instead of stark white */
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 6px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Minimal drop shadow */
-    transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    background: #ffffff; /* Bright white sliding thumb */
+    border-radius: 26px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15); /* Soft outer shadow so the pill pops */
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     z-index: 1;
 }
 
-/* Slides the thumb to the right */
+/* Slides the white background to the right */
 .modern-segmented-control.mdrrmo-active .segment-track {
     transform: translateX(100%);
 }
@@ -1597,21 +1596,21 @@ td {
 .segment-btn {
     flex: 1;
     text-align: center;
-    padding: 7px 0; /* Reduced padding to make it much less bulky */
+    padding: 9px 0; 
     font-size: 0.65rem;
-    font-weight: 600; /* Thinner, cleaner font weight */
-    letter-spacing: 0.5px;
-    z-index: 2;
-    transition: color 0.3s ease;
+    font-weight: 800;
+    letter-spacing: 1px;
+    z-index: 2; /* Keeps text above the white track */
+    transition: color 0.4s ease;
 }
 
 /* Default state (PDRRMO active) */
-.pdrrmo-btn { color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); } /* Crisp white for active */
-.mdrrmo-btn { color: #64748b; } /* Muted slate for inactive */
+.pdrrmo-btn { color: #0f172a; } /* Dark text on white thumb */
+.mdrrmo-btn { color: #94a3b8; } /* Muted text on dark background */
 
 /* Swapped state (MDRRMO active) */
-.modern-segmented-control.mdrrmo-active .pdrrmo-btn { color: #64748b; text-shadow: none; }
-.modern-segmented-control.mdrrmo-active .mdrrmo-btn { color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+.modern-segmented-control.mdrrmo-active .pdrrmo-btn { color: #94a3b8; }
+.modern-segmented-control.mdrrmo-active .mdrrmo-btn { color: #0f172a; }
 /* ==========================================
    SIDEBAR MENU SMOOTH ENTRY ANIMATION
    ========================================== */
