@@ -2741,3 +2741,40 @@ function triggerSendAnimation() {
         
     }, 1500); 
 }
+
+// ==========================================
+// DASHBOARD SWITCHER (PDRRMO <-> MDRRMO)
+// ==========================================
+window.switchDashboard = function(type) {
+    const track = document.getElementById('view-slider-track');
+    const pdrrmoBtn = document.getElementById('btn-pdrrmo');
+    const mdrrmoBtn = document.getElementById('btn-mdrrmo');
+    const pdrrmoSidebar = document.getElementById('pdrrmo-sidebar-menu');
+    const mdrrmoSidebar = document.getElementById('mdrrmo-sidebar-menu');
+
+    if (!track || !pdrrmoSidebar || !mdrrmoSidebar) return;
+
+    if (type === 'mdrrmo') {
+        // Slide left to Panel 2
+        track.style.transform = 'translateX(-50%)';
+        
+        // Update Buttons
+        pdrrmoBtn.classList.remove('active');
+        mdrrmoBtn.classList.add('active');
+        
+        // Swap Sidebar Menus
+        pdrrmoSidebar.style.display = 'none';
+        mdrrmoSidebar.style.display = 'block';
+    } else {
+        // Slide right back to Panel 1
+        track.style.transform = 'translateX(0)';
+        
+        // Update Buttons
+        mdrrmoBtn.classList.remove('active');
+        pdrrmoBtn.classList.add('active');
+        
+        // Swap Sidebar Menus
+        mdrrmoSidebar.style.display = 'none';
+        pdrrmoSidebar.style.display = 'block';
+    }
+}
