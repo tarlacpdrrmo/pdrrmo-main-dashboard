@@ -651,6 +651,15 @@
                 </div>
             </header>
 
+            <!-- 1. SLIDER WRAPPER (Forces bounds) -->
+            <div class="view-slider-wrapper" style="width: 100%; overflow-x: hidden; position: relative;">
+                
+                <!-- 2. SLIDER TRACK (Flexbox & 90fps Transition) -->
+                <div id="view-slider-track" style="display: flex; width: 200%; transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1); will-change: transform;">
+                    
+                    <!-- 3. PANEL 1: PDRRMO -->
+                    <div class="slider-panel" id="panel-pdrrmo" style="width: 50%; flex-shrink: 0; padding-right: 1px;">
+
             <section id="assets" class="panel">
 
                 <div class="panel-header-wrapper">
@@ -1055,6 +1064,26 @@
                     </div>
                 </div>
             </section>
+                        </div> <!-- CRITICAL: THIS DIV CLOSES PANEL 1 -->
+
+                    <!-- 4. PANEL 2: MDRRMO -->
+                    <div class="slider-panel" id="panel-mdrrmo" style="width: 50%; flex-shrink: 0;">
+                        
+                        <!-- The NEW MDRRMO Section goes here -->
+                        <section id="mdrrmo-assets" class="panel">
+                            <div class="panel-header-wrapper">
+                                <h3 class="panel-heading">Assets and Personnel Dispatched <span style="color:#2563eb; margin-left: 10px;">(LGU Level)</span></h3>
+                            </div>
+                            <div style="padding: 40px; text-align: center; color: #64748b; font-weight: 800;">
+                                <h2>MDRRMO DASHBOARD IS READY</h2>
+                                <p>We will inject the charts here next.</p>
+                            </div>
+                        </section>
+
+                    </div> <!-- CRITICAL: THIS DIV CLOSES PANEL 2 -->
+
+                </div> <!-- CLOSES SLIDER TRACK -->
+            </div> <!-- CLOSES SLIDER WRAPPER -->
 
         </main>
     </div>
