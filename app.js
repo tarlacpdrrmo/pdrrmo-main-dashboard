@@ -2755,26 +2755,24 @@ window.switchDashboard = function(type) {
     if (!track || !pdrrmoSidebar || !mdrrmoSidebar) return;
 
     if (type === 'mdrrmo') {
-        // Slide left to Panel 2
+        // Slide track left to reveal Panel 2
         track.style.transform = 'translateX(-50%)';
         
-        // Update Buttons
         pdrrmoBtn.classList.remove('active');
         mdrrmoBtn.classList.add('active');
         
-        // Swap Sidebar Menus
         pdrrmoSidebar.style.display = 'none';
         mdrrmoSidebar.style.display = 'block';
     } else {
-        // Slide right back to Panel 1
+        // Slide track right to reveal Panel 1
         track.style.transform = 'translateX(0)';
         
-        // Update Buttons
         mdrrmoBtn.classList.remove('active');
         pdrrmoBtn.classList.add('active');
         
-        // Swap Sidebar Menus
         mdrrmoSidebar.style.display = 'none';
-        pdrrmoSidebar.style.display = 'block';
+        
+        // CRITICAL FIX: This MUST be 'flex' so the scroll area doesn't collapse!
+        pdrrmoSidebar.style.display = 'flex'; 
     }
 }
