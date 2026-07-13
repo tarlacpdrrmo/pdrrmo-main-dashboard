@@ -1846,7 +1846,7 @@ td {
     display: flex;
     gap: 20px;
     width: 100%;
-    align-items: flex-start !important; /* Kills the infinite stretching bug */
+    align-items: flex-start !important; 
     padding-bottom: 30px;
 }
 
@@ -1854,7 +1854,7 @@ td {
 .training-col-main {
     flex: 4; 
     min-width: 0; 
-    height: 700px; /* HARD LOCK: Cuts the calendar off exactly at the charts' bottom line */
+    height: 700px; /* HARD LOCK */
 }
 .training-col-main .card {
     height: 100% !important;
@@ -1865,7 +1865,14 @@ td {
 .training-col-main .calendar-wrapper {
     flex: 1;
     min-height: 0; 
+    overflow-y: auto !important; /* FIX: Traps the Yearly View inside and makes it scroll */
+    overflow-x: hidden !important;
+    padding-right: 8px; /* Breathing room for the scrollbar */
 }
+/* Sleek scrollbar for the calendar */
+.training-col-main .calendar-wrapper::-webkit-scrollbar { width: 6px; }
+.training-col-main .calendar-wrapper::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+.training-col-main .calendar-wrapper::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
 /* Col 2: KPI & List */
 .training-col-side {
@@ -1874,7 +1881,7 @@ td {
     flex-direction: column;
     gap: 20px;
     min-width: 0;
-    height: 700px; /* HARD LOCK: Cuts the list off exactly at the charts' bottom line */
+    height: 700px; /* HARD LOCK */
 }
 .training-col-side .card {
     margin-bottom: 0 !important;
@@ -1883,16 +1890,16 @@ td {
     flex: 1;
     display: flex;
     flex-direction: column;
-    min-height: 0; /* Prevents the 28 items from breaking the 700px limit */
+    min-height: 0; 
 }
 #top-title-list {
     flex: 1;
-    overflow-y: auto !important; /* Reactivates the scrollbar inside the box */
+    overflow-y: auto !important; 
     min-height: 0 !important;
     max-height: none !important;
 }
 
-/* Col 3: Filter & Mini Charts (Natural Height) */
+/* Col 3: Filter & Mini Charts */
 .training-col-charts {
     flex: 0.9;
     display: flex;
