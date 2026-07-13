@@ -1617,3 +1617,21 @@ td {
     flex-shrink: 0;
     padding-right: 1px; /* Prevents edge clipping */
 }
+/* ==========================================
+   SIDEBAR MENU SMOOTH ENTRY ANIMATION
+   ========================================== */
+@keyframes menuSlideDownFade {
+    0% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.sidebar-anim-enter {
+    /* 90fps-feel smooth bezier curve */
+    animation: menuSlideDownFade 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
