@@ -1769,14 +1769,14 @@ td {
 
 /* 4. Update the Dashboard Switcher to Match the Glass Theme */
 .modern-segmented-control {
-    background: rgba(0, 0, 0, 0.4) !important;
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
-    /* Inner shadow to make it look carved into the glass */
-    box-shadow: inset 0 3px 6px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.05) !important;
+    background: rgba(255, 255, 255, 0.08) !important; /* Makes the inside light and frosted instead of dark */
+    border: 1px solid rgba(255, 255, 255, 0.05) !important; /* Barely visible, soft light edge */
+    box-shadow: none !important; /* THIS COMPLETELY KILLS ALL HEAVY INNER EDGES/CRATERS */
 }
 
 .segment-track {
-    /* Glossy white thumb */
-    background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%) !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3), inset 0 -2px 4px rgba(0,0,0,0.1) !important;
+    /* Keeps the active thumb white and clean */
+    background: #ffffff !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    border: none !important;
 }
