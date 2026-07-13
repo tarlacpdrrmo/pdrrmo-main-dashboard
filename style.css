@@ -1662,3 +1662,60 @@ td {
     opacity: 0;
     pointer-events: none;
 }
+
+/* ==========================================
+   SIDEBAR MODERN TYPOGRAPHY & UI OVERHAUL
+   ========================================== */
+.sidebar li {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.85rem !important; /* Slightly larger, highly readable */
+    font-weight: 500 !important; /* Medium weight, crisp and clean */
+    color: #94a3b8 !important; /* Muted slate gray */
+    letter-spacing: 0.2px !important;
+    padding: 10px 14px !important; /* Better breathing room */
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Very subtle brighten on hover */
+.sidebar li:hover {
+    background-color: rgba(255, 255, 255, 0.03) !important; 
+    color: #cbd5e1 !important; 
+}
+
+/* The active state: Bright white text, subtle dark box, bolder font */
+.sidebar li.active {
+    background-color: rgba(255, 255, 255, 0.06) !important; 
+    color: #ffffff !important; 
+    font-weight: 600 !important; 
+    box-shadow: none !important; /* Removes the old bulky shadow */
+}
+
+/* Ensure the SVG icons perfectly match the text color */
+.sidebar li .menu-icon {
+    color: inherit !important;
+    opacity: 1 !important;
+}
+
+/* Clean up the section titles */
+.sidebar .section-title {
+    font-size: 0.65rem !important;
+    font-weight: 600 !important;
+    color: #64748b !important;
+    letter-spacing: 0.8px !important;
+    text-transform: uppercase !important;
+    opacity: 0.6 !important;
+    margin-top: 24px !important;
+}
+
+/* Smooth out the dropdown submenu items */
+.submenu-list li {
+    font-size: 0.8rem !important;
+    font-weight: 400 !important; /* Lighter weight for sub-items */
+    color: #94a3b8 !important;
+    padding-left: 48px !important;
+}
+
+.submenu-list li:hover {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.03) !important;
+}
