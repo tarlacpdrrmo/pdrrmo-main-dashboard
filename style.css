@@ -1561,56 +1561,56 @@ td {
 }
 
 /* ==========================================
-   HARDWARE TOGGLE SWITCH
+   MODERN SEGMENTED CONTROL SWITCH
    ========================================== */
-.modern-dashboard-toggle {
+.modern-segmented-control {
+    position: relative;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
+    background: #0f172a; /* Deep dark navy */
+    border-radius: 30px; /* Fully rounded pill */
     margin: 0 12px 24px 12px;
+    padding: 4px;
     cursor: pointer;
-    padding: 8px 0;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.6);
     user-select: none;
 }
 
-.toggle-lbl {
+.segment-track {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 4px;
+    width: calc(50% - 4px);
+    background: #ffffff; /* Bright white sliding thumb */
+    border-radius: 26px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    z-index: 1;
+}
+
+/* Slides the white background to the right */
+.modern-segmented-control.mdrrmo-active .segment-track {
+    transform: translateX(100%);
+}
+
+.segment-btn {
+    flex: 1;
+    text-align: center;
+    padding: 10px 0;
     font-size: 0.65rem;
     font-weight: 800;
-    letter-spacing: 0.5px;
-    color: #64748b;
-    transition: color 0.3s ease;
+    letter-spacing: 1px;
+    z-index: 2; /* Keeps text above the white track */
+    transition: color 0.4s ease;
 }
 
-.toggle-lbl.active {
-    color: #ffffff;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
-}
+/* Default state (PDRRMO active) */
+.pdrrmo-btn { color: #0f172a; } /* Dark text on white thumb */
+.mdrrmo-btn { color: #64748b; } /* Muted text on dark background */
 
-.toggle-track {
-    width: 48px;
-    height: 24px;
-    background: #0f172a; /* Deep dark background mimicking your image */
-    border-radius: 20px;
-    position: relative;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: inset 0 2px 6px rgba(0,0,0,0.6);
-    transition: background 0.3s ease;
-}
-
-.toggle-thumb {
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 18px;
-    height: 18px;
-    background: #ffffff; /* Crisp white sliding thumb */
-    border-radius: 50%;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    /* Ultra-smooth slide animation */
-    transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-    will-change: transform;
-}
+/* Swapped state (MDRRMO active) */
+.modern-segmented-control.mdrrmo-active .pdrrmo-btn { color: #64748b; }
+.modern-segmented-control.mdrrmo-active .mdrrmo-btn { color: #0f172a; }
 
 /* State when MDRRMO is toggled ON */
 .modern-dashboard-toggle.mdrrmo-active .toggle-thumb {
