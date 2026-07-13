@@ -2752,8 +2752,12 @@ window.toggleDashboardMode = function() {
     const pdrrmoSidebar = document.getElementById('pdrrmo-sidebar-menu');
     const mdrrmoSidebar = document.getElementById('mdrrmo-sidebar-menu');
     const toggleContainer = document.querySelector('.modern-segmented-control');
+    const scrollArea = document.getElementById('scroll-area'); // Grab the scroll area
 
     if (!track || !pdrrmoSidebar || !mdrrmoSidebar || !toggleContainer) return;
+
+    // Instantly scroll back to the top when switching
+    if (scrollArea) scrollArea.scrollTop = 0;
 
     // Reset smooth sidebar animations
     pdrrmoSidebar.classList.remove('sidebar-anim-enter');
