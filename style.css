@@ -1561,13 +1561,13 @@ td {
 }
 
 /* ==========================================
-   MODERN SEGMENTED CONTROL SWITCH (NO CRATER)
+   MODERN SEGMENTED CONTROL SWITCH (SOFT & LIGHT)
    ========================================== */
 .modern-segmented-control {
     position: relative;
     display: flex;
-    background: rgba(15, 23, 42, 0.6); /* Simple dark background */
-    border: 1px solid rgba(255, 255, 255, 0.1); /* Clean, thin border instead of a deep hole */
+    background: rgba(255, 255, 255, 0.08); /* Soft, light frosted background instead of dark navy */
+    border: 1px solid rgba(255, 255, 255, 0.1); /* Very subtle, light edge */
     border-radius: 30px;
     margin: 0 12px 24px 12px;
     padding: 4px;
@@ -1583,7 +1583,7 @@ td {
     width: calc(50% - 4px);
     background: #ffffff; /* Bright white sliding thumb */
     border-radius: 26px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.15); /* Soft outer shadow so the pill pops */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08); /* Much softer, lighter shadow */
     transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     z-index: 1;
 }
@@ -1597,20 +1597,21 @@ td {
     flex: 1;
     text-align: center;
     padding: 9px 0; 
-    font-size: 0.65rem;
-    font-weight: 800;
-    letter-spacing: 1px;
+    font-family: 'Inter', sans-serif; /* Matches sidebar font exactly */
+    font-size: 0.75rem; /* Matches sidebar size */
+    font-weight: 500; /* Much thinner, matching the sleek sidebar text */
+    letter-spacing: 0.5px;
     z-index: 2; /* Keeps text above the white track */
-    transition: color 0.4s ease;
+    transition: all 0.4s ease;
 }
 
 /* Default state (PDRRMO active) */
-.pdrrmo-btn { color: #0f172a; } /* Dark text on white thumb */
-.mdrrmo-btn { color: #94a3b8; } /* Muted text on dark background */
+.pdrrmo-btn { color: #475569; font-weight: 600; } /* Sleek greyish tone instead of stark dark */
+.mdrrmo-btn { color: #94a3b8; } /* Muted light slate for inactive */
 
 /* Swapped state (MDRRMO active) */
-.modern-segmented-control.mdrrmo-active .pdrrmo-btn { color: #94a3b8; }
-.modern-segmented-control.mdrrmo-active .mdrrmo-btn { color: #0f172a; }
+.modern-segmented-control.mdrrmo-active .pdrrmo-btn { color: #94a3b8; font-weight: 500; }
+.modern-segmented-control.mdrrmo-active .mdrrmo-btn { color: #475569; font-weight: 600; }
 /* ==========================================
    SIDEBAR MENU SMOOTH ENTRY ANIMATION
    ========================================== */
