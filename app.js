@@ -2751,40 +2751,39 @@ window.switchDashboard = function(type) {
     const mdrrmoBtn = document.getElementById('btn-mdrrmo');
     const pdrrmoSidebar = document.getElementById('pdrrmo-sidebar-menu');
     const mdrrmoSidebar = document.getElementById('mdrrmo-sidebar-menu');
+    const switchIndicator = document.getElementById('switch-indicator'); // Modern indicator
 
     if (!track || !pdrrmoSidebar || !mdrrmoSidebar) return;
 
-    // 1. Remove animation class to reset it
     pdrrmoSidebar.classList.remove('sidebar-anim-enter');
     mdrrmoSidebar.classList.remove('sidebar-anim-enter');
 
-    // 2. Force browser reflow (Crucial for restarting CSS animations)
     void pdrrmoSidebar.offsetWidth;
     void mdrrmoSidebar.offsetWidth;
 
     if (type === 'mdrrmo') {
-        // Slide track left to reveal Panel 2
         track.style.transform = 'translateX(-50%)';
         
         pdrrmoBtn.classList.remove('active');
         mdrrmoBtn.classList.add('active');
         
+        // Slide the frosted glass pill to the right
+        if (switchIndicator) switchIndicator.style.transform = 'translateX(100%)';
+        
         pdrrmoSidebar.style.display = 'none';
         mdrrmoSidebar.style.display = 'block';
-        
-        // 3. Add animation class to trigger slide-down effect
         mdrrmoSidebar.classList.add('sidebar-anim-enter');
     } else {
-        // Slide track right to reveal Panel 1
         track.style.transform = 'translateX(0)';
         
         mdrrmoBtn.classList.remove('active');
         pdrrmoBtn.classList.add('active');
         
+        // Slide the frosted glass pill back to the left
+        if (switchIndicator) switchIndicator.style.transform = 'translateX(0)';
+        
         mdrrmoSidebar.style.display = 'none';
         pdrrmoSidebar.style.display = 'flex'; 
-        
-        // 3. Add animation class to trigger slide-down effect
         pdrrmoSidebar.classList.add('sidebar-anim-enter');
     }
 }
