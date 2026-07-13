@@ -1846,17 +1846,29 @@ td {
     display: flex;
     gap: 20px;
     width: 100%;
-    align-items: flex-start; 
+    align-items: stretch !important; /* Locks all columns to the exact same height */
     padding-bottom: 30px;
 }
 
-/* Col 1: Calendar (Massively expanded to ~70% of the screen) */
+/* Col 1: Calendar */
 .training-col-main {
     flex: 4; 
     min-width: 0; 
+    display: flex;
+}
+.training-col-main .card {
+    flex: 1; /* Stretches only to the bottom of the right column */
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0 !important;
+    min-height: 0 !important; /* CRITICAL: Stops the calendar from forcing the height */
+}
+.training-col-main .calendar-wrapper {
+    flex: 1;
+    min-height: 0; 
 }
 
-/* Col 2: KPI & List (Compacted) */
+/* Col 2: KPI & List */
 .training-col-side {
     flex: 0.75;
     display: flex;
@@ -1864,8 +1876,23 @@ td {
     gap: 20px;
     min-width: 0;
 }
+.training-col-side .card {
+    margin-bottom: 0 !important;
+}
+.training-col-side .card:nth-child(2) {
+    flex: 1; /* Stretches only to the bottom of the right column */
+    display: flex;
+    flex-direction: column;
+    min-height: 0 !important; /* CRITICAL: Stops the list from blowing out the grid height */
+}
+#top-title-list {
+    flex: 1;
+    overflow-y: auto !important; /* Brings the scrollbar back */
+    min-height: 0 !important; 
+    max-height: none !important; 
+}
 
-/* Col 3: Filter & Mini Charts (Compacted) */
+/* Col 3: Filter & Mini Charts (THIS column now dictates the master height) */
 .training-col-charts {
     flex: 0.9;
     display: flex;
@@ -1873,9 +1900,6 @@ td {
     gap: 20px;
     min-width: 0;
 }
-
-/* Force internal cards to perfectly fit their new columns */
-.training-dashboard-grid > div > div {
-    width: 100% !important;
-    margin-bottom: 0 !important; 
+.training-col-charts .card {
+    margin-bottom: 0 !important;
 }
