@@ -1780,7 +1780,6 @@ td {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
     border: none !important;
 }
-
 /* ==========================================
    TRAININGS DASHBOARD 3-COLUMN LAYOUT
    ========================================== */
@@ -1788,28 +1787,28 @@ td {
     display: flex;
     gap: 20px;
     width: 100%;
-    align-items: flex-start; /* Prevents columns from stretching vertically */
+    align-items: flex-start; 
     padding-bottom: 30px;
 }
 
-/* Col 1: Calendar (Takes up roughly 55% of the screen) */
+/* Col 1: Calendar (Massively expanded to ~70% of the screen) */
 .training-col-main {
-    flex: 2.5; 
-    min-width: 0; /* Prevents large charts from breaking the flex container */
+    flex: 4; 
+    min-width: 0; 
 }
 
-/* Col 2: KPI & List (Takes up roughly 20% of the screen) */
+/* Col 2: KPI & List (Compacted) */
 .training-col-side {
-    flex: 0.8;
+    flex: 0.75;
     display: flex;
     flex-direction: column;
     gap: 20px;
     min-width: 0;
 }
 
-/* Col 3: Filter & Mini Charts (Takes up roughly 25% of the screen) */
+/* Col 3: Filter & Mini Charts (Compacted) */
 .training-col-charts {
-    flex: 1.2;
+    flex: 0.9;
     display: flex;
     flex-direction: column;
     gap: 20px;
@@ -1819,5 +1818,5 @@ td {
 /* Force internal cards to perfectly fit their new columns */
 .training-dashboard-grid > div > div {
     width: 100% !important;
-    margin-bottom: 0 !important; /* The gap property handles spacing now */
+    margin-bottom: 0 !important; 
 }
