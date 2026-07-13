@@ -2754,6 +2754,14 @@ window.switchDashboard = function(type) {
 
     if (!track || !pdrrmoSidebar || !mdrrmoSidebar) return;
 
+    // 1. Remove animation class to reset it
+    pdrrmoSidebar.classList.remove('sidebar-anim-enter');
+    mdrrmoSidebar.classList.remove('sidebar-anim-enter');
+
+    // 2. Force browser reflow (Crucial for restarting CSS animations)
+    void pdrrmoSidebar.offsetWidth;
+    void mdrrmoSidebar.offsetWidth;
+
     if (type === 'mdrrmo') {
         // Slide track left to reveal Panel 2
         track.style.transform = 'translateX(-50%)';
@@ -2763,6 +2771,9 @@ window.switchDashboard = function(type) {
         
         pdrrmoSidebar.style.display = 'none';
         mdrrmoSidebar.style.display = 'block';
+        
+        // 3. Add animation class to trigger slide-down effect
+        mdrrmoSidebar.classList.add('sidebar-anim-enter');
     } else {
         // Slide track right to reveal Panel 1
         track.style.transform = 'translateX(0)';
@@ -2771,8 +2782,9 @@ window.switchDashboard = function(type) {
         pdrrmoBtn.classList.add('active');
         
         mdrrmoSidebar.style.display = 'none';
-        
-        // CRITICAL FIX: This MUST be 'flex' so the scroll area doesn't collapse!
         pdrrmoSidebar.style.display = 'flex'; 
+        
+        // 3. Add animation class to trigger slide-down effect
+        pdrrmoSidebar.classList.add('sidebar-anim-enter');
     }
 }
