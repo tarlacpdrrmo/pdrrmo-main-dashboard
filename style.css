@@ -36,6 +36,65 @@ body {
     overflow: hidden; 
 }
 
+/* ==========================================
+   TRAININGS DASHBOARD 3-COLUMN LAYOUT
+   ========================================== */
+.training-dashboard-grid {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+    align-items: stretch !important; /* CHANGED: Forces all columns to be the same height */
+    padding-bottom: 30px;
+}
+
+/* Col 1: Calendar (Takes up roughly 70% of the screen) */
+.training-col-main {
+    flex: 4; 
+    min-width: 0; 
+}
+
+/* Force the calendar card to stretch to the bottom */
+.training-col-main .card {
+    height: 100% !important;
+}
+.training-col-main .calendar-wrapper {
+    flex: 1 !important; /* Makes the inner calendar fill the card */
+}
+
+/* Col 2: KPI & List (Compacted) */
+.training-col-side {
+    flex: 0.75;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+}
+
+/* Force the middle list card to stretch to the bottom */
+.training-col-side .card:nth-child(2) {
+    flex: 1 !important; 
+    height: auto !important; /* Overrides the inline fit-content */
+}
+#top-title-list {
+    flex: 1 !important;
+    max-height: none !important; /* Overrides the inline 240px limit */
+}
+
+/* Col 3: Filter & Mini Charts (Compacted) */
+.training-col-charts {
+    flex: 0.9;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+}
+
+/* Force internal cards to perfectly fit their new columns */
+.training-dashboard-grid > div > div {
+    width: 100% !important;
+    margin-bottom: 0 !important; 
+}
+
 .sidebar-logo-container {
     display: flex;
     flex-direction: row; 
