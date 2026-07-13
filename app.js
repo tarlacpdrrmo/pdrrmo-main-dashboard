@@ -2743,45 +2743,53 @@ function triggerSendAnimation() {
 }
 
 // ==========================================
-// DASHBOARD SWITCHER (PDRRMO <-> MDRRMO)
+// DASHBOARD HARDWARE TOGGLE (PDRRMO <-> MDRRMO)
 // ==========================================
-window.switchDashboard = function(type) {
+let currentDashMode = 'pdrrmo';
+
+window.toggleDashboardMode = function() {
     const track = document.getElementById('view-slider-track');
-    const pdrrmoBtn = document.getElementById('btn-pdrrmo');
-    const mdrrmoBtn = document.getElementById('btn-mdrrmo');
     const pdrrmoSidebar = document.getElementById('pdrrmo-sidebar-menu');
     const mdrrmoSidebar = document.getElementById('mdrrmo-sidebar-menu');
-    const switchIndicator = document.getElementById('switch-indicator'); // Modern indicator
+    const toggleContainer = document.querySelector('.modern-dashboard-toggle');
+    const lblPdrrmo = document.getElementById('lbl-pdrrmo');
+    const lblMdrrmo = document.getElementById('lbl-mdrrmo');
 
     if (!track || !pdrrmoSidebar || !mdrrmoSidebar) return;
 
+    // Reset smooth sidebar animations
     pdrrmoSidebar.classList.remove('sidebar-anim-enter');
     mdrrmoSidebar.classList.remove('sidebar-anim-enter');
-
     void pdrrmoSidebar.offsetWidth;
     void mdrrmoSidebar.offsetWidth;
 
-    if (type === 'mdrrmo') {
+    if (currentDashMode === 'pdrrmo') {
+        currentDashMode = 'mdrrmo';
+        
+        // 1. Move the toggle switch visually
+        toggleContainer.classList.add('mdrrmo-active');
+        lblPdrrmo.classList.remove('active');
+        lblMdrrmo.classList.add('active');
+
+        // 2. Slide main content left
         track.style.transform = 'translateX(-50%)';
         
-        pdrrmoBtn.classList.remove('active');
-        mdrrmoBtn.classList.add('active');
-        
-        // Slide the frosted glass pill to the right
-        if (switchIndicator) switchIndicator.style.transform = 'translateX(100%)';
-        
+        // 3. Swap sidebars
         pdrrmoSidebar.style.display = 'none';
         mdrrmoSidebar.style.display = 'block';
         mdrrmoSidebar.classList.add('sidebar-anim-enter');
     } else {
+        currentDashMode = 'pdrrmo';
+        
+        // 1. Move the toggle switch visually
+        toggleContainer.classList.remove('mdrrmo-active');
+        lblMdrrmo.classList.remove('active');
+        lblPdrrmo.classList.add('active');
+
+        // 2. Slide main content right
         track.style.transform = 'translateX(0)';
         
-        mdrrmoBtn.classList.remove('active');
-        pdrrmoBtn.classList.add('active');
-        
-        // Slide the frosted glass pill back to the left
-        if (switchIndicator) switchIndicator.style.transform = 'translateX(0)';
-        
+        // 3. Swap sidebars
         mdrrmoSidebar.style.display = 'none';
         pdrrmoSidebar.style.display = 'flex'; 
         pdrrmoSidebar.classList.add('sidebar-anim-enter');
