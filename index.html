@@ -389,6 +389,14 @@
                     <img src="clean.jpg" alt="Tarlac PDRRMO Rescue Logo">
                 </div>
             </div>
+            <!-- ADDED SWITCHER HERE -->
+            <div class="dashboard-switcher">
+                <button id="btn-pdrrmo" class="switch-btn active" onclick="switchDashboard('pdrrmo')">PDRRMO</button>
+                <button id="btn-mdrrmo" class="switch-btn" onclick="switchDashboard('mdrrmo')">MDRRMOs</button>
+            </div>
+
+            <!-- WRAPPER TO HIDE/SHOW EXISTING PDRRMO MENU -->
+            <div id="pdrrmo-sidebar-menu">
 
             <ul>
                 <li class="section-title">Dashboards</li>
@@ -524,6 +532,37 @@
                     </li>
             </ul>
                 </div>
+</div> <!-- CLOSE PDRRMO WRAPPER HERE -->
+
+            <!-- NEW MDRRMO SIDEBAR (Hidden by Default) -->
+            <div id="mdrrmo-sidebar-menu" class="sidebar-scroll-area" style="display: none; margin-top: 0;">
+                <ul>
+                    <li class="section-title">Component City</li>
+                    <li class="active" onclick="showToast('Switching to Tarlac City CDRRMO')">
+                        <svg class="menu-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                        <span>Tarlac City</span>
+                    </li>
+
+                    <li class="section-title">Municipalities</li>
+                    <li onclick="showToast('Loading Anao MDRRMO')"><span>Anao</span></li>
+                    <li onclick="showToast('Loading Bamban MDRRMO')"><span>Bamban</span></li>
+                    <li onclick="showToast('Loading Camiling MDRRMO')"><span>Camiling</span></li>
+                    <li onclick="showToast('Loading Capas MDRRMO')"><span>Capas</span></li>
+                    <li onclick="showToast('Loading Concepcion MDRRMO')"><span>Concepcion</span></li>
+                    <li onclick="showToast('Loading Gerona MDRRMO')"><span>Gerona</span></li>
+                    <li onclick="showToast('Loading La Paz MDRRMO')"><span>La Paz</span></li>
+                    <li onclick="showToast('Loading Mayantoc MDRRMO')"><span>Mayantoc</span></li>
+                    <li onclick="showToast('Loading Moncada MDRRMO')"><span>Moncada</span></li>
+                    <li onclick="showToast('Loading Paniqui MDRRMO')"><span>Paniqui</span></li>
+                    <li onclick="showToast('Loading Pura MDRRMO')"><span>Pura</span></li>
+                    <li onclick="showToast('Loading Ramos MDRRMO')"><span>Ramos</span></li>
+                    <li onclick="showToast('Loading San Clemente MDRRMO')"><span>San Clemente</span></li>
+                    <li onclick="showToast('Loading San Jose MDRRMO')"><span>San Jose</span></li>
+                    <li onclick="showToast('Loading Santa Ignacia MDRRMO')"><span>Santa Ignacia</span></li>
+                    <li onclick="showToast('Loading Victoria MDRRMO')"><span>Victoria</span></li>
+                </ul>
+            </div>
+                
         </nav>
 
         <main class="main-content" id="scroll-area">
