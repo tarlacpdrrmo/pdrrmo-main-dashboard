@@ -1972,3 +1972,70 @@ td {
     opacity: 1;
     visibility: visible;
 }
+
+/* ==========================================
+   DARK GLASSMORPHISM THEME FOR ALL MODALS
+   ========================================== */
+
+/* 1. Apply Sidebar Background & Blur to Modal Containers */
+.modal-content, .map-modal-content {
+    background: linear-gradient(150deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%) !important;
+    backdrop-filter: blur(20px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(150%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), inset 1px 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+/* 2. Style the Headers */
+.modal-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    background: rgba(0, 0, 0, 0.2) !important; /* Slight darkening for the header area */
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+}
+.modal-header h2 {
+    color: #ffffff !important;
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.5px !important;
+}
+
+/* 3. Style the Close Button */
+.btn-close-modal {
+    color: #94a3b8 !important;
+}
+.btn-close-modal:hover {
+    color: #ef4444 !important;
+}
+
+/* 4. Fix Inner Content for Dark Mode (Lists & Details Modals) */
+.modal-body {
+    background: transparent !important;
+}
+.modal-body .legend-item {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+.modal-body .legend-item:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+}
+.modal-body .legend-text {
+    color: #cbd5e1 !important;
+}
+/* Force inline dark text injected by JS to be white */
+.modal-body .legend-text span {
+    color: #f8fafc !important; 
+}
+.modal-body .legend-val {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* 5. Fix Suggestions Inbox for Dark Mode */
+.inbox-card {
+    background: rgba(15, 23, 42, 0.6) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+.inbox-topic { color: #ffffff !important; }
+.inbox-body { color: #cbd5e1 !important; }
+.btn-inbox-action { color: #cbd5e1 !important; border-color: rgba(255, 255, 255, 0.2) !important; }
+.btn-inbox-action:hover { background: rgba(255, 255, 255, 0.1) !important; color: #ffffff !important; }
