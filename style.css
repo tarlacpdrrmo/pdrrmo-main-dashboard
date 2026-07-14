@@ -1939,3 +1939,36 @@ td {
     margin-bottom: 0 !important;
 }
 
+/* ==========================================
+   FLAWLESS JAVASCRIPT TOOLTIP STYLES
+   ========================================== */
+
+/* 1. Turn off the old CSS-based calendar tooltip so it doesn't show up anymore */
+.cal-day.has-tooltip:hover .cal-tooltip {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+/* 2. Style the new Global Tooltip that sits outside all boundaries */
+#global-cal-tooltip {
+    position: absolute;
+    background-color: rgba(30, 41, 59, 0.98); 
+    color: #ffffff;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4), 0 5px 15px rgba(0, 0, 0, 0.2);
+    z-index: 9999999 !important; /* Supreme priority. Sits higher than everything. */
+    pointer-events: none; /* Lets the mouse click right through it */
+    min-width: 220px;
+    white-space: normal;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s ease-out;
+    font-family: 'Inter', sans-serif;
+}
+
+#global-cal-tooltip.active {
+    opacity: 1;
+    visibility: visible;
+}
