@@ -2247,3 +2247,43 @@ JavaScript
                     item.read = true; // Update local state
                 }
             };
+
+/* ==========================================
+   REVERT CHART MODALS BACK TO LIGHT THEME
+   ========================================== */
+
+/* Automatically revert any modal that contains a Chart.js canvas */
+.modal:has(canvas) .modal-content,
+#chartModal .modal-content {
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: none !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;
+}
+
+/* Revert the Header */
+.modal:has(canvas) .modal-header,
+#chartModal .modal-header {
+    background: #ffffff !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+/* Revert the Title Text Color */
+.modal:has(canvas) .modal-header h2,
+.modal:has(canvas) .modal-title,
+#chartModal .modal-header h2,
+#chartModal .modal-title {
+    color: #1e293b !important; 
+}
+
+/* Revert the Close Button */
+.modal:has(canvas) .btn-close-modal,
+#chartModal .btn-close-modal {
+    color: #94a3b8 !important; 
+}
+
+.modal:has(canvas) .btn-close-modal:hover,
+#chartModal .btn-close-modal:hover {
+    color: #ef4444 !important; 
+}
