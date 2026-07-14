@@ -2642,7 +2642,24 @@ function loadInboxData() {
                     <div class="inbox-actions" id="actions-${item.id}"></div>
                 </div>
             `;
-            
+            // NEW: Make the row clickable to expand the full message
+            card.onclick = function(e) {
+                // Prevent the row from expanding if they clicked a button or the image thumbnail
+                if(e.target.tagName === 'BUTTON' || e.target.tagName === 'IMG') return;
+                
+                // Toggle the 'expanded' class on and off
+                this.classList.toggle('expanded');
+                
+                // Bonus UX: Automatically mark the message as read when they click to open it
+                if (!item.read) {
+                    db.ref('suggestions/' + item.id).update({ read: true });
+                    this.classList.remove('unread');
+                    const readBtn = this.querySelector('.read-toggle');
+                    if (readBtn) readBtn.innerText = 'Mark Unread';
+                    item.read = true; // Update local state
+                }
+            };
+          
             listEl.appendChild(card);
 
             // Safely append buttons using Javascript to preserve your Firebase logic
