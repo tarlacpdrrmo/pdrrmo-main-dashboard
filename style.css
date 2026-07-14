@@ -47,7 +47,7 @@ body {
     padding-bottom: 30px;
 }
 
-/* Col 1: Calendar */
+* Col 1: Calendar */
 .training-col-main {
     flex: 4; 
     min-width: 0; 
@@ -58,27 +58,36 @@ body {
     display: flex;
     flex-direction: column;
     margin-bottom: 0 !important;
+    overflow: visible !important; /* Ensure the card never clips */
 }
 
-/* Default (Monthly/Quarterly): Visible overflow so tooltips can pop out freely */
+/* 1. Keep the wrapper completely unclipped so tooltips can fly */
 .training-col-main .calendar-wrapper {
     flex: 1;
     min-height: 0; 
     overflow: visible !important; 
-    padding-right: 0; 
+    position: relative;
+    z-index: 999 !important; /* Forces the calendar and tooltips to render ABOVE the header */
 }
 
-/* FIX: ONLY activate the scrollbar trap when Yearly View is active */
-.training-col-main .calendar-wrapper:has(.cal-view-yearly) {
+/* 2. Apply the scrollbar ONLY to the Yearly inner grid itself */
+.cal-grid-container.cal-view-yearly {
     overflow-y: auto !important; 
     overflow-x: hidden !important;
     padding-right: 8px; 
+    height: 100%;
 }
 
-/* Sleek scrollbar for the calendar (only visible in Yearly view) */
-.training-col-main .calendar-wrapper::-webkit-scrollbar { width: 6px; }
-.training-col-main .calendar-wrapper::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-.training-col-main .calendar-wrapper::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+/* Sleek scrollbar for the yearly view */
+.cal-grid-container.cal-view-yearly::-webkit-scrollbar { width: 6px; }
+.cal-grid-container.cal-view-yearly::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+.cal-grid-container.cal-view-yearly::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* 3. Ensure Monthly and Quarterly grids stay completely unclipped */
+.cal-grid-container.cal-view-monthly,
+.cal-grid-container.cal-view-quarterly {
+    overflow: visible !important;
+}
 
 /* Col 2: KPI & List (Compacted) */
 .training-col-side {
