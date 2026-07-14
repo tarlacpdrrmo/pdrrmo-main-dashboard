@@ -2246,3 +2246,27 @@ JavaScript
                     item.read = true; // Update local state
                 }
             };
+
+/* ==========================================
+   SIDEBAR FONT SIZE OVERRIDES
+   ========================================== */
+
+/* 1. Main Navigation (Assets & Personnel, Communication Letters, etc.) */
+.sidebar li > a,
+.sidebar-menu > li > a {
+    font-size: 12px !important; 
+}
+
+/* Make sure the icons next to the main text scale down nicely too */
+.sidebar li > a i,
+.sidebar li > a svg {
+    font-size: 13px !important;
+}
+
+/* 2. Sub-Navigation / Tabular Reports (Medical Emergencies, Trauma, etc.) */
+.sidebar ul ul li a,
+.sidebar .sub-menu li a,
+.sidebar-submenu li a {
+    font-size: 10px !important;
+    padding-left: 45px !important; /* Keeps the indentation neat for smaller text */
+}
