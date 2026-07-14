@@ -2609,32 +2609,48 @@ function loadInboxData() {
             const readClass = item.read ? '' : 'unread';
             
             const card = document.createElement('div');
-            card.className = `inbox-card ${readClass}`;
+            // UPDATED: Using the new modern row class
+            card.className = `modern-inbox-row ${readClass}`; 
             
             let imgHtml = '';
             if(item.imageUrl) {
-                imgHtml = `<img src="${item.imageUrl}" class="inbox-img" onclick="window.open('${item.imageUrl}', '_blank')" title="Click to view full size">`;
+                // UPDATED: Using the sleek thumbnail class
+                imgHtml = `<img src="${item.imageUrl}" class="inbox-thumbnail" onclick="window.open('${item.imageUrl}', '_blank')" title="Click to view full size">`;
             }
 
-            // Build the card structure WITHOUT the buttons first
+            // Generate an Avatar based on the first letter of their email
+            const initial = item.email ? item.email.charAt(0).toUpperCase() : '?';
+
+            // Build the modern row structure WITHOUT the buttons first
             card.innerHTML = `
-                <div class="inbox-header">
-                    <div class="inbox-topic">${item.topic}</div>
-                    <div class="inbox-meta">${dateStr}</div>
+                <!-- Avatar / Icon -->
+                <div class="inbox-avatar">${initial}</div>
+
+                <!-- Content Area -->
+                <div class="inbox-content">
+                    <div class="inbox-header">
+                        <span class="inbox-sender">${item.email || 'Unknown User'}</span>
+                        <span class="inbox-topic-badge">${item.topic}</span>
+                    </div>
+                    <div class="inbox-snippet" title="${item.text}">${item.text}</div>
+                    ${imgHtml}
                 </div>
-                <div class="inbox-meta">Submitted by: ${item.email || 'Unknown User'}</div>
-                <div class="inbox-body">${item.text}</div>
-                ${imgHtml}
-                <div class="inbox-actions" id="actions-${item.id}"></div>
+
+                <!-- Meta & Actions -->
+                <div class="inbox-meta">
+                    <div class="inbox-date">${dateStr}</div>
+                    <div class="inbox-actions" id="actions-${item.id}"></div>
+                </div>
             `;
             
             listEl.appendChild(card);
 
-            // Safely append buttons using Javascript to bypass HTML string breaking
+            // Safely append buttons using Javascript to preserve your Firebase logic
             const actionsDiv = card.querySelector(`#actions-${item.id}`);
             
             const readBtn = document.createElement('button');
-            readBtn.className = item.read ? 'btn-inbox-action' : 'btn-inbox-action mark-read';
+            // UPDATED: Using the new pill classes
+            readBtn.className = 'btn-action-pill read-toggle';
             readBtn.innerText = item.read ? 'Mark Unread' : 'Mark as Read';
             readBtn.onclick = function() {
                 db.ref('suggestions/' + item.id).update({ read: !item.read }).then(() => loadInboxData());
@@ -2642,8 +2658,8 @@ function loadInboxData() {
             actionsDiv.appendChild(readBtn);
 
             const delBtn = document.createElement('button');
-            delBtn.className = 'btn-inbox-action';
-            delBtn.style.cssText = 'color: #ef4444; border-color: #fecaca;';
+            // UPDATED: Using the new pill classes
+            delBtn.className = 'btn-action-pill delete';
             delBtn.innerText = 'Delete';
             delBtn.onclick = function() {
                 if(confirm("Are you sure you want to permanently delete this suggestion?")) {
