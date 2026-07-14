@@ -2039,3 +2039,162 @@ td {
 .inbox-body { color: #cbd5e1 !important; }
 .btn-inbox-action { color: #cbd5e1 !important; border-color: rgba(255, 255, 255, 0.2) !important; }
 .btn-inbox-action:hover { background: rgba(255, 255, 255, 0.1) !important; color: #ffffff !important; }
+
+/* ==========================================
+   MODERN LIST-VIEW INBOX (DARK GLASS THEME)
+   ========================================== */
+
+/* The Row Container */
+.modern-inbox-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 16px;
+    align-items: center; /* Aligns everything perfectly in the center */
+    padding: 16px;
+    background: rgba(15, 23, 42, 0.4) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    position: relative;
+    margin-bottom: 4px;
+}
+
+.modern-inbox-row:hover {
+    background: rgba(30, 41, 59, 0.8) !important;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Unread Indicator (The Red Dot from Image 2) */
+.modern-inbox-row.unread::before {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    background-color: #ef4444; 
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+}
+
+/* Avatar / Icon */
+.inbox-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6, #1e3a8a);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 16px;
+    margin-left: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Content Area */
+.inbox-content {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    overflow: hidden;
+}
+.inbox-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.inbox-sender {
+    color: #f8fafc;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+.inbox-topic-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 10px;
+    background: rgba(59, 130, 246, 0.15);
+    color: #93c5fd;
+    border-radius: 12px;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    letter-spacing: 0.5px;
+}
+
+/* Message Snippet (Truncated to one line to save space) */
+.inbox-snippet {
+    color: #94a3b8;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; 
+    max-width: 90%;
+}
+
+/* Compact Image Thumbnail */
+.inbox-thumbnail {
+    max-height: 60px;
+    width: fit-content;
+    border-radius: 4px;
+    margin-top: 4px;
+    border: 1px solid rgba(255,255,255,0.1);
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+.inbox-thumbnail:hover {
+    opacity: 1;
+}
+
+/* Meta Data & Action Buttons */
+.inbox-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+}
+.inbox-date {
+    color: #64748b;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Hover-Reveal Action Buttons (Like Image 2) */
+.inbox-actions {
+    display: flex;
+    gap: 8px;
+    opacity: 0; 
+    transform: translateX(10px);
+    transition: all 0.2s ease;
+}
+.modern-inbox-row:hover .inbox-actions {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* Sleek Pill Buttons */
+.btn-action-pill {
+    padding: 4px 14px;
+    font-size: 0.75rem;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+    background: transparent;
+}
+.btn-action-pill.read-toggle {
+    border: 1px solid #3b82f6;
+    color: #3b82f6;
+}
+.btn-action-pill.read-toggle:hover {
+    background: #3b82f6;
+    color: #fff;
+}
+.btn-action-pill.delete {
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    color: #ef4444;
+}
+.btn-action-pill.delete:hover {
+    background: #ef4444;
+    color: #fff;
+    border-color: #ef4444;
+}
