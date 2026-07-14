@@ -2198,3 +2198,52 @@ td {
     color: #fff;
     border-color: #ef4444;
 }
+
+/* ==========================================
+   INBOX EXPANDABLE ROW LOGIC
+   ========================================== */
+
+/* 1. Make the row look clickable */
+.modern-inbox-row {
+    cursor: pointer;
+}
+
+/* 2. When expanded, shift alignment to the top so the avatar stays in place */
+.modern-inbox-row.expanded {
+    align-items: flex-start !important; 
+}
+
+/* 3. Allow the text to wrap into multiple lines when expanded */
+.modern-inbox-row.expanded .inbox-snippet {
+    white-space: normal !important;
+    overflow: visible !important;
+    max-width: 100% !important;
+    line-height: 1.6;
+    margin-top: 4px;
+    color: #cbd5e1; /* Makes the text slightly brighter for reading */
+}
+Step 2: Add the Click Event to your JavaScript
+Now open your app.js file and find your loadInboxData() function.
+
+Scroll down inside that function to right before this line: listEl.appendChild(card);
+
+Insert this click logic:
+
+JavaScript
+            // NEW: Make the row clickable to expand the full message
+            card.onclick = function(e) {
+                // Prevent the row from expanding if they clicked a button or the image thumbnail
+                if(e.target.tagName === 'BUTTON' || e.target.tagName === 'IMG') return;
+                
+                // Toggle the 'expanded' class on and off
+                this.classList.toggle('expanded');
+                
+                // Bonus UX: Automatically mark the message as read when they click to open it
+                if (!item.read) {
+                    db.ref('suggestions/' + item.id).update({ read: true });
+                    this.classList.remove('unread');
+                    const readBtn = this.querySelector('.read-toggle');
+                    if (readBtn) readBtn.innerText = 'Mark Unread';
+                    item.read = true; // Update local state
+                }
+            };
