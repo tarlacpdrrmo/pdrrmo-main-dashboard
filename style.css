@@ -1910,9 +1910,3 @@ td {
 .training-col-charts .card {
     margin-bottom: 0 !important;
 }
-/* ==========================================
-   GLOBAL SCALE (SIMULATE 75% BROWSER ZOOM)
-   ========================================== */
-body {
-    zoom: 0.75 !important; 
-}
