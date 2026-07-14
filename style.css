@@ -1938,3 +1938,35 @@ td {
 .training-col-charts .card {
     margin-bottom: 0 !important;
 }
+/* ==========================================
+   FINAL TOOLTIP CLIPPING FIX
+   ========================================== */
+
+/* 1. Strip ALL invisible walls from every calendar layer */
+.training-col-main .card,
+.training-col-main .calendar-wrapper,
+.cal-grid-container.cal-view-monthly,
+.cal-grid-container.cal-view-quarterly,
+.cal-month,
+.cal-days {
+    overflow: visible !important;
+}
+
+/* 2. Force the entire calendar to sit strictly ON TOP of the header */
+.training-col-main .calendar-wrapper {
+    position: relative !important;
+    z-index: 9999 !important;
+}
+
+/* 3. Give the hovered day maximum priority so tooltips punch through everything */
+.cal-day:hover {
+    z-index: 99999 !important;
+}
+
+/* 4. Keep ONLY the Yearly View scrollable */
+.cal-grid-container.cal-view-yearly {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: 100%;
+    padding-right: 8px;
+}
