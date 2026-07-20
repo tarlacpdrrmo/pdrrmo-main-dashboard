@@ -2007,28 +2007,32 @@ td {
 #inboxModal .btn-close-modal:hover {
     color: #ef4444 !important;
 }
-/* 4. Fix Inner Content for Dark Mode (Lists & Details Modals) */
-.modal-body {
+/* 4. Fix Inner Content for Dark Mode (Inbox Modal Only) */
+#inboxModal .modal-body {
     background: transparent !important;
 }
-.modal-body .legend-item {
+
+#inboxModal .modal-body .legend-item {
     border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
 }
-.modal-body .legend-item:hover {
+
+#inboxModal .modal-body .legend-item:hover {
     background-color: rgba(255, 255, 255, 0.05) !important;
 }
-.modal-body .legend-text {
+
+#inboxModal .modal-body .legend-text {
     color: #cbd5e1 !important;
 }
-/* Force inline dark text injected by JS to be white */
-.modal-body .legend-text span {
-    color: #f8fafc !important; 
+
+/* Force inline dark text injected by JS to be white ONLY in the inbox */
+#inboxModal .modal-body .legend-text span {
+    color: #f8fafc !important;
 }
-.modal-body .legend-val {
+
+#inboxModal .modal-body .legend-val {
     color: #ffffff !important;
     background: rgba(255, 255, 255, 0.1) !important;
 }
-
 /* 5. Fix Suggestions Inbox for Dark Mode */
 .inbox-card {
     background: rgba(15, 23, 42, 0.6) !important;
