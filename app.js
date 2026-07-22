@@ -350,6 +350,7 @@ document.addEventListener("DOMContentLoaded", function() {
     }, { threshold: 0.2, rootMargin: "-150px 0px 0px 0px" }); // Added rootMargin to offset the sticky header detection
 
     panels.forEach(panel => observer.observe(panel));
+});
 
 // ==========================================
 // DOMContentLoaded BLOCK
