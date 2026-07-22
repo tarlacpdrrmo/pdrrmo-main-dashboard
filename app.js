@@ -7,166 +7,166 @@ const OWM_API_KEY = "3457c364d3f2840960216510c279837c";
 let rainChartInstance = null; 
 
 function toggleWeatherPanel() {
-const container = document.getElementById('weather-interactive-widget');
-if(container) container.classList.toggle('active');
+    const container = document.getElementById('weather-interactive-widget');
+    if(container) container.classList.toggle('active');
 }
 
 function changeMunicipality() {
-const selectEl = document.getElementById('tarlac-muni-select');
-if(!selectEl) return;
-const selectedCityQuery = selectEl.value; 
-const selectedCityName = selectEl.options[selectEl.selectedIndex].text; 
+    const selectEl = document.getElementById('tarlac-muni-select');
+    if(!selectEl) return;
+    const selectedCityQuery = selectEl.value; 
+    const selectedCityName = selectEl.options[selectEl.selectedIndex].text; 
 
-document.getElementById('weather-city-main').innerText = selectedCityName;
-document.getElementById('weather-temp-main').innerText = "...";
+    document.getElementById('weather-city-main').innerText = selectedCityName;
+    document.getElementById('weather-temp-main').innerText = "...";
 
-fetchOpenWeather(selectedCityQuery);
+    fetchOpenWeather(selectedCityQuery);
 }
 
 async function fetchOpenWeather(cityQuery) {
-if (OWM_API_KEY === "PASTE_YOUR_OPENWEATHERMAP_API_KEY_HERE") return;
+    if (OWM_API_KEY === "PASTE_YOUR_OPENWEATHERMAP_API_KEY_HERE") return;
 
-try {
-const currentUrl = `https://api.openweathermap.org/data/2.5/weather?q=${cityQuery}&units=metric&appid=${OWM_API_KEY}`;
-const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${cityQuery}&units=metric&appid=${OWM_API_KEY}`;
+    try {
+        const currentUrl = `https://api.openweathermap.org/data/2.5/weather?q=${cityQuery}&units=metric&appid=${OWM_API_KEY}`;
+        const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${cityQuery}&units=metric&appid=${OWM_API_KEY}`;
 
-const [currentRes, forecastRes] = await Promise.all([
-fetch(currentUrl),
-fetch(forecastUrl)
-]);
+        const [currentRes, forecastRes] = await Promise.all([
+            fetch(currentUrl),
+            fetch(forecastUrl)
+        ]);
 
-const currentData = await currentRes.json();
-const forecastData = await forecastRes.json();
+        const currentData = await currentRes.json();
+        const forecastData = await forecastRes.json();
 
-if (currentRes.ok && forecastRes.ok) {
-const temp = Math.round(currentData.main.temp); 
-const iconCode = currentData.weather[0].icon;
+        if (currentRes.ok && forecastRes.ok) {
+            const temp = Math.round(currentData.main.temp); 
+            const iconCode = currentData.weather[0].icon;
 
-document.getElementById('weather-temp-main').innerText = `${temp}°C`;
-const iconEl = document.getElementById('weather-icon-main');
-iconEl.src = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
-iconEl.style.display = 'block';
+            document.getElementById('weather-temp-main').innerText = `${temp}°C`;
+            const iconEl = document.getElementById('weather-icon-main');
+            iconEl.src = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+            iconEl.style.display = 'block';
 
-document.getElementById('weather-desc-detail').innerText = currentData.weather[0].description;
-document.getElementById('weather-humidity').innerText = `${currentData.main.humidity}%`;
-document.getElementById('weather-wind').innerText = `${currentData.wind.speed} m/s`;
+            document.getElementById('weather-desc-detail').innerText = currentData.weather[0].description;
+            document.getElementById('weather-humidity').innerText = `${currentData.main.humidity}%`;
+            document.getElementById('weather-wind').innerText = `${currentData.wind.speed} m/s`;
 
-const rainLabels = [];
-const rainDataPoints = [];
+            const rainLabels = [];
+            const rainDataPoints = [];
 
-for(let i = 0; i < 5; i++) {
-const item = forecastData.list[i];
-const date = new Date(item.dt * 1000);
-let hour = date.getHours();
-let ampm = hour >= 12 ? 'PM' : 'AM';
-hour = hour % 12 || 12; 
+            for(let i = 0; i < 5; i++) {
+                const item = forecastData.list[i];
+                const date = new Date(item.dt * 1000);
+                let hour = date.getHours();
+                let ampm = hour >= 12 ? 'PM' : 'AM';
+                hour = hour % 12 || 12; 
 
-rainLabels.push(`${hour} ${ampm}`);
-rainDataPoints.push(Math.round(item.pop * 100)); 
-}
-updateRainChart(rainLabels, rainDataPoints);
+                rainLabels.push(`${hour} ${ampm}`);
+                rainDataPoints.push(Math.round(item.pop * 100)); 
+            }
+            updateRainChart(rainLabels, rainDataPoints);
 
-const daysProcessed = new Set();
-const forecastGrid = document.getElementById('forecast-grid');
-if(forecastGrid) forecastGrid.innerHTML = ''; 
+            const daysProcessed = new Set();
+            const forecastGrid = document.getElementById('forecast-grid');
+            if(forecastGrid) forecastGrid.innerHTML = ''; 
 
-const todayStr = new Date().toLocaleDateString();
+            const todayStr = new Date().toLocaleDateString();
 
-for (let item of forecastData.list) {
-const d = new Date(item.dt * 1000);
-const dateStr = d.toLocaleDateString();
+            for (let item of forecastData.list) {
+                const d = new Date(item.dt * 1000);
+                const dateStr = d.toLocaleDateString();
 
-if (dateStr !== todayStr && d.getHours() >= 11 && d.getHours() <= 15 && !daysProcessed.has(dateStr)) {
-daysProcessed.add(dateStr);
+                if (dateStr !== todayStr && d.getHours() >= 11 && d.getHours() <= 15 && !daysProcessed.has(dateStr)) {
+                    daysProcessed.add(dateStr);
 
-const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }); 
-const dayTemp = Math.round(item.main.temp);
-const dayIcon = item.weather[0].icon;
+                    const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }); 
+                    const dayTemp = Math.round(item.main.temp);
+                    const dayIcon = item.weather[0].icon;
 
-if(forecastGrid) {
-forecastGrid.innerHTML += `
-                           <div class="forecast-day">
-                               <span class="forecast-day-name">${dayName}</span>
-                               <img src="https://openweathermap.org/img/wn/${dayIcon}.png" alt="icon">
-                               <span class="forecast-day-temp">${dayTemp}°</span>
-                           </div>
-                       `;
-}
-if (daysProcessed.size === 3) break;
-}
-}
-}
-} catch (error) {
-console.error("Weather fetch failed:", error);
-}
+                    if(forecastGrid) {
+                        forecastGrid.innerHTML += `
+                            <div class="forecast-day">
+                                <span class="forecast-day-name">${dayName}</span>
+                                <img src="https://openweathermap.org/img/wn/${dayIcon}.png" alt="icon">
+                                <span class="forecast-day-temp">${dayTemp}°</span>
+                            </div>
+                        `;
+                    }
+                    if (daysProcessed.size === 3) break;
+                }
+            }
+        }
+    } catch (error) {
+        console.error("Weather fetch failed:", error);
+    }
 }
 
 function updateRainChart(labels, dataPoints) {
-const canvas = document.getElementById('rainChanceChart');
-if(!canvas) return;
-const ctx = canvas.getContext('2d');
+    const canvas = document.getElementById('rainChanceChart');
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
 
-if(rainChartInstance) {
-rainChartInstance.destroy();
-}
+    if(rainChartInstance) {
+        rainChartInstance.destroy();
+    }
 
-rainChartInstance = new Chart(ctx, {
-type: 'bar',
-data: {
-labels: labels,
-datasets: [{
-data: dataPoints,
-backgroundColor: 'rgba(14, 165, 233, 0.7)', 
-borderWidth: 0, 
-borderRadius: 4
-}]
-},
-options: {
-responsive: true, 
-maintainAspectRatio: false,
-plugins: { 
-legend: { display: false }, 
-tooltip: { enabled: false }, 
-datalabels: { 
-display: true, 
-color: '#ffffff', 
-anchor: 'end',
-align: 'top',
-font: { size: 10, weight: 'bold', family: 'Inter' }, 
-formatter: (value) => value + '%' 
-} 
-},
-scales: {
-y: { display: false, min: 0, max: 100 }, 
-x: { 
-ticks: { color: '#94a3b8', font: { size: 9, weight: 'bold', family: 'Inter' } }, 
-grid: { display: false },
-border: { display: false }
-}
-},
-layout: { padding: { top: 15 } } 
-}
-});
+    rainChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: dataPoints,
+                backgroundColor: 'rgba(14, 165, 233, 0.7)', 
+                borderWidth: 0, 
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true, 
+            maintainAspectRatio: false,
+            plugins: { 
+                legend: { display: false }, 
+                tooltip: { enabled: false }, 
+                datalabels: { 
+                    display: true, 
+                    color: '#ffffff', 
+                    anchor: 'end',
+                    align: 'top',
+                    font: { size: 10, weight: 'bold', family: 'Inter' }, 
+                    formatter: (value) => value + '%' 
+                } 
+            },
+            scales: {
+                y: { display: false, min: 0, max: 100 }, 
+                x: { 
+                    ticks: { color: '#94a3b8', font: { size: 9, weight: 'bold', family: 'Inter' } }, 
+                    grid: { display: false },
+                    border: { display: false }
+                }
+            },
+            layout: { padding: { top: 15 } } 
+        }
+    });
 }
 
 // Global Click Listeners for Custom Dropdowns/Widgets
 document.addEventListener('click', function(event) {
-const weatherWidget = document.getElementById('weather-interactive-widget');
-if (weatherWidget && !weatherWidget.contains(event.target)) {
-weatherWidget.classList.remove('active');
-}
+    const weatherWidget = document.getElementById('weather-interactive-widget');
+    if (weatherWidget && !weatherWidget.contains(event.target)) {
+        weatherWidget.classList.remove('active');
+    }
 
-const orgDrop = document.getElementById('orgGenderDropdown');
-if (orgDrop && !orgDrop.contains(event.target)) {
-orgDrop.classList.remove('active');
-}
+    const orgDrop = document.getElementById('orgGenderDropdown');
+    if (orgDrop && !orgDrop.contains(event.target)) {
+        orgDrop.classList.remove('active');
+    }
 
-// Emoji Picker external click listener
-const picker = document.getElementById('emojiPicker');
-const btn = document.querySelector('.chat-emoji-btn');
-if (picker && picker.classList.contains('active') && !picker.contains(event.target) && (!btn || !btn.contains(event.target))) {
-picker.classList.remove('active');
-}
+    // Emoji Picker external click listener
+    const picker = document.getElementById('emojiPicker');
+    const btn = document.querySelector('.chat-emoji-btn');
+    if (picker && picker.classList.contains('active') && !picker.contains(event.target) && (!btn || !btn.contains(event.target))) {
+        picker.classList.remove('active');
+    }
 });
 
 // Global Raw Data Vault
@@ -206,125 +206,112 @@ let globalTitleCounts = {};
 let globalRemarksDetails = {};
 
 let currentPieState = { 
-level: 1, filterKey: 'all', level1Target: null, level2Target: null 
+    level: 1, filterKey: 'all', level1Target: null, level2Target: null 
 };
 
 const serviceCategoryLabels = [
-'TRAUMA (ROADCRASH)', 'Roadside Assistance', 'Patient Transport',
-'Medical Emergencies', 'Standby Medic & VIP', 'SUPPORT SERVICES (MANPOWER, TRANSPORTATION & OTHER RESOURCES)',
-'Clearing Operations', 'Firetruck', 'Hauling', 'Ledvan Truck'
+    'TRAUMA (ROADCRASH)', 'Roadside Assistance', 'Patient Transport',
+    'Medical Emergencies', 'Standby Medic & VIP', 'SUPPORT SERVICES (MANPOWER, TRANSPORTATION & OTHER RESOURCES)',
+    'Clearing Operations', 'Firetruck', 'Hauling', 'Ledvan Truck'
 ];
 
 const monthOrder = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
 
 const pieColorPalette = [
-'#e11d48', '#06b6d4', '#2563eb', '#ea580c', '#16a34a', 
-'#9333ea', '#f43f5e', '#f59e0b', '#3b82f6', '#10b981', 
-'#8b5cf6', '#d946ef', '#f97316', '#14b8a6', '#6366f1'
+    '#e11d48', '#06b6d4', '#2563eb', '#ea580c', '#16a34a', 
+    '#9333ea', '#f43f5e', '#f59e0b', '#3b82f6', '#10b981', 
+    '#8b5cf6', '#d946ef', '#f97316', '#14b8a6', '#6366f1'
 ];
 
 const sharedTooltipConfig = {
-backgroundColor: 'rgba(30, 41, 59, 0.95)',
-titleColor: '#ffffff',
-bodyColor: '#ffffff',
-titleFont: { family: 'Inter', size: 11, weight: '800' },
-bodyFont: { family: 'Inter', size: 11, weight: '600' },
-padding: 10,
-cornerRadius: 6,
-displayColors: false, 
-borderColor: 'rgba(255, 255, 255, 0.4)', 
-borderWidth: 1,
-caretSize: 6,
-caretPadding: 6
+    backgroundColor: 'rgba(30, 41, 59, 0.95)',
+    titleColor: '#ffffff',
+    bodyColor: '#ffffff',
+    titleFont: { family: 'Inter', size: 11, weight: '800' },
+    bodyFont: { family: 'Inter', size: 11, weight: '600' },
+    padding: 10,
+    cornerRadius: 6,
+    displayColors: false, 
+    borderColor: 'rgba(255, 255, 255, 0.4)', 
+    borderWidth: 1,
+    caretSize: 6,
+    caretPadding: 6
 };
 
 // --- MODAL CHART LOGIC FOR FULL YEAR BAR CHART ---
 window.openExpandedLineChart = function(chartKey) {
-try {
-const dataObj = toggleChartData[chartKey];
-if(!dataObj) return;
+    try {
+        const dataObj = toggleChartData[chartKey];
+        if(!dataObj) return;
 
-document.getElementById('expandedLineTitle').innerText = dataObj.labelText + " (12-Month View)";
-document.getElementById('expandedLineModal').classList.add('active');
+        document.getElementById('expandedLineTitle').innerText = dataObj.labelText + " (12-Month View)";
+        document.getElementById('expandedLineModal').classList.add('active');
 
-const canvas = document.getElementById('expandedLineCanvas');
-if(!canvas) return;
-const ctx = canvas.getContext('2d');
+        const canvas = document.getElementById('expandedLineCanvas');
+        if(!canvas) return;
+        const ctx = canvas.getContext('2d');
 
-if(expandedLineInstance) {
-expandedLineInstance.destroy();
-}
+        if(expandedLineInstance) {
+            expandedLineInstance.destroy();
+        }
 
-const chartColor = Array.isArray(dataObj.color) ? dataObj.color[0] : dataObj.color;
+        const chartColor = Array.isArray(dataObj.color) ? dataObj.color[0] : dataObj.color;
 
-expandedLineInstance = new Chart(ctx, {
-type: 'bar', // Full 12 month vertical bar chart
-data: {
-labels: dataObj.labels, 
-datasets: [{
-label: dataObj.labelText,
-data: dataObj.data, 
-backgroundColor: chartColor,
-borderRadius: 4,
-borderWidth: 0,
-maxBarThickness: 40
-}]
-},
-options: {
-responsive: true,
-maintainAspectRatio: false,
-animation: { duration: 800, easing: 'easeOutQuart' },
-plugins: {
-legend: { display: false },
-datalabels: {
-display: true,
-align: 'top',
-anchor: 'end',
-color: '#64748b',
-font: { weight: 'bold', family: 'Inter', size: 11 }
-},
-tooltip: sharedTooltipConfig
-},
-scales: {
-x: {
-grid: { display: false, drawBorder: false },
-ticks: { font: { family: 'Inter', size: 10, weight: '600' }, color: '#64748b' },
-border: { display: false }
-},
-y: {
-beginAtZero: true,
-grid: { color: '#f1f5f9', drawBorder: false },
-ticks: { font: { family: 'Inter', size: 11 }, color: '#94a3b8' },
-grace: '15%',
-border: { display: false }
-}
-}
-}
-});
-} catch (e) {
-console.error("Error opening expanded chart:", e);
-}
-}
-
-window.closeExpandedLineChart = function() {
-document.getElementById('expandedLineModal').classList.remove('active');
-}
-
-// Updated scroll logic with offset for the new sticky header
-function scrollToSection(panelId) {
-    const section = document.getElementById(panelId);
-    if(section) {
-        // Get the height of the new top header dynamically
-        const headerHeight = document.getElementById('sticky-top-panel').offsetHeight;
-        
-        // Calculate position minus the header height and a small 20px padding buffer
-        const topPos = section.getBoundingClientRect().top + window.scrollY - headerHeight - 20;
-        
-        window.scrollTo({ top: topPos, behavior: 'smooth' });
+        expandedLineInstance = new Chart(ctx, {
+            type: 'bar', // Full 12 month vertical bar chart
+            data: {
+                labels: dataObj.labels, 
+                datasets: [{
+                    label: dataObj.labelText,
+                    data: dataObj.data, 
+                    backgroundColor: chartColor,
+                    borderRadius: 4,
+                    borderWidth: 0,
+                    maxBarThickness: 40
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 800, easing: 'easeOutQuart' },
+                plugins: {
+                    legend: { display: false },
+                    datalabels: {
+                        display: true,
+                        align: 'top',
+                        anchor: 'end',
+                        color: '#64748b',
+                        font: { weight: 'bold', family: 'Inter', size: 11 }
+                    },
+                    tooltip: sharedTooltipConfig
+                },
+                scales: {
+                    x: {
+                        grid: { display: false, drawBorder: false },
+                        ticks: { font: { family: 'Inter', size: 10, weight: '600' }, color: '#64748b' },
+                        border: { display: false }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f1f5f9', drawBorder: false },
+                        ticks: { font: { family: 'Inter', size: 11 }, color: '#94a3b8' },
+                        grace: '15%',
+                        border: { display: false }
+                    }
+                }
+            }
+        });
+    } catch (e) {
+        console.error("Error opening expanded chart:", e);
     }
 }
 
-function scrollToSection(panelId) {
+window.closeExpandedLineChart = function() {
+    document.getElementById('expandedLineModal').classList.remove('active');
+}
+
+// --- UPDATED SCROLL LOGIC FOR STICKY HEADER ---
+window.scrollToSection = function(panelId) {
     const section = document.getElementById(panelId);
     if(section) {
         // Calculate the height of the sticky header so we don't hide the title under it
@@ -343,15 +330,13 @@ document.addEventListener("DOMContentLoaded", function() {
     setInterval(() => fetchOpenWeather(document.getElementById('tarlac-muni-select').value), 900000);
 
     const panels = document.querySelectorAll('.panel');
-    // FIX: Targets the new top nav links instead of the deleted sidebar
-    const navLinks = document.querySelectorAll('.top-nav-menu li');
+    const navLinks = document.querySelectorAll('.top-nav-menu li'); // Pointing to your new top menu
 
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 navLinks.forEach(link => link.classList.remove('active'));
                 const id = entry.target.getAttribute('id');
-                // FIX: Targets the exact onclick function of the new menu
                 const activeLink = document.querySelector(`.top-nav-menu li[onclick="scrollToSection('${id}')"]`);
                 if(activeLink) activeLink.classList.add('active');
 
@@ -364,7 +349,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 }
             }
         });
-    }, { threshold: 0.2, rootMargin: "-180px 0px 0px 0px" }); // Offset margin so it tracks scrolling properly
+    }, { threshold: 0.2, rootMargin: "-180px 0px 0px 0px" }); // Added an offset margin so it tracks scrolling properly
 
     panels.forEach(panel => observer.observe(panel));
 
