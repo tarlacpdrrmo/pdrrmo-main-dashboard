@@ -567,127 +567,128 @@
 
         <main class="main-content" id="scroll-area">
 
-           <header class="page-header sticky-top-panel" id="sticky-top-panel">
-    <!-- Top Row: Logos, Titles, and Utilities -->
-    <div class="header-top-row">
-        
-        <!-- Left Side: Brand -->
-        <div class="header-brand-container">
-            <img src="tarlac_official_seal.png" alt="Seal" class="brand-logo">
-            <img src="clean.jpg" alt="Rescue Logo" class="brand-logo">
-            <div class="header-titles">
-                <h1>TARLAC PROVINCIAL DISASTER RISK REDUCTION AND MANAGEMENT OFFICE</h1>
-                <h2>INTEGRATED OPERATIONS DASHBOARD</h2>
-            </div>
-        </div>
+           <!-- NEW STICKY TOP PANEL HEADER -->
+            <header class="page-header sticky-top-panel" id="sticky-top-panel">
+                <!-- Top Row: Logos, Titles, and Utilities -->
+                <div class="header-top-row">
+                    
+                    <!-- Left Side: Brand -->
+                    <div class="header-brand-container">
+                        <img src="tarlac_official_seal.png" alt="Seal" class="brand-logo">
+                        <img src="clean.jpg" alt="Rescue Logo" class="brand-logo">
+                        <div class="header-titles">
+                            <h1>TARLAC PROVINCIAL DISASTER RISK REDUCTION AND MANAGEMENT OFFICE</h1>
+                            <h2>INTEGRATED OPERATIONS DASHBOARD</h2>
+                        </div>
+                    </div>
 
-        <!-- Right Side: Weather, Clock, Minimalist Logout -->
-        <div class="header-right-actions">
-            <div id="weather-interactive-widget" class="weather-interactive-container">
-                <div class="weather-toggle" onclick="toggleWeatherPanel()">
-                    <img id="weather-icon-main" src="" alt="Weather" style="display:none;">
-                    <div class="weather-summary">
-                        <span id="weather-temp-main">--°C</span>
-                        <span id="weather-city-main">Tarlac City</span>
+                    <!-- Right Side: Weather, Clock, Minimalist Logout -->
+                    <div class="header-right-actions">
+                        <div id="weather-interactive-widget" class="weather-interactive-container">
+                            <div class="weather-toggle" onclick="toggleWeatherPanel()">
+                                <img id="weather-icon-main" src="" alt="Weather" style="display:none;">
+                                <div class="weather-summary">
+                                    <span id="weather-temp-main">--°C</span>
+                                    <span id="weather-city-main">Tarlac City</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="header-clock">
+                            <div id="live-time">00:00:00 AM</div>
+                            <div id="live-date">Loading...</div>
+                        </div>
+
+                        <!-- Minimalist Outline Logout Icon -->
+                        <button class="btn-logout-minimal" onclick="handleLogout()" title="Sign Out">
+                            <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path><path stroke-linecap="round" stroke-linejoin="round" d="M21 12H9"></path></svg>
+                        </button>
                     </div>
                 </div>
-            </div>
 
-            <div class="header-clock">
-                <div id="live-time">00:00:00 AM</div>
-                <div id="live-date">Loading...</div>
-            </div>
+                <!-- Middle Row: The 4 Main Dashboard Sections -->
+                <nav class="top-nav-menu">
+                    <li class="active" onclick="scrollToSection('assets')">ASSETS AND PERSONNEL DISPATCHED</li>
+                    <li onclick="scrollToSection('tracking')">COMMUNICATION LETTERS</li>
+                    <li onclick="scrollToSection('trainings')">TRAININGS AND SEMINARS</li>
+                    <li onclick="scrollToSection('volunteers')">VOLUNTEER'S SECTION</li>
+                </nav>
 
-            <!-- Minimalist Outline Logout Icon matching your image -->
-            <button class="btn-logout-minimal" onclick="handleLogout()" title="Sign Out">
-                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-            </button>
-        </div>
-    </div>
+                <!-- Bottom Row: Sub-links with Dropdowns -->
+                <nav class="sub-nav-menu">
+                    <div class="top-dropdown">
+                        <button class="top-dropbtn">TABULAR REPORTS ▼</button>
+                        <div class="top-dropdown-content">
+                            <a onclick="openMapModal('https://tarlacpdrrmo.github.io/tarlacpdrrmotabularreport-training/', 'Trainings Data View')">Trainings Data View</a>
+                            <div class="dropdown-divider">Operation Dispatched</div>
+                            <a onclick="showToast('Coming Soon')">Medical Emergencies</a>
+                            <a onclick="showToast('Coming Soon')">Trauma (RoadCrash incident)</a>
+                            <a onclick="openMapModal('https://tarlacpdrrmo.github.io/standby_medic_marshal_VIP_operation/', 'Standby Medic')">Standby Medic & VIP</a>
+                            <a onclick="showToast('Coming Soon')">Roadside Assistance</a>
+                            <a onclick="openMapModal('https://tarlacpdrrmo.github.io/patient_transport-reports/', 'Patient Transport')">Patient Transport</a>
+                            <a onclick="showToast('Coming Soon')">Support Services</a>
+                            <a onclick="showToast('Coming Soon')">Clearing Operations</a>
+                            <a onclick="openMapModal('https://tarlacpdrrmo.github.io/dispatched_operation_firetruck/', 'Firetruck')">Firetruck</a>
+                            <a onclick="showToast('Coming Soon')">Hauling</a>
+                            <a onclick="showToast('Coming Soon')">Ledvan Truck</a>
+                        </div>
+                    </div>
 
-    <!-- Middle Row: The 4 Main Dashboard Sections -->
-    <nav class="top-nav-menu">
-        <li class="active" onclick="scrollToSection('assets')">ASSETS AND PERSONNEL DISPATCHED</li>
-        <li onclick="scrollToSection('tracking')">COMMUNICATION LETTERS</li>
-        <li onclick="scrollToSection('trainings')">TRAININGS AND SEMINARS</li>
-        <li onclick="scrollToSection('volunteers')">VOLUNTEER'S SECTION</li>
-    </nav>
+                    <div class="top-dropdown">
+                        <button class="top-dropbtn">MDRRMOs ▼</button>
+                        <div class="top-dropdown-content">
+                            <a onclick="showToast('Switching to Tarlac City')">Tarlac City</a>
+                            <a onclick="showToast('Loading Anao')">Anao</a>
+                            <a onclick="showToast('Loading Bamban')">Bamban</a>
+                            <a onclick="showToast('Loading Camiling')">Camiling</a>
+                            <a onclick="showToast('Loading Capas')">Capas</a>
+                            <a onclick="showToast('Loading Concepcion')">Concepcion</a>
+                            <a onclick="showToast('Loading Gerona')">Gerona</a>
+                            <a onclick="showToast('Loading La Paz')">La Paz</a>
+                            <a onclick="showToast('Loading Mayantoc')">Mayantoc</a>
+                            <a onclick="showToast('Loading Moncada')">Moncada</a>
+                            <a onclick="showToast('Loading Paniqui')">Paniqui</a>
+                            <a onclick="showToast('Loading Pura')">Pura</a>
+                            <a onclick="showToast('Loading Ramos')">Ramos</a>
+                            <a onclick="showToast('Loading San Clemente')">San Clemente</a>
+                            <a onclick="showToast('Loading San Jose')">San Jose</a>
+                            <a onclick="showToast('Loading Santa Ignacia')">Santa Ignacia</a>
+                            <a onclick="showToast('Loading Victoria')">Victoria</a>
+                        </div>
+                    </div>
 
-    <!-- Bottom Row: Sub-links with Dropdowns -->
-    <nav class="sub-nav-menu">
-        <div class="top-dropdown">
-            <button class="top-dropbtn">TABULAR REPORTS ▼</button>
-            <div class="top-dropdown-content">
-                <a onclick="openMapModal('https://tarlacpdrrmo.github.io/tarlacpdrrmotabularreport-training/', 'Trainings Data View')">Trainings Data View</a>
-                <div class="dropdown-divider">Operation Dispatched</div>
-                <a onclick="showToast('Coming Soon')">Medical Emergencies</a>
-                <a onclick="showToast('Coming Soon')">Trauma (RoadCrash incident)</a>
-                <a onclick="openMapModal('https://tarlacpdrrmo.github.io/standby_medic_marshal_VIP_operation/', 'Standby Medic')">Standby Medic & VIP</a>
-                <a onclick="showToast('Coming Soon')">Roadside Assistance</a>
-                <a onclick="openMapModal('https://tarlacpdrrmo.github.io/patient_transport-reports/', 'Patient Transport')">Patient Transport</a>
-                <a onclick="showToast('Coming Soon')">Support Services</a>
-                <a onclick="showToast('Coming Soon')">Clearing Operations</a>
-                <a onclick="openMapModal('https://tarlacpdrrmo.github.io/dispatched_operation_firetruck/', 'Firetruck')">Firetruck</a>
-                <a onclick="showToast('Coming Soon')">Hauling</a>
-                <a onclick="showToast('Coming Soon')">Ledvan Truck</a>
-            </div>
-        </div>
+                    <div class="top-dropdown">
+                        <button class="top-dropbtn">WEATHER MONITORING ▼</button>
+                        <div class="top-dropdown-content">
+                            <a onclick="openMapModal('https://tarlacpdrrmo.github.io/tarlac-weather-monitor/', 'Tarlac Weather')">Tarlac Weather</a>
+                        </div>
+                    </div>
 
-        <div class="top-dropdown">
-            <button class="top-dropbtn">MDRRMOs ▼</button>
-            <div class="top-dropdown-content">
-                <a onclick="showToast('Switching to Tarlac City')">Tarlac City</a>
-                <a onclick="showToast('Loading Anao')">Anao</a>
-                <a onclick="showToast('Loading Bamban')">Bamban</a>
-                <a onclick="showToast('Loading Camiling')">Camiling</a>
-                <a onclick="showToast('Loading Capas')">Capas</a>
-                <a onclick="showToast('Loading Concepcion')">Concepcion</a>
-                <a onclick="showToast('Loading Gerona')">Gerona</a>
-                <a onclick="showToast('Loading La Paz')">La Paz</a>
-                <a onclick="showToast('Loading Mayantoc')">Mayantoc</a>
-                <a onclick="showToast('Loading Moncada')">Moncada</a>
-                <a onclick="showToast('Loading Paniqui')">Paniqui</a>
-                <a onclick="showToast('Loading Pura')">Pura</a>
-                <a onclick="showToast('Loading Ramos')">Ramos</a>
-                <a onclick="showToast('Loading San Clemente')">San Clemente</a>
-                <a onclick="showToast('Loading San Jose')">San Jose</a>
-                <a onclick="showToast('Loading Santa Ignacia')">Santa Ignacia</a>
-                <a onclick="showToast('Loading Victoria')">Victoria</a>
-            </div>
-        </div>
+                    <div class="top-dropdown">
+                        <button class="top-dropbtn">GIS AND MAPS ▼</button>
+                        <div class="top-dropdown-content">
+                            <a onclick="openMapModal('https://tarlacpdrrmo.github.io/tarlac-ews-map/', 'EWS Map')">Early Warning System</a>
+                            <a onclick="openMapModal('https://tarlacpdrrmo.github.io/tarlac-incidents/', 'Incident Heatmap')">Incident Heatmap</a>
+                            <a onclick="openMapModal('https://tarlacpdrrmo.github.io/tarlac-evacuation-centers/', 'Critical Facilities')">Critical Facilities</a>
+                        </div>
+                    </div>
 
-        <div class="top-dropdown">
-            <button class="top-dropbtn">WEATHER MONITORING ▼</button>
-            <div class="top-dropdown-content">
-                <a onclick="openMapModal('https://tarlacpdrrmo.github.io/tarlac-weather-monitor/', 'Tarlac Weather')">Tarlac Weather</a>
-            </div>
-        </div>
+                    <div class="top-dropdown">
+                        <button class="top-dropbtn">OTHER SOURCES ▼</button>
+                        <div class="top-dropdown-content">
+                            <a onclick="openMapModal('https://tarlacpdrrmo.github.io/tarlac-weather-imagery/', 'Infrared')">Tropical WPAC Infrared</a>
+                        </div>
+                    </div>
 
-        <div class="top-dropdown">
-            <button class="top-dropbtn">GIS AND MAPS ▼</button>
-            <div class="top-dropdown-content">
-                <a onclick="openMapModal('https://tarlacpdrrmo.github.io/tarlac-ews-map/', 'EWS Map')">Early Warning System</a>
-                <a onclick="openMapModal('https://tarlacpdrrmo.github.io/tarlac-incidents/', 'Incident Heatmap')">Incident Heatmap</a>
-                <a onclick="openMapModal('https://tarlacpdrrmo.github.io/tarlac-evacuation-centers/', 'Critical Facilities')">Critical Facilities</a>
-            </div>
-        </div>
-
-        <div class="top-dropdown">
-            <button class="top-dropbtn">OTHER SOURCES ▼</button>
-            <div class="top-dropdown-content">
-                <a onclick="openMapModal('https://tarlacpdrrmo.github.io/tarlac-weather-imagery/', 'Infrared')">Tropical WPAC Infrared</a>
-            </div>
-        </div>
-
-        <div class="top-dropdown">
-            <button class="top-dropbtn" onclick="openSuggestionsInbox()" style="display:flex; align-items:center; gap:8px;">
-                FEEDBACK AND REPORT
-                <span id="suggestionBadge" class="sidebar-badge" style="display:none; margin:0;">0</span>
-            </button>
-        </div>
-    </nav>
-</header>
-
+                    <div class="top-dropdown">
+                        <button class="top-dropbtn" onclick="openSuggestionsInbox()" style="display:flex; align-items:center; gap:8px;">
+                            FEEDBACK AND REPORT
+                            <span id="suggestionBadge" class="sidebar-badge" style="display:none; margin:0;">0</span>
+                        </button>
+                    </div>
+                </nav>
+            </header>
+            
             <section id="assets" class="panel">
 
                 <div class="panel-header-wrapper">
