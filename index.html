@@ -567,85 +567,140 @@
 
         <main class="main-content" id="scroll-area">
 
-            <header class="page-header">
-                <div class="header-titles">
-                    <h1>TARLAC PROVINCIAL DISASTER RISK REDUCTION & MANAGEMENT OFFICE</h1>
-                    <h2>INTEGRATED OPERATIONS DASHBOARD</h2>
-                </div>
+            <header class="page-header sticky-top-panel" id="sticky-top-panel">
+    <!-- Top Row: Brand & Utilities -->
+    <div class="header-top-row">
+        <div class="header-brand-container">
+            <div class="header-logos">
+                <img src="tarlac_official_seal.png" alt="Tarlac Official Seal">
+                <img src="clean.jpg" alt="Tarlac PDRRMO Rescue Logo">
+            </div>
+            <div class="header-titles">
+                <h1>TARLAC PROVINCIAL DISASTER RISK REDUCTION AND MANAGEMENT OFFICE</h1>
+                <h2>INTEGRATED OPERATIONS DASHBOARD</h2>
+            </div>
+        </div>
 
-                <div class="header-right-actions">
-                    <div id="weather-interactive-widget" class="weather-interactive-container">
-                        <div class="weather-toggle" onclick="toggleWeatherPanel()">
-                            <img id="weather-icon-main" src="" alt="Weather" style="display:none;">
-                            <div class="weather-summary">
-                                <span id="weather-temp-main">--°C</span>
-                                <span id="weather-city-main">Tarlac City</span>
-                            </div>
-                            <svg class="dropdown-arrow" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
-                        </div>
-
-                        <div id="weather-expanded-panel" class="weather-panel">
-                            <div class="weather-search-wrapper">
-                                <label for="tarlac-muni-select">Select Municipality:</label>
-                                <select id="tarlac-muni-select" onchange="changeMunicipality()">
-                                    <option value="Tarlac City,PH">Tarlac City</option>
-                                    <option value="Capas,PH">Capas</option>
-                                    <option value="Concepcion,PH">Concepcion</option>
-                                    <option value="Paniqui,PH">Paniqui</option>
-                                    <option value="Camiling,PH">Camiling</option>
-                                    <option value="Gerona,PH">Gerona</option>
-                                    <option value="Moncada,PH">Moncada</option>
-                                    <option value="Victoria,PH">Victoria</option>
-                                    <option value="Bamban,PH">Bamban</option>
-                                    <option value="San Jose,PH">San Jose</option>
-                                    <option value="San Clemente,PH">San Clemente</option>
-                                    <option value="Mayantoc,PH">Mayantoc</option>
-                                    <option value="Santa Ignacia,PH">Santa Ignacia</option>
-                                    <option value="La Paz,PH">La Paz</option>
-                                    <option value="Pura,PH">Pura</option>
-                                    <option value="Ramos,PH">Ramos</option>
-                                    <option value="Anao,PH">Anao</option>
-                                </select>
-                            </div>
-
-                            <div class="weather-details-grid">
-                                <div class="weather-detail">
-                                    <span class="detail-label">Condition</span>
-                                    <span id="weather-desc-detail" class="detail-value">--</span>
-                                </div>
-                                <div class="weather-detail">
-                                    <span class="detail-label">Humidity</span>
-                                    <span id="weather-humidity" class="detail-value">--%</span>
-                                </div>
-                                <div class="weather-detail">
-                                    <span class="detail-label">Wind Speed</span>
-                                    <span id="weather-wind" class="detail-value">-- m/s</span>
-                                </div>
-                            </div>
-
-                            <h4 class="weather-section-title">Chance of Rain (Next 12 Hrs)</h4>
-                            <div class="weather-chart-wrapper">
-                                <canvas id="rainChanceChart"></canvas>
-                            </div>
-
-                            <h4 class="weather-section-title">3-Day Forecast</h4>
-                            <div id="forecast-grid" class="forecast-grid">
-                                </div>
-                        </div>
+        <div class="header-right-actions">
+            <!-- Your Existing Weather Widget -->
+            <div id="weather-interactive-widget" class="weather-interactive-container">
+                <div class="weather-toggle" onclick="toggleWeatherPanel()">
+                    <img id="weather-icon-main" src="" alt="Weather" style="display:none;">
+                    <div class="weather-summary">
+                        <span id="weather-temp-main">--°C</span>
+                        <span id="weather-city-main">Tarlac City</span>
                     </div>
-
-                    <div class="header-clock">
-                        <div id="live-time">00:00:00 AM</div>
-                        <div id="live-date">Loading...</div>
-                    </div>
-
-                    <button class="btn-logout" onclick="handleLogout()">
-                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                        Sign Out
-                    </button>
+                    <svg class="dropdown-arrow" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                 </div>
-            </header>
+                <!-- ... (Keep your weather-expanded-panel div here) ... -->
+            </div>
 
+            <!-- Your Existing Clock -->
+            <div class="header-clock">
+                <div id="live-time">00:00:00 AM</div>
+                <div id="live-date">Loading...</div>
+            </div>
+
+            <!-- Your Existing Action Buttons -->
+            <button class="btn-print" onclick="window.print()" title="Print Report">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+            </button>
+            <button class="btn-logout" onclick="handleLogout()" title="Sign Out">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Middle Row: The 4 Main Dashboard Sections -->
+    <nav class="top-nav-menu">
+        <li class="top-nav-item active" onclick="scrollToSection('assets')">ASSETS AND PERSONNEL DISPATCHED</li>
+        <li class="top-nav-item" onclick="scrollToSection('tracking')">COMMUNICATION LETTERS</li>
+        <li class="top-nav-item" onclick="scrollToSection('trainings')">TRAININGS AND SEMINARS</li>
+        <li class="top-nav-item" onclick="scrollToSection('volunteers')">VOLUNTEER'S SECTION</li>
+    </nav>
+
+    <!-- Bottom Row: Sub-links Migrated from Sidebar with Dropdowns -->
+    <nav class="sub-nav-menu">
+        
+        <!-- Tabular Reports Dropdown -->
+        <div class="top-dropdown">
+            <button class="top-dropbtn">TABULAR REPORTS ▼</button>
+            <div class="top-dropdown-content">
+                <a onclick="openMapModal('https://tarlacpdrrmo.github.io/tarlacpdrrmotabularreport-training/', 'Trainings Data View')">Trainings Data View</a>
+                <div class="dropdown-divider">Operation Dispatched</div>
+                <a onclick="showToast('Coming Soon: We are currently updating this section.')">Medical Emergencies</a>
+                <a onclick="showToast('Coming Soon: We are currently updating this section.')">Trauma (RoadCrash incident)</a>
+                <a onclick="openMapModal('https://tarlacpdrrmo.github.io/standby_medic_marshal_VIP_operation/', 'Standby Medic, Marshal & VIP Data View')">Standby Medic & VIP</a>
+                <a onclick="showToast('Coming Soon: We are currently updating this section.')">Roadside Assistance</a>
+                <a onclick="openMapModal('https://tarlacpdrrmo.github.io/patient_transport-reports/', 'Patient Transport Data View')">Patient Transport</a>
+                <a onclick="showToast('Coming Soon: We are currently updating this section.')">Support Services</a>
+                <a onclick="showToast('Coming Soon: We are currently updating this section.')">Clearing Operations</a>
+                <a onclick="openMapModal('https://tarlacpdrrmo.github.io/dispatched_operation_firetruck/', 'Firetruck Operations Data View')">Firetruck</a>
+                <a onclick="showToast('Coming Soon: We are currently updating this section.')">Hauling</a>
+                <a onclick="showToast('Coming Soon: We are currently updating this section.')">Ledvan Truck</a>
+            </div>
+        </div>
+
+        <!-- MDRRMOs Dropdown -->
+        <div class="top-dropdown">
+            <button class="top-dropbtn" onclick="toggleDashboardMode()">MDRRMOs ▼</button>
+            <div class="top-dropdown-content">
+                <a onclick="showToast('Switching to Tarlac City CDRRMO')">Tarlac City</a>
+                <a onclick="showToast('Loading Anao MDRRMO')">Anao</a>
+                <a onclick="showToast('Loading Bamban MDRRMO')">Bamban</a>
+                <a onclick="showToast('Loading Camiling MDRRMO')">Camiling</a>
+                <a onclick="showToast('Loading Capas MDRRMO')">Capas</a>
+                <a onclick="showToast('Loading Concepcion MDRRMO')">Concepcion</a>
+                <a onclick="showToast('Loading Gerona MDRRMO')">Gerona</a>
+                <a onclick="showToast('Loading La Paz MDRRMO')">La Paz</a>
+                <a onclick="showToast('Loading Mayantoc MDRRMO')">Mayantoc</a>
+                <a onclick="showToast('Loading Moncada MDRRMO')">Moncada</a>
+                <a onclick="showToast('Loading Paniqui MDRRMO')">Paniqui</a>
+                <a onclick="showToast('Loading Pura MDRRMO')">Pura</a>
+                <a onclick="showToast('Loading Ramos MDRRMO')">Ramos</a>
+                <a onclick="showToast('Loading San Clemente MDRRMO')">San Clemente</a>
+                <a onclick="showToast('Loading San Jose MDRRMO')">San Jose</a>
+                <a onclick="showToast('Loading Santa Ignacia MDRRMO')">Santa Ignacia</a>
+                <a onclick="showToast('Loading Victoria MDRRMO')">Victoria</a>
+            </div>
+        </div>
+
+        <!-- Weather Dropdown -->
+        <div class="top-dropdown">
+            <button class="top-dropbtn">WEATHER MONITORING ▼</button>
+            <div class="top-dropdown-content">
+                <a onclick="openMapModal('https://tarlacpdrrmo.github.io/tarlac-weather-monitor/', 'Tarlac Weather')">Tarlac Weather</a>
+            </div>
+        </div>
+
+        <!-- GIS Dropdown -->
+        <div class="top-dropdown">
+            <button class="top-dropbtn">GIS AND MAPS ▼</button>
+            <div class="top-dropdown-content">
+                <a onclick="openMapModal('https://tarlacpdrrmo.github.io/tarlac-ews-map/', 'Early Warning System Map')">Early Warning System</a>
+                <a onclick="openMapModal('https://tarlacpdrrmo.github.io/tarlac-incidents/', 'Incident Heatmap')">Incident Heatmap</a>
+                <a onclick="openMapModal('https://tarlacpdrrmo.github.io/tarlac-evacuation-centers/', 'Critical Facilities Map')">Critical Facilities</a>
+            </div>
+        </div>
+
+        <!-- Other Sources Dropdown -->
+        <div class="top-dropdown">
+            <button class="top-dropbtn">OTHER SOURCES ▼</button>
+            <div class="top-dropdown-content">
+                <a onclick="openMapModal('https://tarlacpdrrmo.github.io/tarlac-weather-imagery/', 'Tropical WPAC Infrared Stream')">Tropical WPAC Infrared</a>
+            </div>
+        </div>
+
+        <!-- Feedback & Report -->
+        <div class="top-dropdown">
+            <button class="top-dropbtn" onclick="openSuggestionsInbox()" style="display: flex; align-items: center; gap: 8px;">
+                FEEDBACK AND REPORT
+                <span id="suggestionBadge" class="sidebar-badge" style="display:none; margin: 0;">0</span>
+            </button>
+        </div>
+
+    </nav>
+</header>
          <!-- 1. SLIDER WRAPPER -->
             <div class="view-slider-wrapper">
                 
