@@ -310,12 +310,46 @@ window.closeExpandedLineChart = function() {
 document.getElementById('expandedLineModal').classList.remove('active');
 }
 
+// Updated scroll logic with offset for the new sticky header
 function scrollToSection(panelId) {
-const section = document.getElementById(panelId);
-if(section) {
-section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const section = document.getElementById(panelId);
+    if(section) {
+        // Get the height of the new top header dynamically
+        const headerHeight = document.getElementById('sticky-top-panel').offsetHeight;
+        
+        // Calculate position minus the header height and a small 20px padding buffer
+        const topPos = section.getBoundingClientRect().top + window.scrollY - headerHeight - 20;
+        
+        window.scrollTo({ top: topPos, behavior: 'smooth' });
+    }
 }
-}
+
+// Updated Observer to switch the active pill on the new top menu as you scroll
+document.addEventListener("DOMContentLoaded", function() {
+    const panels = document.querySelectorAll('.panel');
+    // Targets the new top nav links instead of the deleted sidebar
+    const navLinks = document.querySelectorAll('.top-nav-menu li');
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                navLinks.forEach(link => link.classList.remove('active'));
+                const id = entry.target.getAttribute('id');
+                const activeLink = document.querySelector(`.top-nav-menu li[onclick="scrollToSection('${id}')"]`);
+                if(activeLink) activeLink.classList.add('active');
+
+                if (entry.target.classList.contains('iframe-panel')) {
+                    entry.target.classList.add('map-in-view');
+                }
+            } else {
+                if (entry.target.classList.contains('iframe-panel')) {
+                    entry.target.classList.remove('map-in-view');
+                }
+            }
+        });
+    }, { threshold: 0.2, rootMargin: "-150px 0px 0px 0px" }); // Added rootMargin to offset the sticky header detection
+
+    panels.forEach(panel => observer.observe(panel));
 
 // ==========================================
 // DOMContentLoaded BLOCK
