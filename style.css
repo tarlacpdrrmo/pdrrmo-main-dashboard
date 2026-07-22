@@ -1648,6 +1648,58 @@ td {
 }
 
 /* ==========================================
+   MODERN SEGMENTED CONTROL SWITCH (SOFT & LIGHT)
+   ========================================== */
+.modern-segmented-control {
+    position: relative;
+    display: flex;
+    background: rgba(255, 255, 255, 0.08); /* Soft, light frosted background instead of dark navy */
+    border: 1px solid rgba(255, 255, 255, 0.1); /* Very subtle, light edge */
+    border-radius: 30px;
+    margin: 0 12px 24px 12px;
+    padding: 4px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.segment-track {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 4px;
+    width: calc(50% - 4px);
+    background: #ffffff; /* Bright white sliding thumb */
+    border-radius: 26px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08); /* Much softer, lighter shadow */
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    z-index: 1;
+}
+
+/* Slides the white background to the right */
+.modern-segmented-control.mdrrmo-active .segment-track {
+    transform: translateX(100%);
+}
+
+.segment-btn {
+    flex: 1;
+    text-align: center;
+    padding: 9px 0; 
+    font-family: 'Inter', sans-serif; /* Matches sidebar font exactly */
+    font-size: 0.75rem; /* Matches sidebar size */
+    font-weight: 500; /* Much thinner, matching the sleek sidebar text */
+    letter-spacing: 0.5px;
+    z-index: 2; /* Keeps text above the white track */
+    transition: all 0.4s ease;
+}
+
+/* Default state (PDRRMO active) */
+.pdrrmo-btn { color: #475569; font-weight: 600; } /* Sleek greyish tone instead of stark dark */
+.mdrrmo-btn { color: #94a3b8; } /* Muted light slate for inactive */
+
+/* Swapped state (MDRRMO active) */
+.modern-segmented-control.mdrrmo-active .pdrrmo-btn { color: #94a3b8; font-weight: 500; }
+.modern-segmented-control.mdrrmo-active .mdrrmo-btn { color: #475569; font-weight: 600; }
+/* ==========================================
    SIDEBAR MENU SMOOTH ENTRY ANIMATION
    ========================================== */
 @keyframes menuSlideDownFade {
@@ -1664,6 +1716,34 @@ td {
 .sidebar-anim-enter {
     /* Increased from 0.4s to 0.75s, and used a silkier deceleration curve */
     animation: menuSlideDownFade 0.75s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+}
+/* ==========================================
+   SLIDER LAYOUT (FIXED PEEKING & SCROLL LAG)
+   ========================================== */
+.view-slider-wrapper {
+    position: relative;
+    width: 100%;
+    overflow-x: hidden; 
+}
+
+.view-slider-track {
+    display: flex;
+    align-items: flex-start;
+    width: 100%; /* Using 100% fixes the sub-pixel peeking bug */
+    transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    /* will-change removed to restore buttery smooth native scrolling */
+}
+
+.slider-panel {
+    width: 100%; /* Forces exact fit */
+    flex-shrink: 0;
+    transition: opacity 0.4s ease;
+}
+
+/* Turns the hidden panel completely invisible so it cannot peek */
+.slider-panel.inactive {
+    opacity: 0;
+    pointer-events: none;
 }
 
 /* ==========================================
@@ -1774,6 +1854,19 @@ td {
     border-radius: 0 6px 6px 0 !important;
 }
 
+/* 4. Update the Dashboard Switcher to Match the Glass Theme */
+.modern-segmented-control {
+    background: rgba(255, 255, 255, 0.08) !important; /* Makes the inside light and frosted instead of dark */
+    border: 1px solid rgba(255, 255, 255, 0.05) !important; /* Barely visible, soft light edge */
+    box-shadow: none !important; /* THIS COMPLETELY KILLS ALL HEAVY INNER EDGES/CRATERS */
+}
+
+.segment-track {
+    /* Keeps the active thumb white and clean */
+    background: #ffffff !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    border: none !important;
+}
 /* ==========================================
    TRAININGS DASHBOARD 3-COLUMN LAYOUT
    ========================================== */
@@ -2180,386 +2273,4 @@ JavaScript
 .sidebar-submenu li a {
     font-size: 10px !important;
     padding-left: 45px !important; /* Keeps the indentation neat for smaller text */
-}
-
-/* --- LAYOUT FIX (Sidebar Removed) --- */
-.dashboard-container {
-    flex-direction: column;
-    overflow-y: auto; /* Moves scrolling to the main window */
-}
-.main-content {
-    padding: 0 24px 24px 24px;
-    overflow-y: visible;
-}
-html { scroll-behavior: smooth; }
-
-/* --- NEW STICKY TOP PANEL --- */
-.sticky-top-panel {
-    position: sticky;
-    top: 0;
-    z-index: 9999;
-    display: flex;
-    flex-direction: column;
-    padding: 15px 32px 0 32px;
-    margin: 0 -24px 24px -24px;
-    background-image: linear-gradient(to right, rgba(15, 23, 42, 0.98) 0%, rgba(30, 41, 59, 0.9) 100%), url('headerbg.jpg');
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-    border-radius: 0;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-/* Header Row Refinements */
-.header-top-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-}
-.header-brand-container {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-.header-logos { display: flex; gap: 10px; align-items: center; }
-.header-logos img { height: 55px; width: auto; object-fit: contain; }
-
-/* --- MIDDLE NAV: MAIN DASHBOARDS --- */
-.top-nav-menu {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-top: 15px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-.top-nav-menu li {
-    list-style: none;
-    color: #ffffff;
-    font-size: 0.8rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    cursor: pointer;
-    padding: 8px 20px;
-    border-radius: 30px;
-    border: 1px solid transparent;
-    transition: all 0.3s ease;
-}
-.top-nav-menu li.active {
-    border-color: #ffffff;
-    background: rgba(255, 255, 255, 0.1);
-}
-.top-nav-menu li:hover { background: rgba(255, 255, 255, 0.2); }
-
-/* --- BOTTOM NAV: DROPDOWNS --- */
-.sub-nav-menu {
-    display: flex;
-    justify-content: center;
-    gap: 30px;
-    margin-top: 5px;
-    padding-bottom: 10px;
-}
-.top-dropdown {
-    position: relative;
-    display: inline-block;
-}
-.top-dropbtn {
-    background: transparent;
-    color: #ffffff;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    border: none;
-    cursor: pointer;
-    padding: 10px;
-    opacity: 0.85;
-    transition: 0.3s;
-}
-.top-dropbtn:hover { color: #93c5fd; opacity: 1; }
-
-/* Dropdown Content Box */
-.top-dropdown-content {
-    display: none;
-    position: absolute;
-    background-color: #ffffff;
-    min-width: 260px;
-    box-shadow: 0px 8px 20px 0px rgba(0,0,0,0.3);
-    z-index: 10000;
-    border-radius: 8px;
-    overflow: hidden;
-    left: 50%;
-    transform: translateX(-50%);
-}
-.top-dropdown:hover .top-dropdown-content {
-    display: block;
-    animation: fadeInDrop 0.2s ease forwards;
-}
-
-/* Dropdown Items */
-.top-dropdown-content a {
-    color: #1e293b;
-    padding: 12px 16px;
-    text-decoration: none;
-    display: block;
-    font-size: 0.75rem;
-    font-weight: 600;
-    cursor: pointer;
-    border-bottom: 1px solid #f1f5f9;
-    transition: 0.2s;
-}
-.top-dropdown-content a:hover {
-    background-color: #eff6ff;
-    color: #2563eb;
-    padding-left: 20px; /* Slight indent hover effect */
-}
-.dropdown-divider {
-    background: #f8fafc;
-    color: #64748b;
-    font-weight: 800;
-    font-size: 0.65rem;
-    padding: 8px 16px;
-    border-bottom: 1px solid #e2e8f0;
-    text-transform: uppercase;
-}
-
-@keyframes fadeInDrop {
-    from { opacity: 0; transform: translate(-50%, 10px); }
-    to { opacity: 1; transform: translate(-50%, 0); }
-}
-
-/* =========================================================
-   1. TOTAL LAYOUT FIX (DESTROY SIDEBAR & BLANK SPACE)
-   ========================================================= */
-.sidebar, #pdrrmo-sidebar-menu, #mdrrmo-sidebar-menu { 
-    display: none !important; 
-    width: 0 !important; 
-}
-.dashboard-container { 
-    display: block; /* Removes flex-row causing the blank space */
-    width: 100%; 
-    height: 100vh; 
-    overflow-y: auto; 
-    overflow-x: hidden; 
-}
-.main-content { 
-    padding: 0 24px 24px 24px; 
-    margin: 0; 
-    width: 100%; 
-    max-width: 100%; 
-}
-
-/* =========================================================
-   2. STICKY HEADER (EXACTLY MATCHING IMAGE 2)
-   ========================================================= */
-.sticky-top-panel {
-    position: sticky;
-    top: 0;
-    z-index: 9999;
-    display: flex;
-    flex-direction: column;
-    padding: 25px 45px 15px 45px; /* Increased breathing room */
-    margin: 0 -24px 24px -24px;
-    /* LIGHTER overlay to match the reference image so the photo shows through */
-    background: linear-gradient(rgba(15, 23, 42, 0.45), rgba(15, 23, 42, 0.7)), url('headerbg.jpg');
-    background-size: cover;
-    background-position: center 25%;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.5);
-}
-
-/* --- Top Row Alignment & Size --- */
-.header-top-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    margin-bottom: 25px; /* Increased gap before the menu */
-}
-.header-brand-container {
-    display: flex;
-    align-items: center;
-    gap: 20px; /* Wider gap between logos and text */
-}
-
-/* FIX: Larger Logos */
-.brand-logo {
-    height: 85px !important; 
-    width: auto !important;
-    object-fit: contain;
-    flex-shrink: 0;
-}
-
-/* FIX: Larger Titles */
-.header-titles {
-    display: flex;
-    flex-direction: column;
-    padding-left: 5px;
-}
-.header-titles h1 {
-    font-size: 1.25rem; /* Larger */
-    color: #ffffff;
-    font-weight: 700;
-    margin-bottom: 4px;
-    letter-spacing: 0.5px;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.6);
-}
-.header-titles h2 {
-    font-size: 0.85rem; /* Larger */
-    color: rgba(255, 255, 255, 0.85);
-    font-weight: 500;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.6);
-}
-
-/* --- Right Side Tools --- */
-.header-right-actions {
-    display: flex;
-    align-items: center;
-    gap: 35px; /* Wider spacing */
-}
-.weather-interactive-container { border-right: none; padding-right: 0; }
-.weather-toggle { 
-    background: rgba(0,0,0,0.4); 
-    border: 1px solid rgba(255,255,255,0.1); 
-    padding: 10px 20px;
-}
-.header-clock { border-right: none; padding-right: 0; text-align: right; }
-#live-time { font-size: 1.35rem; }
-
-.btn-logout-minimal {
-    background: transparent;
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 8px;
-    color: #ffffff;
-    cursor: pointer;
-    opacity: 0.8;
-    transition: 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 12px;
-}
-.btn-logout-minimal:hover {
-    opacity: 1;
-    background: rgba(255,255,255,0.1);
-    border-color: rgba(255,255,255,0.5);
-}
-
-/* --- FIX: Wide Spacing for Main Menu --- */
-.top-nav-menu {
-    display: flex;
-    justify-content: center;
-    gap: 40px; /* MASSIVE increase in spacing to match image */
-    margin-bottom: 16px;
-}
-.top-nav-menu li {
-    list-style: none;
-    color: #ffffff;
-    font-size: 0.85rem; /* Larger text */
-    font-weight: 700;
-    text-transform: uppercase;
-    cursor: pointer;
-    padding: 10px 26px;
-    border-radius: 30px;
-    border: 1px solid transparent;
-    opacity: 0.85;
-    transition: 0.2s;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-}
-.top-nav-menu li:hover {
-    opacity: 1;
-}
-.top-nav-menu li.active {
-    border: 1px solid rgba(255, 255, 255, 0.7);
-    background: rgba(255, 255, 255, 0.15);
-    opacity: 1;
-    box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.1);
-}
-
-/* --- FIX: Wide Spacing for Sub Navigation Dropdowns --- */
-.sub-nav-menu {
-    display: flex;
-    justify-content: center;
-    gap: 50px; /* Huge gap to spread them out across the bottom */
-    padding-bottom: 5px;
-}
-.top-dropdown { position: relative; display: inline-block; }
-.top-dropbtn {
-    background: transparent;
-    color: #ffffff;
-    font-size: 0.8rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    border: none;
-    cursor: pointer;
-    opacity: 0.9;
-    padding: 5px;
-    display: flex;
-    align-items: center;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-}
-.top-dropbtn:hover { opacity: 1; color: #ffffff; }
-
-/* Dropdown Flyout */
-.top-dropdown-content {
-    display: none;
-    position: absolute;
-    background-color: #ffffff;
-    min-width: 260px;
-    box-shadow: 0px 8px 20px 0px rgba(0,0,0,0.3);
-    z-index: 10000;
-    border-radius: 8px;
-    overflow: hidden;
-    left: 50%;
-    transform: translateX(-50%);
-}
-.top-dropdown:hover .top-dropdown-content {
-    display: block;
-    animation: fadeInDrop 0.2s ease forwards;
-}
-.top-dropdown-content a {
-    color: #1e293b;
-    padding: 12px 16px;
-    text-decoration: none;
-    display: block;
-    font-size: 0.75rem;
-    font-weight: 600;
-    cursor: pointer;
-    border-bottom: 1px solid #f1f5f9;
-    transition: 0.2s;
-}
-.top-dropdown-content a:hover {
-    background-color: #eff6ff;
-    color: #2563eb;
-    padding-left: 20px;
-}
-.dropdown-divider {
-    background: #f8fafc;
-    color: #64748b;
-    font-weight: 800;
-    font-size: 0.65rem;
-    padding: 8px 16px;
-    border-bottom: 1px solid #e2e8f0;
-    text-transform: uppercase;
-}
-
-@keyframes fadeInDrop {
-    from { opacity: 0; transform: translate(-50%, 10px); }
-    to { opacity: 1; transform: translate(-50%, 0); }
-}
-
-/* =========================================================
-   FIX SCROLL TRAP (Allows top navigation to scroll page)
-   ========================================================= */
-body, html {
-    overflow-y: auto !important;
-    height: auto !important;
-}
-.dashboard-container { 
-    height: auto !important; 
-    overflow-y: visible !important; 
-}
-.main-content { 
-    height: auto !important; 
-    overflow-y: visible !important; 
 }
