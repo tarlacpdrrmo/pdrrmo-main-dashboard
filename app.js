@@ -310,27 +310,25 @@ window.closeExpandedLineChart = function() {
 document.getElementById('expandedLineModal').classList.remove('active');
 }
 
-// --- UPDATED SCROLL LOGIC FOR STICKY HEADER ---
-window.scrollToSection = function(panelId) {
+// Updated scroll logic with offset for the new sticky header
+function scrollToSection(panelId) {
     const section = document.getElementById(panelId);
     if(section) {
-        // Calculate the height of the sticky header so we don't hide the title under it
+        // Get the height of the new top header dynamically
         const headerHeight = document.getElementById('sticky-top-panel').offsetHeight;
+        
+        // Calculate position minus the header height and a small 20px padding buffer
         const topPos = section.getBoundingClientRect().top + window.scrollY - headerHeight - 20;
         
         window.scrollTo({ top: topPos, behavior: 'smooth' });
     }
 }
 
-// ==========================================
-// DOMContentLoaded BLOCK
-// ==========================================
+// Updated Observer to switch the active pill on the new top menu as you scroll
 document.addEventListener("DOMContentLoaded", function() {
-    fetchOpenWeather("Tarlac City,PH");
-    setInterval(() => fetchOpenWeather(document.getElementById('tarlac-muni-select').value), 900000);
-
     const panels = document.querySelectorAll('.panel');
-    const navLinks = document.querySelectorAll('.top-nav-menu li'); // Pointing to your new top menu
+    // Targets the new top nav links instead of the deleted sidebar
+    const navLinks = document.querySelectorAll('.top-nav-menu li');
 
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
@@ -349,9 +347,10 @@ document.addEventListener("DOMContentLoaded", function() {
                 }
             }
         });
-    }, { threshold: 0.2, rootMargin: "-180px 0px 0px 0px" }); // Added an offset margin so it tracks scrolling properly
+    }, { threshold: 0.2, rootMargin: "-150px 0px 0px 0px" }); // Added rootMargin to offset the sticky header detection
 
     panels.forEach(panel => observer.observe(panel));
+});
 
 // ==========================================
 // DOMContentLoaded BLOCK
