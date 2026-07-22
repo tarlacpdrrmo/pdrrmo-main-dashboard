@@ -310,43 +310,50 @@ window.closeExpandedLineChart = function() {
 document.getElementById('expandedLineModal').classList.remove('active');
 }
 
+// Updated scroll logic with offset for the new sticky header
 function scrollToSection(panelId) {
-const section = document.getElementById(panelId);
-if(section) {
-section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
+    const section = document.getElementById(panelId);
+    if(section) {
+        // Get the height of the new top header dynamically
+        const headerHeight = document.getElementById('sticky-top-panel').offsetHeight;
+        
+        // Calculate position minus the header height and a small 20px padding buffer
+        const topPos = section.getBoundingClientRect().top + window.scrollY - headerHeight - 20;
+        
+        window.scrollTo({ top: topPos, behavior: 'smooth' });
+    }
 }
 
-// ==========================================
-// DOMContentLoaded BLOCK
-// ==========================================
+// Updated Observer to switch the active pill on the new top menu as you scroll
 document.addEventListener("DOMContentLoaded", function() {
-fetchOpenWeather("Tarlac City,PH");
-setInterval(() => fetchOpenWeather(document.getElementById('tarlac-muni-select').value), 900000);
+    const panels = document.querySelectorAll('.panel');
+    // Targets the new top nav links instead of the deleted sidebar
+    const navLinks = document.querySelectorAll('.top-nav-menu li');
 
-const panels = document.querySelectorAll('.panel');
-const navLinks = document.querySelectorAll('.sidebar li:not(.section-title)');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                navLinks.forEach(link => link.classList.remove('active'));
+                const id = entry.target.getAttribute('id');
+                const activeLink = document.querySelector(`.top-nav-menu li[onclick="scrollToSection('${id}')"]`);
+                if(activeLink) activeLink.classList.add('active');
 
-const observer = new IntersectionObserver((entries) => {
-entries.forEach(entry => {
-if (entry.isIntersecting) {
-navLinks.forEach(link => link.classList.remove('active'));
-const id = entry.target.getAttribute('id');
-const activeLink = document.querySelector(`.sidebar li[onclick="scrollToSection('${id}')"]`);
-if(activeLink) activeLink.classList.add('active');
+                if (entry.target.classList.contains('iframe-panel')) {
+                    entry.target.classList.add('map-in-view');
+                }
+            } else {
+                if (entry.target.classList.contains('iframe-panel')) {
+                    entry.target.classList.remove('map-in-view');
+                }
+            }
+        });
+    }, { threshold: 0.2, rootMargin: "-150px 0px 0px 0px" }); // Added rootMargin to offset the sticky header detection
 
-if (entry.target.classList.contains('iframe-panel')) {
-entry.target.classList.add('map-in-view');
-}
-} else {
-if (entry.target.classList.contains('iframe-panel')) {
-entry.target.classList.remove('map-in-view');
-}
-}
-});
-}, { threshold: 0.2 }); 
-
-panels.forEach(panel => observer.observe(panel));
+    panels.forEach(panel => observer.observe(panel));
+    
+    // ... [Keep the rest of your DOMContentLoaded logic exactly as is] ...
+    
+    // ... [Keep the rest of your DOMContentLoaded logic here untouched (updateClock, chart listeners, etc)] ...
 
 function updateClock() {
 const now = new Date();
@@ -2821,63 +2828,6 @@ window.toggleDashboardMode = function() {
         track.style.transform = 'translateX(0)';
         
         // Swap sidebars
-        mdrrmoSidebar.style.display = 'none';
-        pdrrmoSidebar.style.display = 'flex'; 
-        pdrrmoSidebar.classList.add('sidebar-anim-enter');
-    }
-}
-// ==========================================
-// DASHBOARD HARDWARE TOGGLE (PDRRMO <-> MDRRMO)
-// ==========================================
-window.currentDashMode = window.currentDashMode || 'pdrrmo';
-
-window.toggleDashboardMode = function() {
-    const track = document.getElementById('view-slider-track');
-    const pdrrmoSidebar = document.getElementById('pdrrmo-sidebar-menu');
-    const mdrrmoSidebar = document.getElementById('mdrrmo-sidebar-menu');
-    const toggleContainer = document.querySelector('.modern-segmented-control');
-    const scrollArea = document.getElementById('scroll-area');
-    
-    const panelPdrrmo = document.getElementById('panel-pdrrmo');
-    const panelMdrrmo = document.getElementById('panel-mdrrmo');
-
-    if (!track || !pdrrmoSidebar || !mdrrmoSidebar || !toggleContainer) return;
-
-    // Smooth glide to the top
-    if (scrollArea) {
-        scrollArea.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    pdrrmoSidebar.classList.remove('sidebar-anim-enter');
-    mdrrmoSidebar.classList.remove('sidebar-anim-enter');
-    void pdrrmoSidebar.offsetWidth;
-    void mdrrmoSidebar.offsetWidth;
-
-    if (window.currentDashMode === 'pdrrmo') {
-        window.currentDashMode = 'mdrrmo';
-        toggleContainer.classList.add('mdrrmo-active');
-        
-        // Slide exactly 1 screen width over
-        track.style.transform = 'translateX(-100%)';
-        
-        // Fade out PDRRMO, Fade in MDRRMO
-        if(panelPdrrmo) panelPdrrmo.classList.add('inactive');
-        if(panelMdrrmo) panelMdrrmo.classList.remove('inactive');
-
-        pdrrmoSidebar.style.display = 'none';
-        mdrrmoSidebar.style.display = 'block';
-        mdrrmoSidebar.classList.add('sidebar-anim-enter');
-    } else {
-        window.currentDashMode = 'pdrrmo';
-        toggleContainer.classList.remove('mdrrmo-active');
-        
-        // Slide exactly 1 screen width back
-        track.style.transform = 'translateX(0)';
-        
-        // Fade out MDRRMO, Fade in PDRRMO
-        if(panelMdrrmo) panelMdrrmo.classList.add('inactive');
-        if(panelPdrrmo) panelPdrrmo.classList.remove('inactive');
-
         mdrrmoSidebar.style.display = 'none';
         pdrrmoSidebar.style.display = 'flex'; 
         pdrrmoSidebar.classList.add('sidebar-anim-enter');
