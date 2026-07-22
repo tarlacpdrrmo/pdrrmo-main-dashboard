@@ -310,48 +310,12 @@ window.closeExpandedLineChart = function() {
 document.getElementById('expandedLineModal').classList.remove('active');
 }
 
-// --- UPDATED SCROLL LOGIC FOR STICKY HEADER ---
-window.scrollToSection = function(panelId) {
-    const section = document.getElementById(panelId);
-    if(section) {
-        // Calculate the height of the sticky header so we don't hide the title under it
-        const headerHeight = document.getElementById('sticky-top-panel').offsetHeight;
-        const topPos = section.getBoundingClientRect().top + window.scrollY - headerHeight - 20;
-        
-        window.scrollTo({ top: topPos, behavior: 'smooth' });
-    }
+function scrollToSection(panelId) {
+const section = document.getElementById(panelId);
+if(section) {
+section.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
-
-// ==========================================
-// DOMContentLoaded BLOCK
-// ==========================================
-document.addEventListener("DOMContentLoaded", function() {
-    fetchOpenWeather("Tarlac City,PH");
-    setInterval(() => fetchOpenWeather(document.getElementById('tarlac-muni-select').value), 900000);
-
-    const panels = document.querySelectorAll('.panel');
-    const navLinks = document.querySelectorAll('.top-nav-menu li'); // Pointing to your new top menu
-
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                navLinks.forEach(link => link.classList.remove('active'));
-                const id = entry.target.getAttribute('id');
-                const activeLink = document.querySelector(`.top-nav-menu li[onclick="scrollToSection('${id}')"]`);
-                if(activeLink) activeLink.classList.add('active');
-
-                if (entry.target.classList.contains('iframe-panel')) {
-                    entry.target.classList.add('map-in-view');
-                }
-            } else {
-                if (entry.target.classList.contains('iframe-panel')) {
-                    entry.target.classList.remove('map-in-view');
-                }
-            }
-        });
-    }, { threshold: 0.2, rootMargin: "-180px 0px 0px 0px" }); // Added an offset margin so it tracks scrolling properly
-
-    panels.forEach(panel => observer.observe(panel));
+}
 
 // ==========================================
 // DOMContentLoaded BLOCK
@@ -2809,6 +2773,115 @@ function triggerSendAnimation() {
         }, 400); 
         
     }, 1500); 
+}
+
+// ==========================================
+// DASHBOARD HARDWARE TOGGLE (PDRRMO <-> MDRRMO)
+// ==========================================
+let currentDashMode = 'pdrrmo';
+
+window.toggleDashboardMode = function() {
+    const track = document.getElementById('view-slider-track');
+    const pdrrmoSidebar = document.getElementById('pdrrmo-sidebar-menu');
+    const mdrrmoSidebar = document.getElementById('mdrrmo-sidebar-menu');
+    const toggleContainer = document.querySelector('.modern-segmented-control');
+    const scrollArea = document.getElementById('scroll-area'); // Grab the scroll area
+
+    if (!track || !pdrrmoSidebar || !mdrrmoSidebar || !toggleContainer) return;
+
+    // Instantly scroll back to the top when switching
+    if (scrollArea) scrollArea.scrollTop = 0;
+
+    // Reset smooth sidebar animations
+    pdrrmoSidebar.classList.remove('sidebar-anim-enter');
+    mdrrmoSidebar.classList.remove('sidebar-anim-enter');
+    void pdrrmoSidebar.offsetWidth;
+    void mdrrmoSidebar.offsetWidth;
+
+    if (currentDashMode === 'pdrrmo') {
+        currentDashMode = 'mdrrmo';
+        
+        // Move the white slider behind the text
+        toggleContainer.classList.add('mdrrmo-active');
+
+        // Slide main content left
+        track.style.transform = 'translateX(-50%)';
+        
+        // Swap sidebars
+        pdrrmoSidebar.style.display = 'none';
+        mdrrmoSidebar.style.display = 'block';
+        mdrrmoSidebar.classList.add('sidebar-anim-enter');
+    } else {
+        currentDashMode = 'pdrrmo';
+        
+        // Move the white slider back
+        toggleContainer.classList.remove('mdrrmo-active');
+
+        // Slide main content right
+        track.style.transform = 'translateX(0)';
+        
+        // Swap sidebars
+        mdrrmoSidebar.style.display = 'none';
+        pdrrmoSidebar.style.display = 'flex'; 
+        pdrrmoSidebar.classList.add('sidebar-anim-enter');
+    }
+}
+// ==========================================
+// DASHBOARD HARDWARE TOGGLE (PDRRMO <-> MDRRMO)
+// ==========================================
+window.currentDashMode = window.currentDashMode || 'pdrrmo';
+
+window.toggleDashboardMode = function() {
+    const track = document.getElementById('view-slider-track');
+    const pdrrmoSidebar = document.getElementById('pdrrmo-sidebar-menu');
+    const mdrrmoSidebar = document.getElementById('mdrrmo-sidebar-menu');
+    const toggleContainer = document.querySelector('.modern-segmented-control');
+    const scrollArea = document.getElementById('scroll-area');
+    
+    const panelPdrrmo = document.getElementById('panel-pdrrmo');
+    const panelMdrrmo = document.getElementById('panel-mdrrmo');
+
+    if (!track || !pdrrmoSidebar || !mdrrmoSidebar || !toggleContainer) return;
+
+    // Smooth glide to the top
+    if (scrollArea) {
+        scrollArea.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    pdrrmoSidebar.classList.remove('sidebar-anim-enter');
+    mdrrmoSidebar.classList.remove('sidebar-anim-enter');
+    void pdrrmoSidebar.offsetWidth;
+    void mdrrmoSidebar.offsetWidth;
+
+    if (window.currentDashMode === 'pdrrmo') {
+        window.currentDashMode = 'mdrrmo';
+        toggleContainer.classList.add('mdrrmo-active');
+        
+        // Slide exactly 1 screen width over
+        track.style.transform = 'translateX(-100%)';
+        
+        // Fade out PDRRMO, Fade in MDRRMO
+        if(panelPdrrmo) panelPdrrmo.classList.add('inactive');
+        if(panelMdrrmo) panelMdrrmo.classList.remove('inactive');
+
+        pdrrmoSidebar.style.display = 'none';
+        mdrrmoSidebar.style.display = 'block';
+        mdrrmoSidebar.classList.add('sidebar-anim-enter');
+    } else {
+        window.currentDashMode = 'pdrrmo';
+        toggleContainer.classList.remove('mdrrmo-active');
+        
+        // Slide exactly 1 screen width back
+        track.style.transform = 'translateX(0)';
+        
+        // Fade out MDRRMO, Fade in PDRRMO
+        if(panelMdrrmo) panelMdrrmo.classList.add('inactive');
+        if(panelPdrrmo) panelPdrrmo.classList.remove('inactive');
+
+        mdrrmoSidebar.style.display = 'none';
+        pdrrmoSidebar.style.display = 'flex'; 
+        pdrrmoSidebar.classList.add('sidebar-anim-enter');
+    }
 }
 
 // ==========================================
