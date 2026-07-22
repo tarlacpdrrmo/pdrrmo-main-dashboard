@@ -324,10 +324,26 @@ function scrollToSection(panelId) {
     }
 }
 
-// Updated Observer to switch the active pill on the new top menu as you scroll
+function scrollToSection(panelId) {
+    const section = document.getElementById(panelId);
+    if(section) {
+        // Calculate the height of the sticky header so we don't hide the title under it
+        const headerHeight = document.getElementById('sticky-top-panel').offsetHeight;
+        const topPos = section.getBoundingClientRect().top + window.scrollY - headerHeight - 20;
+        
+        window.scrollTo({ top: topPos, behavior: 'smooth' });
+    }
+}
+
+// ==========================================
+// DOMContentLoaded BLOCK
+// ==========================================
 document.addEventListener("DOMContentLoaded", function() {
+    fetchOpenWeather("Tarlac City,PH");
+    setInterval(() => fetchOpenWeather(document.getElementById('tarlac-muni-select').value), 900000);
+
     const panels = document.querySelectorAll('.panel');
-    // Targets the new top nav links instead of the deleted sidebar
+    // FIX: Targets the new top nav links instead of the deleted sidebar
     const navLinks = document.querySelectorAll('.top-nav-menu li');
 
     const observer = new IntersectionObserver((entries) => {
@@ -335,6 +351,7 @@ document.addEventListener("DOMContentLoaded", function() {
             if (entry.isIntersecting) {
                 navLinks.forEach(link => link.classList.remove('active'));
                 const id = entry.target.getAttribute('id');
+                // FIX: Targets the exact onclick function of the new menu
                 const activeLink = document.querySelector(`.top-nav-menu li[onclick="scrollToSection('${id}')"]`);
                 if(activeLink) activeLink.classList.add('active');
 
@@ -347,181 +364,9 @@ document.addEventListener("DOMContentLoaded", function() {
                 }
             }
         });
-    }, { threshold: 0.2, rootMargin: "-150px 0px 0px 0px" }); // Added rootMargin to offset the sticky header detection
+    }, { threshold: 0.2, rootMargin: "-180px 0px 0px 0px" }); // Offset margin so it tracks scrolling properly
 
     panels.forEach(panel => observer.observe(panel));
-});
-
-// ==========================================
-// DOMContentLoaded BLOCK
-// ==========================================
-document.addEventListener("DOMContentLoaded", function() {
-fetchOpenWeather("Tarlac City,PH");
-setInterval(() => fetchOpenWeather(document.getElementById('tarlac-muni-select').value), 900000);
-
-const panels = document.querySelectorAll('.panel');
-const navLinks = document.querySelectorAll('.sidebar li:not(.section-title)');
-
-const observer = new IntersectionObserver((entries) => {
-entries.forEach(entry => {
-if (entry.isIntersecting) {
-navLinks.forEach(link => link.classList.remove('active'));
-const id = entry.target.getAttribute('id');
-const activeLink = document.querySelector(`.sidebar li[onclick="scrollToSection('${id}')"]`);
-if(activeLink) activeLink.classList.add('active');
-
-if (entry.target.classList.contains('iframe-panel')) {
-entry.target.classList.add('map-in-view');
-}
-} else {
-if (entry.target.classList.contains('iframe-panel')) {
-entry.target.classList.remove('map-in-view');
-}
-}
-});
-}, { threshold: 0.2 }); 
-
-panels.forEach(panel => observer.observe(panel));
-
-function updateClock() {
-const now = new Date();
-let hours = now.getHours();
-let minutes = now.getMinutes();
-let seconds = now.getSeconds();
-const ampm = hours >= 12 ? 'PM' : 'AM';
-hours = hours % 12;
-hours = hours ? hours : 12; 
-minutes = minutes < 10 ? '0' + minutes : minutes;
-seconds = seconds < 10 ? '0' + seconds : seconds;
-const timeString = hours + ':' + minutes + ':' + seconds + ' ' + ampm;
-
-const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-const dateString = now.toLocaleDateString('en-US', options);
-
-const timeEl = document.getElementById('live-time');
-const dateEl = document.getElementById('live-date');
-
-if(timeEl) timeEl.innerText = timeString;
-if(dateEl) dateEl.innerText = dateString;
-}
-setInterval(updateClock, 1000);
-updateClock(); 
-
-const resetMasterPieBtn = document.getElementById('resetMasterPieBtn');
-if (resetMasterPieBtn) {
-resetMasterPieBtn.addEventListener('click', function() {
-if (masterServicePieInstance) {
-let changed = false;
-masterServicePieInstance.data.labels.forEach((_, index) => {
-if (!masterServicePieInstance.getDataVisibility(index)) {
-masterServicePieInstance.toggleDataVisibility(index);
-changed = true;
-}
-});
-if (changed) masterServicePieInstance.update();
-
-const legendItems = document.querySelectorAll('#masterServiceLegend .legend-item');
-legendItems.forEach(item => item.classList.remove('hidden-slice'));
-}
-});
-}
-
-const yearSelect = document.getElementById('globalYearSelect');
-if(yearSelect) {
-yearSelect.addEventListener('change', function(e) {
-applyGlobalYearFilter(e.target.value);
-});
-}
-
-const docPieMonthFilter = document.getElementById('docPieMonthFilter');
-if(docPieMonthFilter) {
-docPieMonthFilter.addEventListener('change', function(e) {
-currentPieState.filterKey = e.target.value;
-renderDocPieChart();
-});
-}
-
-const pieBackBtn = document.getElementById('pieBackButton');
-if(pieBackBtn) {
-pieBackBtn.addEventListener('click', function() {
-if (currentPieState.level === 3) {
-currentPieState.level = 2;
-currentPieState.level2Target = null;
-} else if (currentPieState.level === 2) {
-currentPieState.level = 1;
-currentPieState.level1Target = null;
-}
-renderDocPieChart();
-});
-}
-
-const lineChartFilter = document.getElementById('lineChartFilter');
-if(lineChartFilter) {
-lineChartFilter.addEventListener('change', function(e) {
-renderLineChartByTimeframe(e.target.value);
-});
-}
-
-const trainTopMonthFilter = document.getElementById('trainTopMonthFilter');
-if (trainTopMonthFilter) {
-trainTopMonthFilter.addEventListener('change', function(e) {
-renderTrainingOverview(e.target.value);
-});
-}
-
-const masterServiceMonthFilter = document.getElementById('masterServiceMonthFilter');
-if(masterServiceMonthFilter) {
-masterServiceMonthFilter.addEventListener('change', function(e) {
-renderMasterServicePie(e.target.value);
-});
-}
-
-const expandBtn = document.getElementById('expandTitlesBtn');
-const closeBtn = document.getElementById('closeModalBtn');
-const modal = document.getElementById('titlesModal');
-
-if(expandBtn && modal && closeBtn) {
-expandBtn.addEventListener('click', () => {
-populateModalList(globalTitleCounts);
-modal.classList.add('active');
-});
-closeBtn.addEventListener('click', () => {
-modal.classList.remove('active');
-});
-modal.addEventListener('click', (e) => {
-if(e.target === modal) modal.classList.remove('active'); 
-});
-}
-
-const expandRemarksBtn = document.getElementById('expandRemarksBtn');
-const closeRemarksModalBtn = document.getElementById('closeRemarksModalBtn');
-const remarksModal = document.getElementById('remarksModal');
-
-if(expandRemarksBtn && remarksModal && closeRemarksModalBtn) {
-expandRemarksBtn.addEventListener('click', () => {
-populateRemarksModal(globalRemarksDetails);
-remarksModal.classList.add('active');
-});
-closeRemarksModalBtn.addEventListener('click', () => {
-remarksModal.classList.remove('active');
-});
-remarksModal.addEventListener('click', (e) => {
-if(e.target === remarksModal) remarksModal.classList.remove('active'); 
-});
-}
-
-const docDetailsModal = document.getElementById('docDetailsModal');
-const closeDocDetailsModalBtn = document.getElementById('closeDocDetailsModalBtn');
-
-if(docDetailsModal && closeDocDetailsModalBtn) {
-closeDocDetailsModalBtn.addEventListener('click', () => {
-docDetailsModal.classList.remove('active');
-});
-docDetailsModal.addEventListener('click', (e) => {
-if(e.target === docDetailsModal) docDetailsModal.classList.remove('active'); 
-});
-}
-});
 
 // ==========================================
 // DATA PARSING HELPERS
