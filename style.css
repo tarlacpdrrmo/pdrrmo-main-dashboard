@@ -2286,90 +2286,160 @@ html { scroll-behavior: smooth; }
 }
 html { scroll-behavior: smooth; }
 
-/* --- NEW STICKY TOP PANEL --- */
+/* =========================================================
+   2. STICKY HEADER (EXACTLY MATCHING IMAGE 2)
+   ========================================================= */
 .sticky-top-panel {
     position: sticky;
     top: 0;
     z-index: 9999;
     display: flex;
     flex-direction: column;
-    padding: 15px 32px 0 32px;
+    padding: 25px 45px 15px 45px; /* Increased breathing room */
     margin: 0 -24px 24px -24px;
-    background-image: linear-gradient(to right, rgba(15, 23, 42, 0.98) 0%, rgba(30, 41, 59, 0.9) 100%), url('headerbg.jpg');
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-    border-radius: 0;
-    border-bottom: 1px solid #e2e8f0;
+    /* LIGHTER overlay to match the reference image so the photo shows through */
+    background: linear-gradient(rgba(15, 23, 42, 0.45), rgba(15, 23, 42, 0.7)), url('headerbg.jpg');
+    background-size: cover;
+    background-position: center 25%;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.5);
 }
 
-/* Header Row Refinements */
+/* --- Top Row Alignment & Size --- */
 .header-top-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
     width: 100%;
+    margin-bottom: 25px; /* Increased gap before the menu */
 }
 .header-brand-container {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 20px; /* Wider gap between logos and text */
 }
-.header-logos { display: flex; gap: 10px; align-items: center; }
-.header-logos img { height: 55px; width: auto; object-fit: contain; }
 
-/* --- MIDDLE NAV: MAIN DASHBOARDS --- */
+/* FIX: Larger Logos */
+.brand-logo {
+    height: 85px !important; 
+    width: auto !important;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+/* FIX: Larger Titles */
+.header-titles {
+    display: flex;
+    flex-direction: column;
+    padding-left: 5px;
+}
+.header-titles h1 {
+    font-size: 1.25rem; /* Larger */
+    color: #ffffff;
+    font-weight: 700;
+    margin-bottom: 4px;
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+}
+.header-titles h2 {
+    font-size: 0.85rem; /* Larger */
+    color: rgba(255, 255, 255, 0.85);
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+}
+
+/* --- Right Side Tools --- */
+.header-right-actions {
+    display: flex;
+    align-items: center;
+    gap: 35px; /* Wider spacing */
+}
+.weather-interactive-container { border-right: none; padding-right: 0; }
+.weather-toggle { 
+    background: rgba(0,0,0,0.4); 
+    border: 1px solid rgba(255,255,255,0.1); 
+    padding: 10px 20px;
+}
+.header-clock { border-right: none; padding-right: 0; text-align: right; }
+#live-time { font-size: 1.35rem; }
+
+.btn-logout-minimal {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    color: #ffffff;
+    cursor: pointer;
+    opacity: 0.8;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+}
+.btn-logout-minimal:hover {
+    opacity: 1;
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.5);
+}
+
+/* --- FIX: Wide Spacing for Main Menu --- */
 .top-nav-menu {
     display: flex;
     justify-content: center;
-    gap: 10px;
-    margin-top: 15px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    gap: 40px; /* MASSIVE increase in spacing to match image */
+    margin-bottom: 16px;
 }
 .top-nav-menu li {
     list-style: none;
     color: #ffffff;
-    font-size: 0.8rem;
+    font-size: 0.85rem; /* Larger text */
     font-weight: 700;
     text-transform: uppercase;
     cursor: pointer;
-    padding: 8px 20px;
+    padding: 10px 26px;
     border-radius: 30px;
     border: 1px solid transparent;
-    transition: all 0.3s ease;
+    opacity: 0.85;
+    transition: 0.2s;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+.top-nav-menu li:hover {
+    opacity: 1;
 }
 .top-nav-menu li.active {
-    border-color: #ffffff;
-    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.15);
+    opacity: 1;
+    box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.1);
 }
-.top-nav-menu li:hover { background: rgba(255, 255, 255, 0.2); }
 
-/* --- BOTTOM NAV: DROPDOWNS --- */
+/* --- FIX: Wide Spacing for Sub Navigation Dropdowns --- */
 .sub-nav-menu {
     display: flex;
     justify-content: center;
-    gap: 30px;
-    margin-top: 5px;
-    padding-bottom: 10px;
+    gap: 50px; /* Huge gap to spread them out across the bottom */
+    padding-bottom: 5px;
 }
-.top-dropdown {
-    position: relative;
-    display: inline-block;
-}
+.top-dropdown { position: relative; display: inline-block; }
 .top-dropbtn {
     background: transparent;
     color: #ffffff;
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-size: 0.8rem;
+    font-weight: 700;
     text-transform: uppercase;
     border: none;
     cursor: pointer;
-    padding: 10px;
-    opacity: 0.85;
-    transition: 0.3s;
+    opacity: 0.9;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
-.top-dropbtn:hover { color: #93c5fd; opacity: 1; }
+.top-dropbtn:hover { opacity: 1; color: #ffffff; }
 
-/* Dropdown Content Box */
+/* Dropdown Flyout */
 .top-dropdown-content {
     display: none;
     position: absolute;
@@ -2386,8 +2456,6 @@ html { scroll-behavior: smooth; }
     display: block;
     animation: fadeInDrop 0.2s ease forwards;
 }
-
-/* Dropdown Items */
 .top-dropdown-content a {
     color: #1e293b;
     padding: 12px 16px;
@@ -2402,7 +2470,7 @@ html { scroll-behavior: smooth; }
 .top-dropdown-content a:hover {
     background-color: #eff6ff;
     color: #2563eb;
-    padding-left: 20px; /* Slight indent hover effect */
+    padding-left: 20px;
 }
 .dropdown-divider {
     background: #f8fafc;
