@@ -1648,58 +1648,6 @@ td {
 }
 
 /* ==========================================
-   MODERN SEGMENTED CONTROL SWITCH (SOFT & LIGHT)
-   ========================================== */
-.modern-segmented-control {
-    position: relative;
-    display: flex;
-    background: rgba(255, 255, 255, 0.08); /* Soft, light frosted background instead of dark navy */
-    border: 1px solid rgba(255, 255, 255, 0.1); /* Very subtle, light edge */
-    border-radius: 30px;
-    margin: 0 12px 24px 12px;
-    padding: 4px;
-    cursor: pointer;
-    user-select: none;
-}
-
-.segment-track {
-    position: absolute;
-    top: 4px;
-    bottom: 4px;
-    left: 4px;
-    width: calc(50% - 4px);
-    background: #ffffff; /* Bright white sliding thumb */
-    border-radius: 26px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.08); /* Much softer, lighter shadow */
-    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
-    z-index: 1;
-}
-
-/* Slides the white background to the right */
-.modern-segmented-control.mdrrmo-active .segment-track {
-    transform: translateX(100%);
-}
-
-.segment-btn {
-    flex: 1;
-    text-align: center;
-    padding: 9px 0; 
-    font-family: 'Inter', sans-serif; /* Matches sidebar font exactly */
-    font-size: 0.75rem; /* Matches sidebar size */
-    font-weight: 500; /* Much thinner, matching the sleek sidebar text */
-    letter-spacing: 0.5px;
-    z-index: 2; /* Keeps text above the white track */
-    transition: all 0.4s ease;
-}
-
-/* Default state (PDRRMO active) */
-.pdrrmo-btn { color: #475569; font-weight: 600; } /* Sleek greyish tone instead of stark dark */
-.mdrrmo-btn { color: #94a3b8; } /* Muted light slate for inactive */
-
-/* Swapped state (MDRRMO active) */
-.modern-segmented-control.mdrrmo-active .pdrrmo-btn { color: #94a3b8; font-weight: 500; }
-.modern-segmented-control.mdrrmo-active .mdrrmo-btn { color: #475569; font-weight: 600; }
-/* ==========================================
    SIDEBAR MENU SMOOTH ENTRY ANIMATION
    ========================================== */
 @keyframes menuSlideDownFade {
@@ -1716,34 +1664,6 @@ td {
 .sidebar-anim-enter {
     /* Increased from 0.4s to 0.75s, and used a silkier deceleration curve */
     animation: menuSlideDownFade 0.75s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
-}
-/* ==========================================
-   SLIDER LAYOUT (FIXED PEEKING & SCROLL LAG)
-   ========================================== */
-.view-slider-wrapper {
-    position: relative;
-    width: 100%;
-    overflow-x: hidden; 
-}
-
-.view-slider-track {
-    display: flex;
-    align-items: flex-start;
-    width: 100%; /* Using 100% fixes the sub-pixel peeking bug */
-    transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-    /* will-change removed to restore buttery smooth native scrolling */
-}
-
-.slider-panel {
-    width: 100%; /* Forces exact fit */
-    flex-shrink: 0;
-    transition: opacity 0.4s ease;
-}
-
-/* Turns the hidden panel completely invisible so it cannot peek */
-.slider-panel.inactive {
-    opacity: 0;
-    pointer-events: none;
 }
 
 /* ==========================================
@@ -1854,19 +1774,6 @@ td {
     border-radius: 0 6px 6px 0 !important;
 }
 
-/* 4. Update the Dashboard Switcher to Match the Glass Theme */
-.modern-segmented-control {
-    background: rgba(255, 255, 255, 0.08) !important; /* Makes the inside light and frosted instead of dark */
-    border: 1px solid rgba(255, 255, 255, 0.05) !important; /* Barely visible, soft light edge */
-    box-shadow: none !important; /* THIS COMPLETELY KILLS ALL HEAVY INNER EDGES/CRATERS */
-}
-
-.segment-track {
-    /* Keeps the active thumb white and clean */
-    background: #ffffff !important;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
-    border: none !important;
-}
 /* ==========================================
    TRAININGS DASHBOARD 3-COLUMN LAYOUT
    ========================================== */
