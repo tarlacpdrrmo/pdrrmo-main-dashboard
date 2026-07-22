@@ -582,7 +582,7 @@
                         </div>
                     </div>
 
-                    <!-- Right Side: Weather, Clock, Minimalist Logout -->
+                  <!-- Right Side: Weather, Clock, Minimalist Logout -->
                     <div class="header-right-actions">
                         <div id="weather-interactive-widget" class="weather-interactive-container">
                             <div class="weather-toggle" onclick="toggleWeatherPanel()">
@@ -591,6 +591,53 @@
                                     <span id="weather-temp-main">--°C</span>
                                     <span id="weather-city-main">Tarlac City</span>
                                 </div>
+                                <svg class="dropdown-arrow" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+
+                            <!-- THE MISSING WEATHER PANEL THAT CAUSED THE CRASH -->
+                            <div id="weather-expanded-panel" class="weather-panel">
+                                <div class="weather-search-wrapper">
+                                    <label for="tarlac-muni-select">Select Municipality:</label>
+                                    <select id="tarlac-muni-select" onchange="changeMunicipality()">
+                                        <option value="Tarlac City,PH">Tarlac City</option>
+                                        <option value="Capas,PH">Capas</option>
+                                        <option value="Concepcion,PH">Concepcion</option>
+                                        <option value="Paniqui,PH">Paniqui</option>
+                                        <option value="Camiling,PH">Camiling</option>
+                                        <option value="Gerona,PH">Gerona</option>
+                                        <option value="Moncada,PH">Moncada</option>
+                                        <option value="Victoria,PH">Victoria</option>
+                                        <option value="Bamban,PH">Bamban</option>
+                                        <option value="San Jose,PH">San Jose</option>
+                                        <option value="San Clemente,PH">San Clemente</option>
+                                        <option value="Mayantoc,PH">Mayantoc</option>
+                                        <option value="Santa Ignacia,PH">Santa Ignacia</option>
+                                        <option value="La Paz,PH">La Paz</option>
+                                        <option value="Pura,PH">Pura</option>
+                                        <option value="Ramos,PH">Ramos</option>
+                                        <option value="Anao,PH">Anao</option>
+                                    </select>
+                                </div>
+                                <div class="weather-details-grid">
+                                    <div class="weather-detail">
+                                        <span class="detail-label">Condition</span>
+                                        <span id="weather-desc-detail" class="detail-value">--</span>
+                                    </div>
+                                    <div class="weather-detail">
+                                        <span class="detail-label">Humidity</span>
+                                        <span id="weather-humidity" class="detail-value">--%</span>
+                                    </div>
+                                    <div class="weather-detail">
+                                        <span class="detail-label">Wind Speed</span>
+                                        <span id="weather-wind" class="detail-value">-- m/s</span>
+                                    </div>
+                                </div>
+                                <h4 class="weather-section-title">Chance of Rain (Next 12 Hrs)</h4>
+                                <div class="weather-chart-wrapper">
+                                    <canvas id="rainChanceChart"></canvas>
+                                </div>
+                                <h4 class="weather-section-title">3-Day Forecast</h4>
+                                <div id="forecast-grid" class="forecast-grid"></div>
                             </div>
                         </div>
 
@@ -598,6 +645,11 @@
                             <div id="live-time">00:00:00 AM</div>
                             <div id="live-date">Loading...</div>
                         </div>
+
+                        <button class="btn-logout-minimal" onclick="handleLogout()" title="Sign Out">
+                            <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path><path stroke-linecap="round" stroke-linejoin="round" d="M21 12H9"></path></svg>
+                        </button>
+                    </div>
 
                         <!-- Minimalist Outline Logout Icon -->
                         <button class="btn-logout-minimal" onclick="handleLogout()" title="Sign Out">
