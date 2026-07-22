@@ -1,353 +1,125 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDRRMO Integrated Operations Dashboard</title>
+<header class="page-header sticky-top-panel" id="sticky-top-panel">
+    <!-- Top Row: Logos, Titles, and Utilities -->
+    <div class="header-top-row">
+        
+        <!-- Left Side: Brand -->
+        <div class="header-brand-container">
+            <img src="tarlac_official_seal.png" alt="Seal" class="brand-logo">
+            <img src="clean.jpg" alt="Rescue Logo" class="brand-logo">
+            <div class="header-titles">
+                <h1>TARLAC PROVINCIAL DISASTER RISK REDUCTION AND MANAGEMENT OFFICE</h1>
+                <h2>INTEGRATED OPERATIONS DASHBOARD</h2>
+            </div>
+        </div>
 
-    <link rel="preload" href="bg.jpg" as="image">
-    <link rel="preload" href="headerbg.jpg" as="image">
+        <!-- Right Side: Weather, Clock, Minimalist Logout -->
+        <div class="header-right-actions">
+            <div id="weather-interactive-widget" class="weather-interactive-container">
+                <div class="weather-toggle" onclick="toggleWeatherPanel()">
+                    <img id="weather-icon-main" src="" alt="Weather" style="display:none;">
+                    <div class="weather-summary">
+                        <span id="weather-temp-main">--°C</span>
+                        <span id="weather-city-main">Tarlac City</span>
+                    </div>
+                </div>
+            </div>
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-treemap@3"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+            <div class="header-clock">
+                <div id="live-time">00:00:00 AM</div>
+                <div id="live-date">Loading...</div>
+            </div>
 
-    <style>
-        /* --- SECURE LOGIN OVERLAY --- */
-        .login-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background-image: linear-gradient(135deg, rgba(15, 23, 42, 0.7), rgba(30, 41, 59, 0.85)), url('bg.jpg');
-            background-size: cover;
-            background-position: center;
-            z-index: 9999999; /* Highest priority */
-            display: none; /* Hidden by default so it doesn't flash */
-            justify-content: center;
-            align-items: center;
-            backdrop-filter: blur(8px);
-        }
+            <!-- Minimalist Outline Logout Icon matching your image -->
+            <button class="btn-logout-minimal" onclick="handleLogout()" title="Sign Out">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+            </button>
+        </div>
+    </div>
 
-        /* Ultra-smooth, elegant entry animation */
-        @keyframes popIn {
-            0% { opacity: 0; transform: scale(0.9) translateY(40px); }
-            100% { opacity: 1; transform: scale(1) translateY(0); }
-        }
+    <!-- Middle Row: The 4 Main Dashboard Sections -->
+    <nav class="top-nav-menu">
+        <li class="active" onclick="scrollToSection('assets')">ASSETS AND PERSONNEL DISPATCHED</li>
+        <li onclick="scrollToSection('tracking')">COMMUNICATION LETTERS</li>
+        <li onclick="scrollToSection('trainings')">TRAININGS AND SEMINARS</li>
+        <li onclick="scrollToSection('volunteers')">VOLUNTEER'S SECTION</li>
+    </nav>
 
-        /* 85% Opacity Dark Glassmorphism Card */
-        .login-card {
-            background: rgba(15, 23, 42, 0.85); /* Deep, sleek background at 85% opacity */
-            backdrop-filter: blur(16px); 
-            -webkit-backdrop-filter: blur(16px);
-            padding: 40px;
-            border-radius: 16px; 
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.5); 
-            width: 100%;
-            max-width: 440px; 
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            animation: popIn 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
-        }
+    <!-- Bottom Row: Sub-links with Dropdowns -->
+    <nav class="sub-nav-menu">
+        <div class="top-dropdown">
+            <button class="top-dropbtn">TABULAR REPORTS ▼</button>
+            <div class="top-dropdown-content">
+                <a onclick="openMapModal('https://tarlacpdrrmo.github.io/tarlacpdrrmotabularreport-training/', 'Trainings Data View')">Trainings Data View</a>
+                <div class="dropdown-divider">Operation Dispatched</div>
+                <a onclick="showToast('Coming Soon')">Medical Emergencies</a>
+                <a onclick="showToast('Coming Soon')">Trauma (RoadCrash incident)</a>
+                <a onclick="openMapModal('https://tarlacpdrrmo.github.io/standby_medic_marshal_VIP_operation/', 'Standby Medic')">Standby Medic & VIP</a>
+                <a onclick="showToast('Coming Soon')">Roadside Assistance</a>
+                <a onclick="openMapModal('https://tarlacpdrrmo.github.io/patient_transport-reports/', 'Patient Transport')">Patient Transport</a>
+                <a onclick="showToast('Coming Soon')">Support Services</a>
+                <a onclick="showToast('Coming Soon')">Clearing Operations</a>
+                <a onclick="openMapModal('https://tarlacpdrrmo.github.io/dispatched_operation_firetruck/', 'Firetruck')">Firetruck</a>
+                <a onclick="showToast('Coming Soon')">Hauling</a>
+                <a onclick="showToast('Coming Soon')">Ledvan Truck</a>
+            </div>
+        </div>
 
-        .login-logo { width: 80px; margin: 0 auto 16px auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); }
+        <div class="top-dropdown">
+            <button class="top-dropbtn">MDRRMOs ▼</button>
+            <div class="top-dropdown-content">
+                <a onclick="showToast('Switching to Tarlac City')">Tarlac City</a>
+                <a onclick="showToast('Loading Anao')">Anao</a>
+                <a onclick="showToast('Loading Bamban')">Bamban</a>
+                <a onclick="showToast('Loading Camiling')">Camiling</a>
+                <a onclick="showToast('Loading Capas')">Capas</a>
+                <a onclick="showToast('Loading Concepcion')">Concepcion</a>
+                <a onclick="showToast('Loading Gerona')">Gerona</a>
+                <a onclick="showToast('Loading La Paz')">La Paz</a>
+                <a onclick="showToast('Loading Mayantoc')">Mayantoc</a>
+                <a onclick="showToast('Loading Moncada')">Moncada</a>
+                <a onclick="showToast('Loading Paniqui')">Paniqui</a>
+                <a onclick="showToast('Loading Pura')">Pura</a>
+                <a onclick="showToast('Loading Ramos')">Ramos</a>
+                <a onclick="showToast('Loading San Clemente')">San Clemente</a>
+                <a onclick="showToast('Loading San Jose')">San Jose</a>
+                <a onclick="showToast('Loading Santa Ignacia')">Santa Ignacia</a>
+                <a onclick="showToast('Loading Victoria')">Victoria</a>
+            </div>
+        </div>
 
-        .login-card h2 { color: #ffffff; font-weight: 800; font-size: 1.05rem; letter-spacing: 0px; margin-bottom: 8px; line-height: 1.4; padding: 0 10px; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-        .login-card p { color: #cbd5e1; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 24px; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+        <div class="top-dropdown">
+            <button class="top-dropbtn">WEATHER MONITORING ▼</button>
+            <div class="top-dropdown-content">
+                <a onclick="openMapModal('https://tarlacpdrrmo.github.io/tarlac-weather-monitor/', 'Tarlac Weather')">Tarlac Weather</a>
+            </div>
+        </div>
 
-        .login-card input {
-            width: 100%; padding: 12px 16px; margin-bottom: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px;
-            font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 600;
-            background: rgba(0, 0, 0, 0.2); 
-            color: #ffffff;
-            transition: all 0.3s ease; 
-            outline: none;
-            box-sizing: border-box;
-        }
-        .login-card input::placeholder { color: #94a3b8; }
-        .login-card input:focus { 
-            border-color: #94a3b8; 
-            background: rgba(0, 0, 0, 0.4);
-            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1); 
-        }
+        <div class="top-dropdown">
+            <button class="top-dropbtn">GIS AND MAPS ▼</button>
+            <div class="top-dropdown-content">
+                <a onclick="openMapModal('https://tarlacpdrrmo.github.io/tarlac-ews-map/', 'EWS Map')">Early Warning System</a>
+                <a onclick="openMapModal('https://tarlacpdrrmo.github.io/tarlac-incidents/', 'Incident Heatmap')">Incident Heatmap</a>
+                <a onclick="openMapModal('https://tarlacpdrrmo.github.io/tarlac-evacuation-centers/', 'Critical Facilities')">Critical Facilities</a>
+            </div>
+        </div>
 
-        .login-error { color: #ef4444 !important; font-size: 0.7rem !important; margin-bottom: 12px !important; height: 14px; text-transform: none !important; letter-spacing: 0 !important; text-shadow: 0 1px 2px rgba(0,0,0,0.5);}
+        <div class="top-dropdown">
+            <button class="top-dropbtn">OTHER SOURCES ▼</button>
+            <div class="top-dropdown-content">
+                <a onclick="openMapModal('https://tarlacpdrrmo.github.io/tarlac-weather-imagery/', 'Infrared')">Tropical WPAC Infrared</a>
+            </div>
+        </div>
 
-        /* Sleek Greyish Button */
-        #loginBtn {
-            background: linear-gradient(135deg, #64748b, #475569); 
-            color: white; border: 1px solid rgba(255, 255, 255, 0.1); padding: 14px; border-radius: 8px;
-            font-weight: 800; font-family: 'Inter', sans-serif; cursor: pointer; text-transform: uppercase; transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-        }
-        #loginBtn:hover { 
-            background: linear-gradient(135deg, #94a3b8, #64748b); 
-            transform: translateY(-2px); 
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-        }
-
-        /* Sleek Nickname Button */
-        #nicknameBtn {
-            width: 100%;
-            background: linear-gradient(135deg, #2563eb, #1e40af);
-            color: #ffffff;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 14px;
-            border-radius: 8px;
-            font-family: 'Inter', sans-serif;
-            font-size: 0.85rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
-            margin-top: 8px;
-        }
-        #nicknameBtn:hover {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(37, 99, 235, 0.4);
-        }
-        #nicknameBtn:active {
-            transform: translateY(0);
-            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
-        }
-
-        .btn-logout {
-            display: flex; align-items: center; gap: 8px; background-color: transparent; color: #cbd5e1;
-            border: 1px solid #64748b; padding: 10px 16px; border-radius: 6px;
-            font-family: 'Inter', sans-serif; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; cursor: pointer; transition: 0.2s;
-        }
-        .btn-logout:hover { background-color: #334155; color: #ffffff; border-color: #94a3b8; }
-
-        /* --- LOADER STYLES --- */
-        #global-loader {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 99999;
-            transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.8s;
-            overflow: hidden;
-            background-color: #e2e8f0; 
-        }
-
-        .loader-bg {
-            position: absolute;
-            top: -20px; left: -20px; right: -20px; bottom: -20px;
-            background-image: url('bg.jpg'); 
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            opacity: 1; 
-            filter: blur(4px); 
-            z-index: 1;
-            animation: smoothImageFadeIn 0.8s ease-out forwards; 
-        }
-
-        .loader-gloss {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.75) 100%);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            z-index: 2;
-        }
-
-        .loader-circle-container {
-            position: relative;
-            width: 140px;
-            height: 140px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 24px;
-            z-index: 3;
-        }
-
-        .loader-circle-container {
-            position: relative;
-            width: 140px;
-            height: 140px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 24px;
-            z-index: 3;
-        }
-
-        .loader-ring-outer {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            border: 2px solid rgba(226, 232, 240, 0.6);
-            border-top-color: #2563eb;
-            border-right-color: rgba(37, 99, 235, 0.2);
-            animation: spin-smooth 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
-        }
-
-        .loader-ring-inner {
-            position: absolute;
-            width: 80%;
-            height: 80%;
-            border-radius: 50%;
-            border: 2px solid transparent;
-            border-bottom-color: #0ea5e9;
-            border-left-color: rgba(14, 165, 233, 0.2);
-            animation: spin-smooth-reverse 2s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
-        }
-
-        .loader-text-main {
-            font-family: 'Inter', sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .loader-text-main .sub {
-            font-weight: 600;
-            font-size: 0.65rem;
-            color: #475569;
-            letter-spacing: 3px;
-            margin-bottom: 2px;
-        }
-
-        .loader-text-main .main {
-            font-weight: 800;
-            font-size: 1rem;
-            color: #0f172a;
-            letter-spacing: 1px;
-        }
-
-        .loader-text-footer {
-            font-family: 'Inter', sans-serif;
-            font-weight: 600;
-            font-size: 0.7rem;
-            color: #1e293b; 
-            letter-spacing: 4px;
-            text-transform: uppercase;
-            animation: gentle-pulse 2s ease-in-out infinite;
-            position: relative;
-            z-index: 3;
-        }
-
-        /* --- CUSTOM SLEEK DROPDOWN STYLES --- */
-        .custom-dropdown-container {
-            position: relative;
-            width: 250px;
-            font-family: 'Inter', sans-serif;
-        }
-        .custom-dropdown-selected {
-            background-color: #f8fafc;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            padding: 8px 16px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: #1e293b;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: all 0.2s ease;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        }
-        .custom-dropdown-selected:hover {
-            border-color: #93c5fd;
-            background-color: #ffffff;
-            box-shadow: 0 4px 6px rgba(37,99,235,0.1);
-        }
-        .custom-dropdown-selected svg {
-            width: 14px; height: 14px;
-            color: #2563eb;
-            transition: transform 0.3s ease;
-            flex-shrink: 0;
-            margin-left: 8px;
-        }
-        .custom-dropdown-container.active .custom-dropdown-selected {
-            border-color: #2563eb;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
-        }
-        .custom-dropdown-container.active .custom-dropdown-selected svg {
-            transform: rotate(180deg);
-        }
-        .custom-dropdown-options {
-            position: absolute;
-            top: calc(100% + 4px);
-            left: 0;
-            right: 0;
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            max-height: 250px;
-            overflow-y: auto;
-            z-index: 100;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(-10px);
-            transition: all 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
-        }
-        .custom-dropdown-container.active .custom-dropdown-options {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
-        .custom-dropdown-option {
-            padding: 10px 16px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: #475569;
-            cursor: pointer;
-            transition: background-color 0.2s ease, color 0.2s ease;
-            border-bottom: 1px solid #f1f5f9;
-        }
-        .custom-dropdown-option:last-child {
-            border-bottom: none;
-        }
-        .custom-dropdown-option:hover, .custom-dropdown-option.selected {
-            background-color: #eff6ff;
-            color: #2563eb;
-        }
-        /* Custom Dropdown Scrollbar */
-        .custom-dropdown-options::-webkit-scrollbar { width: 6px; }
-        .custom-dropdown-options::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
-        .custom-dropdown-options::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
-        @keyframes spin-smooth {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @keyframes spin-smooth-reverse {
-            0% { transform: rotate(360deg); }
-            100% { transform: rotate(0deg); }
-        }
-
-        @keyframes gentle-pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
-        }
-
-        @keyframes smoothImageFadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-    </style>
-</head>
+        <div class="top-dropdown">
+            <button class="top-dropbtn" onclick="openSuggestionsInbox()" style="display:flex; align-items:center; gap:8px;">
+                FEEDBACK AND REPORT
+                <span id="suggestionBadge" class="sidebar-badge" style="display:none; margin:0;">0</span>
+            </button>
+        </div>
+    </nav>
+</header>
 <body>
 
     <div id="login-overlay" class="login-overlay">
