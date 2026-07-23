@@ -2230,20 +2230,33 @@ html { scroll-behavior: smooth; }
 .top-nav-menu li {
     list-style: none;
     color: #ffffff;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     font-weight: 700;
     text-transform: uppercase;
     cursor: pointer;
-    padding: 8px 20px;
+    padding: 10px 26px;
     border-radius: 30px;
     border: 1px solid transparent;
-    transition: all 0.3s ease;
+    opacity: 0.85;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    /* Apply a modern spring/bounce easing curve */
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transform: translateY(0) scale(1);
+}
+.top-nav-menu li:hover {
+    opacity: 1;
+    /* Pops up and slightly enlarges */
+    transform: translateY(-4px) scale(1.03);
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15), inset 0 0 10px rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
 }
 .top-nav-menu li.active {
-    border-color: #ffffff;
-    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.15);
+    opacity: 1;
+    box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.1);
 }
-.top-nav-menu li:hover { background: rgba(255, 255, 255, 0.2); }
 
 /* 5. Sub Navigation (With Dropdown Arrows) */
 .sub-nav-menu {
@@ -2428,13 +2441,35 @@ html { scroll-behavior: smooth; }
     border: none;
     cursor: pointer;
     opacity: 0.9;
-    padding: 5px;
+    padding: 5px 12px;
     display: flex;
     align-items: center;
+    gap: 10px; /* Space between text and arrow */
     text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    transition: all 0.3s ease;
 }
 .top-dropbtn:hover { opacity: 1; color: #ffffff; }
 
+/* Draw the sleek CSS Chevron inside dropdowns */
+.top-dropdown .top-dropbtn::after {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-right: 2px solid #ffffff;
+    border-bottom: 2px solid #ffffff;
+    /* Default state: Pointing Right (▶) */
+    transform: rotate(-45deg);
+    /* Snappy physical rotation curve */
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    margin-top: -2px; /* Optical center alignment */
+}
+
+/* Open/Hover State: Pointing Down (▼) */
+.top-dropdown:hover .top-dropbtn::after,
+.top-dropdown:focus-within .top-dropbtn::after {
+    transform: rotate(45deg);
+}
 /* Dropdown Flyout */
 .top-dropdown-content {
     display: none;
