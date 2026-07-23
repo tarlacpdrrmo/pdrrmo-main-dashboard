@@ -15,9 +15,7 @@ body {
 
 .dashboard-container { 
     display: flex; 
-    height: 100vh; 
     width: 100%; 
-    overflow: hidden; 
 }
 
 /* --- SIDEBAR --- */
@@ -199,7 +197,6 @@ body {
     flex: 1; 
     min-width: 0; 
     padding: 16px 24px; 
-    overflow-y: auto; 
     scroll-behavior: smooth; 
 }
 
@@ -2278,7 +2275,6 @@ html { scroll-behavior: smooth; }
 /* --- LAYOUT FIX (Sidebar Removed) --- */
 .dashboard-container {
     flex-direction: column;
-    overflow-y: auto; /* Moves scrolling to the main window */
 }
 .main-content {
     padding: 0 24px 24px 24px;
