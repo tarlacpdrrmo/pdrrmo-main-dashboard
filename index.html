@@ -617,7 +617,7 @@
                 <!-- Bottom Row: Sub-links with Dropdowns -->
                 <nav class="sub-nav-menu">
                     <div class="top-dropdown">
-                        <button class="top-dropbtn">TABULAR REPORTS ▼</button>
+                        <button class="top-dropbtn">TABULAR REPORTS</button>
                         <div class="top-dropdown-content">
                             <a onclick="openMapModal('https://tarlacpdrrmo.github.io/tarlacpdrrmotabularreport-training/', 'Trainings Data View')">Trainings Data View</a>
                             <div class="dropdown-divider">Operation Dispatched</div>
@@ -635,7 +635,7 @@
                     </div>
 
                     <div class="top-dropdown">
-                        <button class="top-dropbtn">MDRRMOs ▼</button>
+                        <button class="top-dropbtn">MDRRMOs</button>
                         <div class="top-dropdown-content">
                             <a onclick="showToast('Switching to Tarlac City')">Tarlac City</a>
                             <a onclick="showToast('Loading Anao')">Anao</a>
@@ -658,14 +658,14 @@
                     </div>
 
                     <div class="top-dropdown">
-                        <button class="top-dropbtn">WEATHER MONITORING ▼</button>
+                        <button class="top-dropbtn">WEATHER MONITORING</button>
                         <div class="top-dropdown-content">
                             <a onclick="openMapModal('https://tarlacpdrrmo.github.io/tarlac-weather-monitor/', 'Tarlac Weather')">Tarlac Weather</a>
                         </div>
                     </div>
 
                     <div class="top-dropdown">
-                        <button class="top-dropbtn">GIS AND MAPS ▼</button>
+                        <button class="top-dropbtn">GIS AND MAPS</button>
                         <div class="top-dropdown-content">
                             <a onclick="openMapModal('https://tarlacpdrrmo.github.io/tarlac-ews-map/', 'EWS Map')">Early Warning System</a>
                             <a onclick="openMapModal('https://tarlacpdrrmo.github.io/tarlac-incidents/', 'Incident Heatmap')">Incident Heatmap</a>
@@ -674,13 +674,13 @@
                     </div>
 
                     <div class="top-dropdown">
-                        <button class="top-dropbtn">OTHER SOURCES ▼</button>
+                        <button class="top-dropbtn">OTHER SOURCES</button>
                         <div class="top-dropdown-content">
                             <a onclick="openMapModal('https://tarlacpdrrmo.github.io/tarlac-weather-imagery/', 'Infrared')">Tropical WPAC Infrared</a>
                         </div>
                     </div>
 
-                    <div class="top-dropdown">
+               <div> <!-- Removed top-dropdown class here so it doesn't get an arrow -->
                         <button class="top-dropbtn" onclick="openSuggestionsInbox()" style="display:flex; align-items:center; gap:8px;">
                             FEEDBACK AND REPORT
                             <span id="suggestionBadge" class="sidebar-badge" style="display:none; margin:0;">0</span>
