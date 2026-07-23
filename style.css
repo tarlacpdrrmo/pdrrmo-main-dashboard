@@ -2200,7 +2200,7 @@ html { scroll-behavior: smooth; }
     padding: 15px 32px 0 32px;
     align-items: stretch;
     margin: 0 -24px 24px -24px;
-    background-image: linear-gradient(to right, rgba(15, 23, 42, 0.98) 0%, rgba(30, 41, 59, 0.9) 100%), url('headerbg.jpg');
+    background-image: linear-gradient(to right, rgba(15, 23, 42, 0.4) 0%, rgba(30, 41, 59, 0.3) 100%), url('headerbg.jpg');
     box-shadow: 0 4px 15px rgba(0,0,0,0.5);
 }
 
