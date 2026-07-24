@@ -378,6 +378,7 @@ if(dateEl) dateEl.innerText = dateString;
 }
 setInterval(updateClock, 1000);
 updateClock(); 
+fetchOpenWeather('Tarlac City, PH');
 
 const resetMasterPieBtn = document.getElementById('resetMasterPieBtn');
 if (resetMasterPieBtn) {
