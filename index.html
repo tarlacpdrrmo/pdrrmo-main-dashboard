@@ -584,15 +584,72 @@
 
                     <!-- Right Side: Weather, Clock, Minimalist Logout -->
                     <div class="header-right-actions">
-                        <div id="weather-interactive-widget" class="weather-interactive-container">
-                            <div class="weather-toggle" onclick="toggleWeatherPanel()">
-                                <img id="weather-icon-main" src="" alt="Weather" style="display:none;">
-                                <div class="weather-summary">
-                                    <span id="weather-temp-main">--°C</span>
-                                    <span id="weather-city-main">Tarlac City</span>
-                                </div>
-                            </div>
-                        </div>
+                     <div id="weather-interactive-widget" class="weather-interactive-container">
+    
+    <!-- The Top Toggle Button -->
+    <div class="weather-toggle" onclick="toggleWeatherPanel()">
+        <img id="weather-icon-main" src="" alt="Weather" style="display:none;">
+        <div class="weather-summary">
+            <span id="weather-temp-main">--°C</span>
+            <span id="weather-city-main">Tarlac City</span>
+        </div>
+        <!-- Down Arrow for visual cue -->
+        <svg class="dropdown-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    </div>
+
+    <!-- The Hidden Dropdown Panel -->
+    <div class="weather-panel" id="weatherPanel">
+        <div class="weather-search-wrapper">
+            <label for="tarlac-muni-select">Select Location</label>
+            <select id="tarlac-muni-select" onchange="changeMunicipality()">
+                <option value="Tarlac City, PH" selected>Tarlac City</option>
+                <option value="Anao, PH">Anao</option>
+                <option value="Bamban, PH">Bamban</option>
+                <option value="Camiling, PH">Camiling</option>
+                <option value="Capas, PH">Capas</option>
+                <option value="Concepcion, PH">Concepcion</option>
+                <option value="Gerona, PH">Gerona</option>
+                <option value="La Paz, Tarlac, PH">La Paz</option>
+                <option value="Mayantoc, PH">Mayantoc</option>
+                <option value="Moncada, PH">Moncada</option>
+                <option value="Paniqui, PH">Paniqui</option>
+                <option value="Pura, PH">Pura</option>
+                <option value="Ramos, PH">Ramos</option>
+                <option value="San Clemente, Tarlac, PH">San Clemente</option>
+                <option value="San Jose, Tarlac, PH">San Jose</option>
+                <option value="San Manuel, Tarlac, PH">San Manuel</option>
+                <option value="Santa Ignacia, PH">Santa Ignacia</option>
+                <option value="Victoria, Tarlac, PH">Victoria</option>
+            </select>
+        </div>
+
+        <div class="weather-details-grid">
+            <div class="weather-detail">
+                <span class="detail-label">Condition</span>
+                <span class="detail-value" id="weather-desc-detail">--</span>
+            </div>
+            <div class="weather-detail">
+                <span class="detail-label">Humidity</span>
+                <span class="detail-value" id="weather-humidity">--</span>
+            </div>
+            <div class="weather-detail">
+                <span class="detail-label">Wind</span>
+                <span class="detail-value" id="weather-wind">--</span>
+            </div>
+        </div>
+
+        <h4 class="weather-section-title">Rain Chance (Next 15 Hours)</h4>
+        <div class="weather-chart-wrapper">
+            <canvas id="rainChanceChart"></canvas>
+        </div>
+
+        <h4 class="weather-section-title">3-Day Forecast</h4>
+        <div class="forecast-grid" id="forecast-grid">
+            <!-- JavaScript dynamically renders this section -->
+        </div>
+    </div>
+
+</div>
 
                         <div class="header-clock">
                             <div id="live-time">00:00:00 AM</div>
