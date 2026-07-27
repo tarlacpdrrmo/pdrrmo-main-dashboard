@@ -709,8 +709,8 @@ body {
 /* --- DOCUMENT TRACKING LAYOUT --- */
 .tracking-layout { 
     display: grid; 
-    grid-template-columns: 1.2fr 2fr; 
-    gap: 16px; 
+    grid-template-columns: 1fr 1fr; /* 50/50 split makes the Pie Chart side much wider */
+    gap: 20px; 
     align-items: stretch; 
 }
 
@@ -811,57 +811,98 @@ body {
     padding: 10px;
 }
 
-.interactive-pie-container { display: flex; gap: 16px; height: 260px; align-items: stretch; margin-top: 8px; min-width: 0; }
-.doc-pie-wrapper { flex: 1; height: 100%; position: relative; cursor: pointer; min-width: 0; }
+/* --- MODERN SAAS PIE CHART & LEGEND DESIGN --- */
+.interactive-pie-container { 
+    display: flex; 
+    flex-direction: row; 
+    gap: 24px; 
+    align-items: center; /* Perfectly centers chart and legend vertically */
+    justify-content: center;
+    height: 100%; 
+    min-height: 280px; 
+    padding: 10px 0;
+}
+
+.doc-pie-wrapper { 
+    flex: 1; 
+    max-width: 45%; /* Keeps the chart perfectly sized, leaving room for the legend */
+    height: 100%; 
+    position: relative; 
+    cursor: pointer; 
+}
 
 @keyframes legendFadeIn {
     from { opacity: 0; transform: translateX(10px); }
     to { opacity: 1; transform: translateX(0); }
 }
 
-.scrollable-legend { width: 200px; overflow-y: auto; padding-right: 10px; font-size: 0.7rem; border-left: 2px solid #f1f5f9; padding-left: 12px; }
+.scrollable-legend { 
+    flex: 1; /* Takes the remaining horizontal space cleanly */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px; /* Clean, modern vertical spacing */
+    max-height: 280px;
+    overflow-y: auto;
+    padding-right: 8px; 
+    border-left: none; /* Removes the old vertical divider line */
+}
+
 .scrollable-legend::-webkit-scrollbar { width: 4px; }
-.scrollable-legend::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
+.scrollable-legend::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
 .legend-item { 
-    display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f8fafc; transition: 0.3s; 
+    display: flex; 
+    align-items: center; 
+    padding: 10px 14px; 
+    border-radius: 8px; 
+    background-color: #f8fafc; /* Sleek card look instead of underlines */
+    border: 1px solid #f1f5f9;
+    transition: all 0.2s ease; 
     opacity: 0; 
     animation: legendFadeIn 0.4s ease forwards;
 }
-.legend-item:hover { transform: translateX(4px); background-color: #f8fafc; border-radius: 4px; }
+
+.legend-item:hover { 
+    transform: translateX(4px); 
+    background-color: #ffffff; 
+    border-color: #e2e8f0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.03); 
+}
 
 .legend-color { 
-    width: 14px !important; 
-    height: 14px !important; 
-    border-radius: 50%; 
+    width: 10px !important; 
+    height: 10px !important; 
+    border-radius: 3px !important; /* Modern squircle/square look */
     flex-shrink: 0; 
-    transition: 0.3s ease; 
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='20 6 9 17 4 12'%3e%3c/polyline%3e%3c/svg%3e");
-    background-size: 8px;
-    background-position: center;
-    background-repeat: no-repeat;
-}
-.legend-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #334155; font-weight: 600; transition: 0.3s ease; }
-.legend-val { font-weight: 800; margin-left: auto; color: #0f172a; background: #f1f5f9; padding: 2px 4px; border-radius: 4px; transition: 0.3s ease; }
-
-.interactive-legend-item {
-    cursor: pointer;
-    user-select: none;
-}
-.interactive-legend-item:active {
-    transform: scale(0.98);
+    margin-right: 12px;
+    background-image: none !important; /* Removes the old checkmark icon */
 }
 
-.hidden-slice .legend-text {
-    color: #94a3b8; 
+.legend-text { 
+    font-size: 0.75rem;
+    color: #475569; /* Slate grey */
+    font-weight: 600; 
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis; 
 }
-.hidden-slice .legend-color {
-    background-color: #e2e8f0 !important;
-    background-image: none !important; 
+
+.legend-val { 
+    font-size: 0.85rem;
+    font-weight: 700; 
+    margin-left: auto; /* Pushes the number perfectly to the right edge */
+    color: #0f172a; 
+    background: transparent; /* Removes the old chunky grey background */
+    padding: 0; 
 }
-.hidden-slice .legend-val {
-    opacity: 0.4;
-}
+
+/* Interactivity states */
+.interactive-legend-item { cursor: pointer; user-select: none; }
+.interactive-legend-item:active { transform: scale(0.98); }
+.hidden-slice .legend-text { color: #94a3b8; }
+.hidden-slice .legend-color { background-color: #e2e8f0 !important; background-image: none !important;}
+.hidden-slice .legend-val { opacity: 0.4; }
 
 .line-wrapper { height: 180px; position: relative; margin-top: 8px; min-width: 0; }
 
