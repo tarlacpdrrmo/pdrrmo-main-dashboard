@@ -804,19 +804,20 @@ type: 'line',
 data: { 
 labels: labels, 
 datasets: [{ 
-label: 'Requests Received', 
-data: dataArr, 
-borderColor: '#2563eb', 
-backgroundColor: gradient, 
-borderWidth: 2, 
-pointRadius: 0, 
-pointHoverRadius: 5,
-pointBackgroundColor: '#ffffff',
-pointBorderColor: '#2563eb',
-pointBorderWidth: 2,
-tension: 0.4, 
-fill: true
-}] 
+    label: 'Requests Received', 
+    data: dataArr, 
+    borderColor: '#2563eb', 
+    backgroundColor: gradient, 
+    borderWidth: 2, 
+    borderDash: [5, 5], /* <--- ADDED: Makes the line dotted/dashed */
+    pointRadius: 4,     /* <--- CHANGED: Increased from 0 to 4 to show the dots */
+    pointHoverRadius: 6,
+    pointBackgroundColor: '#ffffff',
+    pointBorderColor: '#2563eb',
+    pointBorderWidth: 2,
+    tension: 0.4, 
+    fill: true
+}]
 },
 options: { 
 responsive: true, 
