@@ -725,7 +725,7 @@ body {
     display: grid; 
     grid-template-columns: repeat(3, 1fr); 
     gap: 12px; 
-    align-content: stretch; 
+    align-content: start; /* This forces the cards to stay their normal compact size at the top */
     min-width: 0; 
 }
 
