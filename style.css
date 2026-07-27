@@ -837,15 +837,17 @@ body {
 }
 
 .scrollable-legend { 
-    flex: 1; /* Takes the remaining horizontal space cleanly */
+    flex: 1; 
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    gap: 8px; /* Clean, modern vertical spacing */
+    justify-content: flex-start; /* Fixes the cut-off bug */
+    gap: 8px; 
     max-height: 280px;
     overflow-y: auto;
+    padding-top: 4px; /* Gives the first item breathing room */
+    padding-bottom: 10px;
     padding-right: 8px; 
-    border-left: none; /* Removes the old vertical divider line */
+    border-left: none; 
 }
 
 .scrollable-legend::-webkit-scrollbar { width: 4px; }
@@ -906,7 +908,20 @@ body {
 
 .line-wrapper { height: 180px; position: relative; margin-top: 8px; min-width: 0; }
 
-.kpi-card-small { padding: 14px; display: flex; flex-direction: column; justify-content: center; min-height: 80px; min-width: 0;}
+@keyframes cardSwitchAnim {
+    from { opacity: 0; transform: scale(0.95) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.kpi-card-small { 
+    padding: 14px; 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: center; 
+    min-height: 80px; 
+    min-width: 0;
+    animation: cardSwitchAnim 0.4s cubic-bezier(0.165, 0.84, 0.44, 1) forwards; /* Adds smooth transition when switching data */
+}
 .kpi-card-small p { font-size: 0.6rem; color: #64748b; font-weight: 800; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; }
 .kpi-card-small h3 { font-size: 1.6rem; font-weight: 800; color: #0f172a; line-height: 1; text-shadow: 0 1px 2px rgba(0,0,0,0.05); } 
 .kpi-card-small h3.green { color: #059669; }
