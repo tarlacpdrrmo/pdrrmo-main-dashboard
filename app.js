@@ -809,8 +809,7 @@ datasets: [{
     borderColor: '#2563eb', 
     backgroundColor: gradient, 
     borderWidth: 2, 
-    borderDash: [5, 5], /* <--- ADDED: Makes the line dotted/dashed */
-    pointRadius: 4,     /* <--- CHANGED: Increased from 0 to 4 to show the dots */
+    pointRadius: 4,     /* <--- CHANGED: Increased from 0 to 4 to reveal the dots */
     pointHoverRadius: 6,
     pointBackgroundColor: '#ffffff',
     pointBorderColor: '#2563eb',
