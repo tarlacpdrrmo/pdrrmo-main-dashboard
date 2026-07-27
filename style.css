@@ -909,8 +909,8 @@ body {
 .line-wrapper { height: 180px; position: relative; margin-top: 8px; min-width: 0; }
 
 @keyframes cardSwitchAnim {
-    from { opacity: 0; transform: scale(0.95) translateY(10px); }
-    to { opacity: 1; transform: scale(1) translateY(0); }
+    0% { opacity: 0; transform: translateY(15px); }
+    100% { opacity: 1; transform: translateY(0); }
 }
 
 .kpi-card-small { 
@@ -919,8 +919,9 @@ body {
     flex-direction: column; 
     justify-content: center; 
     min-height: 80px; 
-    min-width: 0;
-    animation: cardSwitchAnim 0.4s cubic-bezier(0.165, 0.84, 0.44, 1) forwards; /* Adds smooth transition when switching data */
+    min-width: 0; 
+    /* Changed from 0.4s to 0.8s, with a much softer and luxurious curve */
+    animation: cardSwitchAnim 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards; 
 }
 .kpi-card-small p { font-size: 0.6rem; color: #64748b; font-weight: 800; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; }
 .kpi-card-small h3 { font-size: 1.6rem; font-weight: 800; color: #0f172a; line-height: 1; text-shadow: 0 1px 2px rgba(0,0,0,0.05); } 
