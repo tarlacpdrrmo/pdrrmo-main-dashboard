@@ -788,72 +788,130 @@ drawLineChart('docDateLineChart', labels, dataValues);
 }
 }
 
+function drawLineChart(canvasId, labels, dataArr) {
+const canvas = document.getElementById(canvasId);
+if(!canvas) return;
+const ctx = canvas.getContext('2d');
+
+if(docLineChartInstance) docLineChartInstance.destroy();
+
+let gradient = ctx.createLinearGradient(0, 0, 0, 300);
+gradient.addColorStop(0, 'rgba(37, 99, 235, 0.3)');
+gradient.addColorStop(1, 'rgba(37, 99, 235, 0.0)'); 
+
+docLineChartInstance = new Chart(ctx, {
+type: 'line',
+data: { 
+labels: labels, 
+datasets: [{ 
+label: 'Requests Received', 
+data: dataArr, 
+borderColor: '#2563eb', 
+backgroundColor: gradient, 
+borderWidth: 2, 
+pointRadius: 0, 
+pointHoverRadius: 5,
+pointBackgroundColor: '#ffffff',
+pointBorderColor: '#2563eb',
+pointBorderWidth: 2,
+tension: 0.4, 
+fill: true
+}] 
+},
+options: { 
+responsive: true, 
+maintainAspectRatio: false, 
+animation: { duration: 1000, easing: 'easeOutQuart' },
+interaction: { mode: 'index', intersect: false },
+plugins: { 
+datalabels: { display: false }, 
+legend: { display: false }, 
+tooltip: sharedTooltipConfig 
+}, 
+scales: { 
+x: { 
+grid: { display: false }, 
+ticks: { font: { family: 'Inter', size: 9 }, color: '#64748b', maxTicksLimit: 12 } 
+}, 
+y: { 
+title: {
+display: true,
+text: 'Received From (OFFICE)',
+font: { family: 'Inter', size: 12, weight: '600', style: 'italic' },
+color: '#475569'
+},
+grid: { color: '#f1f5f9', drawBorder: false }, 
+beginAtZero: true, 
+ticks: { font: { family: 'Inter', size: 10 }, color: '#64748b' } 
+} 
+} 
+}
+});
+}
+
 function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
-    const canvas = document.getElementById(canvasId);
-    if(!canvas) return;
-    const ctx = canvas.getContext('2d');
+const canvas = document.getElementById(canvasId);
+if(!canvas) return;
+const ctx = canvas.getContext('2d');
 
-    if (monthlyTotalPieInstance) {
-        monthlyTotalPieInstance.destroy();
-    }
+if (monthlyTotalPieInstance) {
+monthlyTotalPieInstance.destroy();
+}
 
-    const vibrantColors = ['#2563eb', '#06b6d4', '#e11d48', '#ea580c', '#16a34a', '#9333ea'];
-    const mappedVibrant = dataArr.map((_, i) => vibrantColors[i % vibrantColors.length]);
+const vibrantColors = ['#2563eb', '#06b6d4', '#e11d48', '#ea580c', '#16a34a', '#9333ea'];
+const mappedVibrant = dataArr.map((_, i) => vibrantColors[i % vibrantColors.length]);
 
-    const gtEl = document.getElementById('pie-grand-total');
-    if(gtEl) gtEl.innerText = grandTotal.toLocaleString();
+const gtEl = document.getElementById('pie-grand-total');
+if(gtEl) gtEl.innerText = grandTotal.toLocaleString();
 
-    monthlyTotalPieInstance = new Chart(ctx, {
-        type: 'pie', 
-        data: { 
-            labels: labels, 
-            datasets: [{ 
-                data: dataArr, 
-                backgroundColor: mappedVibrant, 
-                borderWidth: 2, 
-                borderColor: '#ffffff',
-                hoverOffset: 12 
-            }] 
-        },
-        options: { 
-            responsive: true, 
-            maintainAspectRatio: false, 
-            layout: { padding: 15 }, 
-            animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, 
-            hover: { mode: 'index', animationDuration: 300 }, 
-            plugins: { 
-                legend: { display: false }, 
-                datalabels: { 
-                    color: '#ffffff', 
-                    font: { weight: '800', family: 'Inter', size: 9 }, // Slightly smaller for a tighter fit
-                    anchor: 'end',     // Pushes the label to the wide outer rim
-                    align: 'start',    // Aligns it slightly inward so it doesn't clip outside the chart
-                    offset: 10,        // Adds a 10px buffer from the edge
-                    textStrokeColor: 'rgba(0, 0, 0, 0.15)', // Professional soft shadow for contrast
-                    textStrokeWidth: 3, 
-                    formatter: (value, context) => { 
-                        let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); 
-                        if (sum === 0) return ''; 
-                        let pctStr = ((value * 100) / sum).toFixed(1);
-                        let pctFloat = parseFloat(pctStr);
-                        
-                        // Hide labels for slices under 10% to prevent clutter on small cards
-                        return pctFloat >= 10 ? pctStr + '%' : ''; 
-                    } 
-                },
-                tooltip: {
-                    ...sharedTooltipConfig, 
-                    callbacks: {
-                        label: function(context) {
-                            let val = context.raw;
-                            let pct = grandTotal > 0 ? ((val / grandTotal) * 100).toFixed(1) : 0;
-                            return [`${val} Services Catered`, `vs Grand Total: ${pct}%`];
-                        }
-                    }
-                }
-            } 
-        }
-    });
+monthlyTotalPieInstance = new Chart(ctx, {
+type: 'doughnut', 
+data: { 
+labels: labels, 
+datasets: [{ 
+data: dataArr, 
+backgroundColor: mappedVibrant, 
+borderWidth: 0, 
+borderRadius: 8, 
+spacing: 5,     
+hoverOffset: 15 
+}] 
+},
+options: { 
+responsive: true, 
+maintainAspectRatio: false, 
+cutout: '55%', 
+layout: { padding: 15 }, 
+animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, 
+hover: { mode: 'index', animationDuration: 300 }, 
+plugins: { 
+legend: { display: false }, 
+datalabels: { 
+color: '#ffffff', 
+font: { weight: '800', family: 'Inter', size: 9 }, 
+anchor: 'center',
+align: 'center',
+formatter: (value, context) => { 
+let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); 
+if (sum === 0) return ''; 
+let pctStr = ((value * 100) / sum).toFixed(1);
+let pctFloat = parseFloat(pctStr);
+return pctFloat >= 8 ? pctStr + '%' : ''; 
+} 
+},
+tooltip: {
+...sharedTooltipConfig, 
+callbacks: {
+label: function(context) {
+let val = context.raw;
+let pct = grandTotal > 0 ? ((val / grandTotal) * 100).toFixed(1) : 0;
+return [`${val} Services Catered`, `vs Grand Total: ${pct}%`];
+}
+}
+}
+} 
+}
+});
 }
 
 // ==========================================
@@ -2828,29 +2886,4 @@ document.addEventListener("DOMContentLoaded", function() {
             globalTooltip.classList.remove('active');
         }
     });
-});
-
-// --- HERO LANDING SCROLL OBSERVER ---
-document.addEventListener("DOMContentLoaded", function () {
-    const scrollElements = document.querySelectorAll(".reveal-on-scroll");
-
-    const elementObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                // Smooth landing entry when scrolling down into view
-                entry.target.classList.add("is-visible");
-            } else {
-                // Optional: Remove if you want sections to softly fade out 
-                // when scrolling far away upwards/downwards
-                if (entry.boundingClientRect.top > 0) {
-                    entry.target.classList.remove("is-visible");
-                }
-            }
-        });
-    }, {
-        threshold: 0.08, // Triggers slightly after the card enters the screen
-        rootMargin: "0px 0px -20px 0px" // Smooth buffer zone
-    });
-
-    scrollElements.forEach(el => elementObserver.observe(el));
 });
