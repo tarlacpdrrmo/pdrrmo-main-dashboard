@@ -837,17 +837,12 @@ body {
 }
 
 .scrollable-legend { 
-    flex: 1; 
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start; /* Fixes the cut-off bug */
-    gap: 8px; 
-    max-height: 280px;
-    overflow-y: auto;
-    padding-top: 4px; /* Gives the first item breathing room */
-    padding-bottom: 10px;
-    padding-right: 8px; 
-    border-left: none; 
+    width: 200px; 
+    overflow-y: auto; 
+    padding-right: 10px; 
+    font-size: 0.7rem; 
+    border-left: none; /* Removed the vertical grey line */
+    padding-left: 12px; 
 }
 
 .scrollable-legend::-webkit-scrollbar { width: 4px; }
@@ -856,11 +851,10 @@ body {
 .legend-item { 
     display: flex; 
     align-items: center; 
-    padding: 10px 14px; 
-    border-radius: 8px; 
-    background-color: #f8fafc; /* Sleek card look instead of underlines */
-    border: 1px solid #f1f5f9;
-    transition: all 0.2s ease; 
+    gap: 8px; 
+    padding: 6px 0; 
+    border-bottom: none; /* Removed the horizontal grey lines */
+    transition: 0.3s; 
     opacity: 0; 
     animation: legendFadeIn 0.4s ease forwards;
 }
