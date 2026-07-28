@@ -804,22 +804,20 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
     if(gtEl) gtEl.innerText = grandTotal.toLocaleString();
 
     monthlyTotalPieInstance = new Chart(ctx, {
-        type: 'pie', // CHANGED: From 'doughnut' to 'pie'
+        type: 'pie', 
         data: { 
             labels: labels, 
             datasets: [{ 
                 data: dataArr, 
                 backgroundColor: mappedVibrant, 
-                borderWidth: 2, // ADDED: Crisp white borders for modern separation
-                borderColor: '#ffffff', // ADDED: Matches the card background
-                hoverOffset: 12 // TWEAKED: Slightly reduced for a tighter pop effect on solid slices
-                // REMOVED: spacing and borderRadius (best suited for doughnuts)
+                borderWidth: 2, 
+                borderColor: '#ffffff',
+                hoverOffset: 12 
             }] 
         },
         options: { 
             responsive: true, 
             maintainAspectRatio: false, 
-            // REMOVED: cutout: '55%' (Not needed for a solid pie chart)
             layout: { padding: 15 }, 
             animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutExpo' }, 
             hover: { mode: 'index', animationDuration: 300 }, 
@@ -827,15 +825,20 @@ function drawDonutChart(canvasId, labels, dataArr, grandTotal) {
                 legend: { display: false }, 
                 datalabels: { 
                     color: '#ffffff', 
-                    font: { weight: '800', family: 'Inter', size: 10 }, // Slightly larger for better readability on solid slices
-                    anchor: 'center',
-                    align: 'center',
+                    font: { weight: '800', family: 'Inter', size: 9 }, // Slightly smaller for a tighter fit
+                    anchor: 'end',     // Pushes the label to the wide outer rim
+                    align: 'start',    // Aligns it slightly inward so it doesn't clip outside the chart
+                    offset: 10,        // Adds a 10px buffer from the edge
+                    textStrokeColor: 'rgba(0, 0, 0, 0.15)', // Professional soft shadow for contrast
+                    textStrokeWidth: 3, 
                     formatter: (value, context) => { 
                         let sum = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); 
                         if (sum === 0) return ''; 
                         let pctStr = ((value * 100) / sum).toFixed(1);
                         let pctFloat = parseFloat(pctStr);
-                        return pctFloat >= 8 ? pctStr + '%' : ''; 
+                        
+                        // Hide labels for slices under 10% to prevent clutter on small cards
+                        return pctFloat >= 10 ? pctStr + '%' : ''; 
                     } 
                 },
                 tooltip: {
