@@ -804,19 +804,19 @@ type: 'line',
 data: { 
 labels: labels, 
 datasets: [{ 
-label: 'Requests Received', 
-data: dataArr, 
-borderColor: '#2563eb', 
-backgroundColor: gradient, 
-borderWidth: 2, 
-pointRadius: 0, 
-pointHoverRadius: 5,
-pointBackgroundColor: '#ffffff',
-pointBorderColor: '#2563eb',
-pointBorderWidth: 2,
-tension: 0.4, 
-fill: true
-}] 
+    label: 'Requests Received', 
+    data: dataArr, 
+    borderColor: '#2563eb', 
+    backgroundColor: gradient, 
+    borderWidth: 2, 
+    pointRadius: 4,     /* <--- CHANGED: Increased from 0 to 4 to reveal the dots */
+    pointHoverRadius: 6,
+    pointBackgroundColor: '#ffffff',
+    pointBorderColor: '#2563eb',
+    pointBorderWidth: 2,
+    tension: 0.4, 
+    fill: true
+}]
 },
 options: { 
 responsive: true, 
@@ -2886,4 +2886,29 @@ document.addEventListener("DOMContentLoaded", function() {
             globalTooltip.classList.remove('active');
         }
     });
+});
+
+// --- HERO LANDING SCROLL OBSERVER ---
+document.addEventListener("DOMContentLoaded", function () {
+    const scrollElements = document.querySelectorAll(".reveal-on-scroll");
+
+    const elementObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                // Smooth landing entry when scrolling down into view
+                entry.target.classList.add("is-visible");
+            } else {
+                // Optional: Remove if you want sections to softly fade out 
+                // when scrolling far away upwards/downwards
+                if (entry.boundingClientRect.top > 0) {
+                    entry.target.classList.remove("is-visible");
+                }
+            }
+        });
+    }, {
+        threshold: 0.08, // Triggers slightly after the card enters the screen
+        rootMargin: "0px 0px -20px 0px" // Smooth buffer zone
+    });
+
+    scrollElements.forEach(el => elementObserver.observe(el));
 });
