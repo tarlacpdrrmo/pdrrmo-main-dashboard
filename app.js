@@ -2595,7 +2595,7 @@ window.closeSuggestionsInbox = function() {
 document.getElementById('inboxModal').classList.remove('active');
 }
 
-function loadInboxData() {
+function () {
     const listEl = document.getElementById('inboxList');
     listEl.innerHTML = '<div style="text-align:center; padding: 40px; color: #64748b; font-weight: 600;">Loading suggestions...</div>';
 
@@ -2673,15 +2673,34 @@ function loadInboxData() {
           
             listEl.appendChild(card);
 
-            // Safely append buttons using Javascript to preserve your Firebase logic
+        // Safely append buttons using Javascript to preserve your Firebase logic
             const actionsDiv = card.querySelector(`#actions-${item.id}`);
             
+            // --- NEW: Explicit 'Open' Button ---
+            const openBtn = document.createElement('button');
+            openBtn.className = 'btn-action-pill open-btn';
+            openBtn.innerText = 'Open';
+            openBtn.onclick = function(e) {
+                e.stopPropagation(); // Prevents the row click from interfering
+                card.classList.toggle('expanded');
+                
+                // Change button text to 'Close' when opened
+                this.innerText = card.classList.contains('expanded') ? 'Close' : 'Open';
+                
+                // Automatically mark as read when opened
+                if (!item.read) {
+                    db.ref('suggestions/' + item.id).update({ read: true }).then(() => loadInboxData());
+                }
+            };
+            actionsDiv.appendChild(openBtn);
+            
+            // --- EXISTING READ BUTTON LOGIC STAYS HERE ---
             const readBtn = document.createElement('button');
             // UPDATED: Using the new pill classes
             readBtn.className = 'btn-action-pill read-toggle';
             readBtn.innerText = item.read ? 'Mark Unread' : 'Mark as Read';
             readBtn.onclick = function() {
-                db.ref('suggestions/' + item.id).update({ read: !item.read }).then(() => loadInboxData());
+                db.ref('suggestions/' + item.id).update({ read: !item.read }).then(() => ());
             };
             actionsDiv.appendChild(readBtn);
 
