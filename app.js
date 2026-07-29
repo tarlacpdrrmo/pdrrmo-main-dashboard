@@ -2595,7 +2595,7 @@ window.closeSuggestionsInbox = function() {
 document.getElementById('inboxModal').classList.remove('active');
 }
 
-function () {
+function loadInboxData() {
     const listEl = document.getElementById('inboxList');
     listEl.innerHTML = '<div style="text-align:center; padding: 40px; color: #64748b; font-weight: 600;">Loading suggestions...</div>';
 
@@ -2699,15 +2699,6 @@ function () {
             // UPDATED: Using the new pill classes
             readBtn.className = 'btn-action-pill read-toggle';
             readBtn.innerText = item.read ? 'Mark Unread' : 'Mark as Read';
-            readBtn.onclick = function() {
-                db.ref('suggestions/' + item.id).update({ read: !item.read }).then(() => ());
-            };
-            actionsDiv.appendChild(readBtn);
-
-            const delBtn = document.createElement('button');
-            // UPDATED: Using the new pill classes
-            delBtn.className = 'btn-action-pill delete';
-            delBtn.innerText = 'Delete';
             delBtn.onclick = function() {
                 if(confirm("Are you sure you want to permanently delete this suggestion?")) {
                     db.ref('suggestions/' + item.id).remove().then(() => {
