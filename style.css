@@ -854,16 +854,23 @@ body {
 .scrollable-legend::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
 .legend-item { 
-    display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: none; transition: 0.3s; 
+    display: flex; 
+    align-items: center; 
+    gap: 8px; 
+    padding: 6px 8px; /* Added slight horizontal padding for a balanced hover box */
+    border-bottom: none; 
+    transition: all 0.2s cubic-bezier(0.165, 0.84, 0.44, 1); /* Smooth, snappy transition */
     opacity: 0; 
     animation: legendFadeIn 0.4s ease forwards;
+    position: relative; /* Keeps the pop-up layered correctly */
 }
 
 .legend-item:hover { 
-    transform: translateX(4px); 
+    transform: scale(1.04); /* Creates the pop-up enlargement */
     background-color: #ffffff; 
-    border-color: #e2e8f0;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.03); 
+    border-radius: 6px; 
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Adds a soft drop shadow for depth */
+    z-index: 10; /* Ensures the hovered item pops over the others */
 }
 
 .legend-color { 
