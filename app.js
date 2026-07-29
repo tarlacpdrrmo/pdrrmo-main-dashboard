@@ -2694,11 +2694,18 @@ function loadInboxData() {
             };
             actionsDiv.appendChild(openBtn);
             
-            // --- EXISTING READ BUTTON LOGIC STAYS HERE ---
+// --- EXISTING READ BUTTON LOGIC STAYS HERE ---
             const readBtn = document.createElement('button');
-            // UPDATED: Using the new pill classes
             readBtn.className = 'btn-action-pill read-toggle';
             readBtn.innerText = item.read ? 'Mark Unread' : 'Mark as Read';
+            readBtn.onclick = function() {
+                db.ref('suggestions/' + item.id).update({ read: !item.read }).then(() => loadInboxData());
+            };
+            actionsDiv.appendChild(readBtn);
+
+            const delBtn = document.createElement('button');
+            delBtn.className = 'btn-action-pill delete';
+            delBtn.innerText = 'Delete';
             delBtn.onclick = function() {
                 if(confirm("Are you sure you want to permanently delete this suggestion?")) {
                     db.ref('suggestions/' + item.id).remove().then(() => {
