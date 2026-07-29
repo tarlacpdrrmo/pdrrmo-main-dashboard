@@ -2506,3 +2506,25 @@ html { scroll-behavior: smooth; }
     opacity: 1;
     transform: translateY(0) scale(1);
 }
+
+/* --- Top-to-Center Drop Animation for Inbox Modal --- */
+#inboxModal .modal-content {
+    transform: translateY(-100px) scale(0.95) !important; /* Starts higher up */
+    opacity: 0;
+    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease-out !important; /* Bouncy drop effect */
+}
+
+#inboxModal.active .modal-content {
+    transform: translateY(0) scale(1) !important; /* Settles perfectly in the center */
+    opacity: 1;
+}
+
+/* --- 'Open Message' Button Style --- */
+.btn-action-pill.open-btn {
+    border: 1px solid #10b981; /* Clean modern green */
+    color: #10b981;
+}
+.btn-action-pill.open-btn:hover {
+    background: #10b981;
+    color: #ffffff;
+}
