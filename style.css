@@ -1963,114 +1963,70 @@ td {
 }
 
 /* ==========================================
-   DARK GLASSMORPHISM THEME (INBOX ONLY)
+   CLEAN WHITE MODERN INBOX THEME
    ========================================== */
 
-/* 1. Apply Dark Theme ONLY to the Inbox Modal */
+/* 1. Clean Modal Container & Header */
 #inboxModal .modal-content {
-    background: linear-gradient(150deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%) !important;
-    backdrop-filter: blur(20px) saturate(150%) !important;
-    -webkit-backdrop-filter: blur(20px) saturate(150%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), inset 1px 1px 0 rgba(255, 255, 255, 0.05) !important;
+    background: #ffffff !important;
+    border: none !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
 }
-
-/* 2. Style the Inbox Header */
 #inboxModal .modal-header {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
-    background: rgba(0, 0, 0, 0.2) !important; 
-    border-top-left-radius: 12px;
-    border-top-right-radius: 12px;
+    background: #ffffff !important;
+    border-bottom: 1px solid #e2e8f0 !important;
 }
 #inboxModal .modal-header h2 {
-    color: #ffffff !important;
-    font-family: 'Inter', sans-serif !important;
-    font-weight: 700 !important;
-    letter-spacing: 0.5px !important;
+    color: #0f172a !important; 
 }
-
-/* 3. Style the Inbox Close Button */
 #inboxModal .btn-close-modal {
     color: #94a3b8 !important;
 }
 #inboxModal .btn-close-modal:hover {
     color: #ef4444 !important;
 }
-/* 4. Fix Inner Content for Dark Mode (Inbox Modal Only) */
 #inboxModal .modal-body {
-    background: transparent !important;
+    background: #f8fafc !important; /* Soft contrast behind the white cards */
 }
 
-#inboxModal .modal-body .legend-item {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
-}
-
-#inboxModal .modal-body .legend-item:hover {
-    background-color: rgba(255, 255, 255, 0.05) !important;
-}
-
-#inboxModal .modal-body .legend-text {
-    color: #cbd5e1 !important;
-}
-
-/* Force inline dark text injected by JS to be white ONLY in the inbox */
-#inboxModal .modal-body .legend-text span {
-    color: #f8fafc !important;
-}
-
-#inboxModal .modal-body .legend-val {
-    color: #ffffff !important;
-    background: rgba(255, 255, 255, 0.1) !important;
-}
-/* 5. Fix Suggestions Inbox for Dark Mode */
-.inbox-card {
-    background: rgba(15, 23, 42, 0.6) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-}
-.inbox-topic { color: #ffffff !important; }
-.inbox-body { color: #cbd5e1 !important; }
-.btn-inbox-action { color: #cbd5e1 !important; border-color: rgba(255, 255, 255, 0.2) !important; }
-.btn-inbox-action:hover { background: rgba(255, 255, 255, 0.1) !important; color: #ffffff !important; }
-
-/* ==========================================
-   MODERN LIST-VIEW INBOX (DARK GLASS THEME)
-   ========================================== */
-
-/* The Row Container */
+/* 2. The Clean Row Container */
 .modern-inbox-row {
     display: grid;
     grid-template-columns: auto 1fr auto;
     gap: 16px;
-    align-items: center; /* Aligns everything perfectly in the center */
+    align-items: center;
     padding: 16px;
-    background: rgba(15, 23, 42, 0.4) !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
     border-radius: 8px;
     transition: all 0.2s ease;
     position: relative;
-    margin-bottom: 4px;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    cursor: pointer;
 }
-
 .modern-inbox-row:hover {
-    background: rgba(30, 41, 59, 0.8) !important;
-    border-color: rgba(255, 255, 255, 0.1);
+    background: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.06);
+    transform: translateY(-1px);
 }
 
-/* Unread Indicator (The Red Dot from Image 2) */
+/* 3. Unread Indicator */
 .modern-inbox-row.unread::before {
     content: '';
     position: absolute;
-    left: 4px;
+    left: -4px;
     top: 50%;
     transform: translateY(-50%);
-    width: 6px;
-    height: 6px;
-    background-color: #ef4444; 
+    width: 8px;
+    height: 8px;
+    background-color: #3b82f6; 
     border-radius: 50%;
-    box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
 }
 
-/* Avatar / Icon */
+/* 4. Typography & Elements */
 .inbox-avatar {
     width: 42px;
     height: 42px;
@@ -2081,11 +2037,8 @@ td {
     justify-content: center;
     color: #ffffff;
     font-size: 16px;
-    margin-left: 12px;
-    border: 2px solid rgba(255, 255, 255, 0.1);
+    margin-left: 8px;
 }
-
-/* Content Area */
 .inbox-content {
     display: flex;
     flex-direction: column;
@@ -2098,46 +2051,39 @@ td {
     gap: 12px;
 }
 .inbox-sender {
-    color: #f8fafc;
-    font-weight: 600;
+    color: #0f172a !important;
+    font-weight: 700;
     font-size: 0.95rem;
 }
 .inbox-topic-badge {
     font-size: 0.65rem;
     font-weight: 700;
-    padding: 2px 10px;
-    background: rgba(59, 130, 246, 0.15);
-    color: #93c5fd;
+    padding: 3px 10px;
+    background: #eff6ff;
+    color: #2563eb;
     border-radius: 12px;
-    border: 1px solid rgba(59, 130, 246, 0.3);
+    border: 1px solid #bfdbfe;
     letter-spacing: 0.5px;
 }
-
-/* Message Snippet (Truncated to one line to save space) */
 .inbox-snippet {
-    color: #94a3b8;
+    color: #64748b !important;
     font-size: 0.85rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis; 
     max-width: 90%;
 }
-
-/* Compact Image Thumbnail */
 .inbox-thumbnail {
     max-height: 60px;
     width: fit-content;
     border-radius: 4px;
     margin-top: 4px;
-    border: 1px solid rgba(255,255,255,0.1);
-    opacity: 0.8;
+    border: 1px solid #e2e8f0;
     transition: opacity 0.2s;
 }
-.inbox-thumbnail:hover {
-    opacity: 1;
-}
+.inbox-thumbnail:hover { opacity: 0.8; }
 
-/* Meta Data & Action Buttons */
+/* 5. Meta & Buttons */
 .inbox-meta {
     display: flex;
     flex-direction: column;
@@ -2145,12 +2091,10 @@ td {
     gap: 12px;
 }
 .inbox-date {
-    color: #64748b;
+    color: #94a3b8;
     font-size: 0.75rem;
-    font-weight: 500;
+    font-weight: 600;
 }
-
-/* Hover-Reveal Action Buttons (Like Image 2) */
 .inbox-actions {
     display: flex;
     gap: 8px;
@@ -2162,8 +2106,6 @@ td {
     opacity: 1;
     transform: translateX(0);
 }
-
-/* Sleek Pill Buttons */
 .btn-action-pill {
     padding: 4px 14px;
     font-size: 0.75rem;
@@ -2171,75 +2113,25 @@ td {
     cursor: pointer;
     font-weight: 600;
     transition: all 0.2s;
-    background: transparent;
+    background: #ffffff;
 }
-.btn-action-pill.read-toggle {
-    border: 1px solid #3b82f6;
-    color: #3b82f6;
-}
-.btn-action-pill.read-toggle:hover {
-    background: #3b82f6;
-    color: #fff;
-}
-.btn-action-pill.delete {
-    border: 1px solid rgba(239, 68, 68, 0.5);
-    color: #ef4444;
-}
-.btn-action-pill.delete:hover {
-    background: #ef4444;
-    color: #fff;
-    border-color: #ef4444;
-}
+.btn-action-pill.read-toggle { border: 1px solid #3b82f6; color: #3b82f6; }
+.btn-action-pill.read-toggle:hover { background: #3b82f6; color: #fff; }
+.btn-action-pill.delete { border: 1px solid #fca5a5; color: #ef4444; }
+.btn-action-pill.delete:hover { background: #ef4444; color: #fff; border-color: #ef4444; }
 
-/* ==========================================
-   INBOX EXPANDABLE ROW LOGIC
-   ========================================== */
-
-/* 1. Make the row look clickable */
-.modern-inbox-row {
-    cursor: pointer;
-}
-
-/* 2. When expanded, shift alignment to the top so the avatar stays in place */
+/* 6. Expandable Row Logic */
 .modern-inbox-row.expanded {
     align-items: flex-start !important; 
 }
-
-/* 3. Allow the text to wrap into multiple lines when expanded */
 .modern-inbox-row.expanded .inbox-snippet {
     white-space: normal !important;
     overflow: visible !important;
     max-width: 100% !important;
     line-height: 1.6;
     margin-top: 4px;
-    color: #cbd5e1; /* Makes the text slightly brighter for reading */
+    color: #334155 !important; 
 }
-Step 2: Add the Click Event to your JavaScript
-Now open your app.js file and find your loadInboxData() function.
-
-Scroll down inside that function to right before this line: listEl.appendChild(card);
-
-Insert this click logic:
-
-JavaScript
-            // NEW: Make the row clickable to expand the full message
-            card.onclick = function(e) {
-                // Prevent the row from expanding if they clicked a button or the image thumbnail
-                if(e.target.tagName === 'BUTTON' || e.target.tagName === 'IMG') return;
-                
-                // Toggle the 'expanded' class on and off
-                this.classList.toggle('expanded');
-                
-                // Bonus UX: Automatically mark the message as read when they click to open it
-                if (!item.read) {
-                    db.ref('suggestions/' + item.id).update({ read: true });
-                    this.classList.remove('unread');
-                    const readBtn = this.querySelector('.read-toggle');
-                    if (readBtn) readBtn.innerText = 'Mark Unread';
-                    item.read = true; // Update local state
-                }
-            };
-
 /* ==========================================
    SIDEBAR FONT SIZE OVERRIDES
    ========================================== */
