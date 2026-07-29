@@ -2066,6 +2066,7 @@ td {
     letter-spacing: 0.5px;
 }
 .inbox-snippet {
+    display: none; /* NEW: Hides the text preview by default */
     color: #64748b !important;
     font-size: 0.85rem;
     white-space: nowrap;
@@ -2074,6 +2075,7 @@ td {
     max-width: 90%;
 }
 .inbox-thumbnail {
+    display: none; /* NEW: Hides the image preview by default */
     max-height: 60px;
     width: fit-content;
     border-radius: 4px;
@@ -2125,12 +2127,16 @@ td {
     align-items: flex-start !important; 
 }
 .modern-inbox-row.expanded .inbox-snippet {
+    display: block; /* NEW: Reveals the text when opened */
     white-space: normal !important;
     overflow: visible !important;
     max-width: 100% !important;
     line-height: 1.6;
     margin-top: 4px;
     color: #334155 !important; 
+}
+.modern-inbox-row.expanded .inbox-thumbnail {
+    display: block; /* NEW: Reveals the image when opened */
 }
 /* ==========================================
    SIDEBAR FONT SIZE OVERRIDES
