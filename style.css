@@ -854,13 +854,7 @@ body {
 .scrollable-legend::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
 .legend-item { 
-    display: flex; 
-    align-items: center; 
-    padding: 10px 14px; 
-    border-radius: 8px; 
-    background-color: #f8fafc; /* Sleek card look instead of underlines */
-    border: 1px solid #f1f5f9;
-    transition: all 0.2s ease; 
+    display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: none; transition: 0.3s; 
     opacity: 0; 
     animation: legendFadeIn 0.4s ease forwards;
 }
